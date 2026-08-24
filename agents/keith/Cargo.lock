@@ -954,6 +954,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
+name = "filetime"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c287a33c7f0a620c38e641e7f60827713987b3c0f26e8ddc9462cc69cf75759"
+dependencies = [
+ "cfg-if",
+ "libc",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1106,11 +1116,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "r-efi 5.3.0",
  "wasip2",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -1566,8 +1574,10 @@ name = "keith-agent-cli"
 version = "0.1.0"
 dependencies = [
  "keith-agent-types",
+ "keith-connection",
  "keith-credentials",
  "keith-platform",
+ "keith-protocol",
  "keith-provider-catalog",
 ]
 
@@ -1650,7 +1660,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "futures-util",
- "getrandom 0.3.4",
  "keith-agent-types",
  "keith-connection",
  "keith-credentials",
@@ -1658,7 +1667,6 @@ dependencies = [
  "keith-platform",
  "keith-protocol",
  "keith-provider-catalog",
- "keith-ui-model",
  "ring",
  "serde",
  "serde_json",
@@ -1666,10 +1674,8 @@ dependencies = [
  "thiserror",
  "tokio",
  "tungstenite 0.28.0",
- "ulid",
  "ureq",
  "url",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -1678,26 +1684,40 @@ version = "0.1.0"
 dependencies = [
  "keith-build-info",
  "keith-local-runtime",
+ "keith-self-evolution",
+ "keith-supervisor",
+ "keith-telemetry",
  "keith-worker-runtime",
  "serde_json",
+ "sha2",
+ "tempfile",
 ]
 
 [[package]]
 name = "keith-agentd"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "keith-agent-types",
  "keith-agent-web",
  "keith-build-info",
+ "keith-computer",
  "keith-connection",
+ "keith-conversation",
  "keith-credentials",
  "keith-daemon-core",
  "keith-local-runtime",
  "keith-platform",
+ "keith-profile",
  "keith-protocol",
+ "keith-sandbox",
+ "keith-self-evolution",
+ "keith-state-store",
  "keith-worker-runtime",
  "nix",
+ "ring",
  "serde_json",
+ "sha2",
  "signal-hook",
  "tempfile",
  "tokio",
@@ -1731,6 +1751,7 @@ dependencies = [
  "keith-state-store-core",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "thiserror",
 ]
@@ -1755,7 +1776,10 @@ dependencies = [
  "keith-agent-types",
  "keith-provider-core",
  "keith-web",
+ "serde",
  "serde_json",
+ "tempfile",
+ "tungstenite 0.28.0",
 ]
 
 [[package]]
@@ -1777,6 +1801,7 @@ dependencies = [
  "keith-credentials",
  "serde",
  "serde_json",
+ "thiserror",
  "tungstenite 0.28.0",
  "ureq",
 ]
@@ -1826,6 +1851,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "keith-computer"
+version = "0.1.0"
+dependencies = [
+ "keith-agent-types",
+ "keith-credentials",
+ "keith-resource-governor",
+ "keith-state-store",
+ "keith-state-store-core",
+ "keith-supervisor",
+ "keith-web",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "keith-configuration"
 version = "0.1.0"
 dependencies = [
@@ -1849,6 +1891,39 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tungstenite 0.28.0",
+]
+
+[[package]]
+name = "keith-conversation"
+version = "0.1.0"
+dependencies = [
+ "keith-agent-types",
+ "keith-artifacts",
+ "keith-knowledge",
+ "keith-retrieval",
+ "keith-state-store",
+ "keith-state-store-core",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "keith-coordination"
+version = "0.1.0"
+dependencies = [
+ "keith-agent-types",
+ "keith-conversation",
+ "keith-session-store",
+ "keith-state-store",
+ "keith-state-store-core",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]
@@ -1882,13 +1957,16 @@ dependencies = [
  "keith-protocol",
  "keith-runtime-api",
  "keith-scheduler",
+ "keith-self-evolution",
  "keith-session-store",
  "keith-state-store",
  "keith-state-store-core",
  "keith-supervisor",
+ "keith-telemetry",
  "keith-tool-core",
  "keith-waiting",
  "keith-worker-runtime",
+ "ring",
  "serde",
  "serde_json",
  "tempfile",
@@ -1900,9 +1978,12 @@ name = "keith-data-control"
 version = "0.1.0"
 dependencies = [
  "keith-agent-types",
+ "keith-knowledge",
  "keith-retrieval",
+ "keith-self-evolution",
  "keith-state-store",
  "keith-state-store-core",
+ "keith-supervisor",
  "serde",
  "serde_json",
  "sha2",
@@ -2015,7 +2096,11 @@ version = "0.1.0"
 dependencies = [
  "keith-agent-types",
  "keith-retrieval",
+ "keith-state-store",
+ "keith-state-store-core",
  "keith-workspace",
+ "serde",
+ "serde_json",
  "tempfile",
  "thiserror",
 ]
@@ -2032,7 +2117,10 @@ dependencies = [
  "keith-awareness",
  "keith-channel-core",
  "keith-commitments",
+ "keith-computer",
  "keith-configuration",
+ "keith-conversation",
+ "keith-coordination",
  "keith-credentials",
  "keith-data-control",
  "keith-delivery",
@@ -2059,6 +2147,7 @@ dependencies = [
  "keith-routing",
  "keith-runtime-api",
  "keith-scheduler",
+ "keith-self-evolution",
  "keith-session",
  "keith-session-store",
  "keith-skills",
@@ -2070,6 +2159,7 @@ dependencies = [
  "keith-tool-runner-core",
  "keith-waiting",
  "keith-web",
+ "keith-worker-runtime",
  "keith-workspace",
  "serde",
  "serde_json",
@@ -2117,17 +2207,23 @@ version = "0.1.0"
 dependencies = [
  "keith-agent-types",
  "keith-configuration",
+ "keith-conversation",
  "keith-plugin-host",
  "keith-plugin-sdk",
+ "keith-profile",
  "keith-protocol",
  "keith-retrieval",
+ "keith-routing",
  "keith-session-store",
  "keith-state-store",
+ "keith-state-store-core",
  "keith-workspace",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
+ "thiserror",
  "toml",
  "wat",
 ]
@@ -2149,7 +2245,6 @@ version = "0.1.0"
 dependencies = [
  "keith-agent-tui",
  "keith-agent-types",
- "keith-agent-web",
  "keith-connection",
  "keith-protocol",
  "keith-worker-runtime",
@@ -2342,6 +2437,7 @@ dependencies = [
 name = "keith-sandbox"
 version = "0.1.0"
 dependencies = [
+ "nix",
  "serde",
 ]
 
@@ -2359,6 +2455,40 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "keith-self-evolution"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "fs2",
+ "keith-agent-types",
+ "keith-evolution",
+ "keith-platform",
+ "keith-provider-core",
+ "keith-release",
+ "keith-resource-governor",
+ "keith-runtime-api",
+ "keith-sandbox",
+ "keith-state-store",
+ "keith-state-store-core",
+ "keith-supervisor",
+ "keith-telemetry",
+ "keith-test-support",
+ "keith-tool-core",
+ "keith-tool-runner-core",
+ "keith-worker-runtime",
+ "nix",
+ "ring",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tar",
+ "tempfile",
+ "thiserror",
+ "toml",
 ]
 
 [[package]]
@@ -2409,8 +2539,10 @@ name = "keith-state-store"
 version = "0.1.0"
 dependencies = [
  "keith-agent-types",
+ "keith-session-store",
  "keith-state-store-core",
  "rusqlite",
+ "serde",
  "serde_json",
  "tempfile",
  "thiserror",
@@ -2445,11 +2577,18 @@ dependencies = [
 name = "keith-supervisor"
 version = "0.1.0"
 dependencies = [
+ "fs2",
  "keith-agent-types",
  "keith-connection",
+ "keith-platform",
+ "keith-release",
  "keith-runtime-api",
  "keith-worker-runtime",
  "nix",
+ "ring",
+ "serde",
+ "serde_json",
+ "sha2",
  "tempfile",
  "thiserror",
 ]
@@ -2461,12 +2600,17 @@ dependencies = [
  "keith-agent-types",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror",
 ]
 
 [[package]]
 name = "keith-test-support"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "keith-tool-core"
@@ -2551,6 +2695,7 @@ dependencies = [
  "keith-connection",
  "keith-framing",
  "keith-platform",
+ "keith-protocol",
  "keith-runtime-api",
  "keith-state-store",
  "keith-state-store-core",
@@ -3822,6 +3967,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tar"
+version = "0.4.46"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f6221d9a6003c78398e3b239969f352578258df48c8eb051caadae0015bc840"
+dependencies = [
+ "filetime",
+ "libc",
+ "xattr",
+]
+
+[[package]]
 name = "target-lexicon"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4896,6 +5052,16 @@ name = "writeable"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
+
+[[package]]
+name = "xattr"
+version = "1.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32e45ad4206f6d2479085147f02bc2ef834ac85886624a23575ae137c8aa8156"
+dependencies = [
+ "libc",
+ "rustix",
+]
 
 [[package]]
 name = "yoke"

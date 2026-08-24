@@ -1,0 +1,38 @@
+services:
+  agentd:
+    image: ${KEITH_IMAGE:?set KEITH_IMAGE to a verified immutable image digest}
+    command: ["--data-root", "/var/lib/keith", "--socket", "/run/keith/agentd.sock"]
+    restart: unless-stopped
+    volumes:
+      - keith-state:/var/lib/keith
+      - keith-runtime:/run/keith
+      - keith-backups:/var/backups/keith
+    env_file:
+      - ${KEITH_ENV_FILE:-/etc/keith/keith.env}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    image: ${KEITH_IMAGE:?set KEITH_IMAGE to a verified immutable image digest}
+    entrypoint: ["/opt/keith/bin/agent-web"]
+    command: ["--bind", "0.0.0.0:7341", "--socket", "/run/keith/agentd.sock", "--asset-root", "/opt/keith/share/web"]
+    depends_on:
+      - agentd
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7341:7341"
+    volumes:
+      - keith-runtime:/run/keith
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  keith-state:
+  keith-runtime:
+  keith-backups:

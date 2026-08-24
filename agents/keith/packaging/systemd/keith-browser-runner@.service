@@ -1,0 +1,21 @@
+[Unit]
+Description=Keith profile-scoped browser runner for %i
+After=keith-agentd.service
+Requires=keith-agentd.service
+PartOf=keith-agentd.service
+
+[Service]
+Type=simple
+User=keith
+Group=keith
+EnvironmentFile=-/etc/keith/keith.env
+Environment=KEITH_BROWSER_INSTANCE=%i
+ExecStart=/opt/keith/bin/keith-browser-runner
+Restart=on-failure
+RestartSec=2s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/keith /run/keith
+UMask=0027

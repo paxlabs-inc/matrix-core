@@ -1,14 +1,19 @@
+use std::path::Path;
 use std::time::Duration;
 
 use keith_agent_types::{Generation, RootTreeId};
 #[cfg(unix)]
 use keith_supervisor::WorkerHealth;
-use keith_supervisor::{SupervisorOptions, WorkerEvent, WorkerSupervisor};
+use keith_supervisor::{ImageInstallRequest, SupervisorOptions, WorkerEvent, WorkerSupervisor};
 use keith_worker_runtime::LeaseManager;
 #[cfg(unix)]
 use nix::sys::signal::{Signal, kill};
 #[cfg(unix)]
 use nix::unistd::Pid;
+use ring::rand::SystemRandom;
+use ring::signature::{Ed25519KeyPair, KeyPair};
+use serde_json::json;
+use sha2::{Digest, Sha256};
 
 fn options() -> SupervisorOptions {
     SupervisorOptions {
@@ -18,6 +23,57 @@ fn options() -> SupervisorOptions {
         heartbeat_interval: Duration::from_millis(20),
         lease_duration: Duration::from_millis(500),
     }
+}
+
+fn digest(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+
+fn signed_worker_image(executable: &[u8]) -> (Vec<u8>, Vec<u8>, [u8; 32]) {
+    let output = "real exit status: success";
+    let output_digest = digest(output.as_bytes());
+    let gates = [
+        "formatting",
+        "strict_clippy",
+        "workspace_tests",
+        "dependency_policy",
+        "security",
+        "platform",
+    ]
+    .into_iter()
+    .map(|gate| {
+        json!({
+            "gate": gate,
+            "exit_code": 0,
+            "elapsed_millis": 1,
+            "output": output,
+            "output_sha256": output_digest,
+            "sandbox": {"backend":"real-process-test"}
+        })
+    })
+    .collect::<Vec<_>>();
+    let manifest = serde_json::to_vec(&json!({
+        "format": "keith-worker-image-v1",
+        "build_id": "generation-two",
+        "base_revision": "a".repeat(40),
+        "source_manifest_sha256": "b".repeat(64),
+        "executable_sha256": digest(executable),
+        "executable_bytes": executable.len(),
+        "toolchain": {"rustc":"rustc 1.93", "cargo":"cargo 1.93", "target":"test-host"},
+        "worker_report": {
+            "component":"worker", "package_version":"0.1.0", "build_id":"generation-two",
+            "protocol_version":"1.0", "storage_schema":"1.0", "enabled_features":["runtime"]
+        },
+        "gates": gates,
+        "artifact_source_paths": ["crates/tools/src/lib.rs"],
+        "change_class": "b"
+    }))
+    .unwrap();
+    let key_bytes = Ed25519KeyPair::generate_pkcs8(&SystemRandom::new()).unwrap();
+    let key = Ed25519KeyPair::from_pkcs8(key_bytes.as_ref()).unwrap();
+    let public_key = key.public_key().as_ref().try_into().unwrap();
+    let signature = key.sign(&manifest).as_ref().to_vec();
+    (manifest, signature, public_key)
 }
 
 #[test]
@@ -128,6 +184,45 @@ fn renewal_loss_stops_stale_worker_and_forced_replacement_advances_generation() 
     supervisor.validate_route(&root, forced.generation).unwrap();
     supervisor.drain(&root).unwrap();
     assert!(supervisor.status(&root).is_none());
+}
+
+#[test]
+fn image_resolution_is_bound_to_each_real_worker_generation() {
+    let directory = tempfile::tempdir().unwrap();
+    let executable = Path::new(env!("CARGO_BIN_EXE_keith-worker-process-host"));
+    let executable_bytes = std::fs::read(executable).unwrap();
+    let root = RootTreeId::new();
+    let mut supervisor = WorkerSupervisor::open(directory.path(), executable, options()).unwrap();
+
+    let original = supervisor.start(root.clone()).unwrap();
+    assert!(original.image_id.starts_with("bootstrap-"));
+    let (manifest, signature, key) = signed_worker_image(&executable_bytes);
+    let installed = supervisor
+        .image_registry_mut()
+        .install_verified(&ImageInstallRequest {
+            manifest: &manifest,
+            signature: &signature,
+            executable: &executable_bytes,
+            trusted_public_key: &key,
+        })
+        .unwrap();
+    supervisor
+        .image_registry_mut()
+        .promote_verified(&installed.image_id, &key)
+        .unwrap();
+    assert_eq!(
+        supervisor.status(&root).unwrap().image_id,
+        original.image_id
+    );
+
+    let replacement = supervisor.restart(&root).unwrap();
+    assert_eq!(replacement.generation, Generation::new(2));
+    assert_eq!(replacement.image_id, installed.image_id);
+    assert_eq!(
+        replacement.source_manifest_sha256,
+        installed.source_manifest_sha256
+    );
+    supervisor.drain(&root).unwrap();
 }
 
 #[test]

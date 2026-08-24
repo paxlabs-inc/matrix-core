@@ -9,7 +9,9 @@ use std::sync::{Mutex, MutexGuard};
 use cap_fs_ext::{FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::ambient_authority;
 use cap_std::fs::{Dir, OpenOptions};
-use keith_agent_types::{CURRENT_SCHEMA_VERSION, EntityId, SchemaVersion, UtcTimestamp};
+use keith_agent_types::{
+    CURRENT_SCHEMA_VERSION, EntityId, ProfileId, Revision, SchemaVersion, StableKey, UtcTimestamp,
+};
 use keith_model_registry::CredentialResolver;
 use keith_provider_core::{ProviderCredential, ProviderError, ProviderErrorKind};
 use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
@@ -323,6 +325,52 @@ pub struct CredentialInspection {
     pub updated_at: UtcTimestamp,
 }
 
+/// Schema-level disposition of credential data during profile deletion.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProfileCredentialDataClassification {
+    RetainedInstallationScoped,
+    RetainedImmutable,
+    ExternallyControlled,
+}
+
+/// Revision-bound proof of the credential resources attributable to one profile.
+///
+/// Credential records contain a [`CredentialOwner`] but no [`ProfileId`]. Consequently this
+/// inventory is supported and empty rather than guessing ownership from provider or channel names.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProfileCredentialDeletionInventory {
+    pub profile_id: ProfileId,
+    pub expected_revision: Revision,
+    pub stable_key: StableKey,
+    pub schema_digest: String,
+    pub owned_records: Vec<StableKey>,
+    pub retained_classifications: Vec<ProfileCredentialDataClassification>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProfileCredentialEraseReport {
+    pub profile_id: ProfileId,
+    pub expected_revision: Revision,
+    pub stable_key: StableKey,
+    pub schema_digest: String,
+    pub deleted_records: usize,
+    pub duplicate: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProfileCredentialLeakScan {
+    pub profile_id: ProfileId,
+    pub expected_revision: Revision,
+    pub stable_key: StableKey,
+    pub schema_digest: String,
+    pub remaining_owned_records: Vec<StableKey>,
+    pub retained_classifications: Vec<ProfileCredentialDataClassification>,
+}
+
 impl From<&CredentialMetadata> for CredentialInspection {
     fn from(metadata: &CredentialMetadata) -> Self {
         Self {
@@ -373,6 +421,8 @@ pub enum CredentialError {
     Corrupt,
     #[error("credential store lock was poisoned")]
     LockPoisoned,
+    #[error("profile credential deletion inventory is stale or malformed")]
+    StaleDeletionInventory,
 }
 
 pub struct EncryptedCredentialStore {
@@ -479,6 +529,24 @@ impl EncryptedCredentialStore {
         self.decrypt(&record)
     }
 
+    /// Resolves one encrypted credential only for the duration of a write-only consumer call.
+    /// The decrypted allocation is zeroed whether the consumer succeeds, fails, or unwinds. The
+    /// consumer must not retain, format, serialize, record, or otherwise copy the supplied bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when resolution fails. Consumer failures are returned without exposing
+    /// credential material.
+    pub fn consume_write_only<T, E>(
+        &self,
+        reference: &CredentialRef,
+        requester: &CredentialOwner,
+        consume: impl FnOnce(&[u8]) -> Result<T, E>,
+    ) -> Result<Result<T, E>, CredentialError> {
+        let secret = self.resolve(reference, requester)?;
+        Ok(secret.with_bytes(consume))
+    }
+
     /// # Errors
     ///
     /// Returns an error when an encrypted record cannot be inspected.
@@ -501,6 +569,60 @@ impl EncryptedCredentialStore {
         }
         inspections.sort_by(|left, right| left.owner_kind.cmp(&right.owner_kind));
         Ok(inspections)
+    }
+
+    /// Returns a revision-bound, supported-empty profile deletion inventory.
+    ///
+    /// The persisted credential schema has no profile ownership field. Installation-scoped
+    /// credentials are therefore retained and no secret or credential reference is exposed.
+    pub fn enumerate_profile_deletion_inventory(
+        &self,
+        profile_id: &ProfileId,
+        expected_revision: Revision,
+    ) -> ProfileCredentialDeletionInventory {
+        profile_credential_inventory(profile_id, expected_revision)
+    }
+
+    /// Validates and applies an exact profile credential inventory.
+    ///
+    /// There are currently no profile-owned records to erase, so a valid call is a replay-safe
+    /// no-op. The caller's current profile revision prevents a stale plan from being accepted.
+    /// # Errors
+    /// Returns an error when the inventory is stale, forged, or bound to another revision.
+    pub fn erase_profile_deletion_inventory(
+        &self,
+        inventory: &ProfileCredentialDeletionInventory,
+        current_revision: Revision,
+    ) -> Result<ProfileCredentialEraseReport, CredentialError> {
+        let expected = profile_credential_inventory(&inventory.profile_id, current_revision);
+        if inventory != &expected {
+            return Err(CredentialError::StaleDeletionInventory);
+        }
+        Ok(ProfileCredentialEraseReport {
+            profile_id: inventory.profile_id.clone(),
+            expected_revision: inventory.expected_revision,
+            stable_key: inventory.stable_key.clone(),
+            schema_digest: inventory.schema_digest.clone(),
+            deleted_records: 0,
+            duplicate: true,
+        })
+    }
+
+    /// Scans the schema-supported profile scope without reading or exposing secret material.
+    pub fn scan_profile_credential_leaks(
+        &self,
+        profile_id: &ProfileId,
+        expected_revision: Revision,
+    ) -> ProfileCredentialLeakScan {
+        let inventory = profile_credential_inventory(profile_id, expected_revision);
+        ProfileCredentialLeakScan {
+            profile_id: inventory.profile_id,
+            expected_revision: inventory.expected_revision,
+            stable_key: inventory.stable_key,
+            schema_digest: inventory.schema_digest,
+            remaining_owned_records: inventory.owned_records,
+            retained_classifications: inventory.retained_classifications,
+        }
     }
 
     /// # Errors
@@ -540,7 +662,7 @@ impl EncryptedCredentialStore {
         if record.version.major != CURRENT_SCHEMA_VERSION.major {
             return Err(CredentialError::Corrupt);
         }
-        let mut ciphertext = hex_decode(&record.ciphertext)?;
+        let mut ciphertext = ZeroingBytes(hex_decode(&record.ciphertext)?);
         let key = LessSafeKey::new(
             UnboundKey::new(&AES_256_GCM, &self.key.bytes).map_err(|_| CredentialError::Crypto)?,
         );
@@ -548,11 +670,10 @@ impl EncryptedCredentialStore {
             .open_in_place(
                 Nonce::assume_unique_for_key(record.nonce),
                 Aad::from(metadata_aad(&record.metadata)?),
-                &mut ciphertext,
+                &mut ciphertext.0,
             )
             .map_err(|_| CredentialError::Corrupt)?;
         let result = SecretValue::new(plaintext.to_vec())?;
-        ciphertext.fill(0);
         Ok(result)
     }
 
@@ -611,6 +732,39 @@ impl EncryptedCredentialStore {
 
     fn lock(&self) -> Result<MutexGuard<'_, ()>, CredentialError> {
         self.lock.lock().map_err(|_| CredentialError::LockPoisoned)
+    }
+}
+
+struct ZeroingBytes(Vec<u8>);
+
+impl Drop for ZeroingBytes {
+    fn drop(&mut self) {
+        self.0.fill(0);
+    }
+}
+
+fn profile_credential_inventory(
+    profile_id: &ProfileId,
+    expected_revision: Revision,
+) -> ProfileCredentialDeletionInventory {
+    const SCHEMA_PROOF: &[u8] = b"encrypted_record:v1:version,metadata(reference(name,owner),created_at,updated_at),nonce,ciphertext;profile_id=absent";
+    let schema_digest = hex_digest(SCHEMA_PROOF);
+    let stable_key = StableKey::parse(format!(
+        "profile-delete:credentials:{}:{}:{}",
+        profile_id,
+        expected_revision.get(),
+        schema_digest
+    ))
+    .expect("profile deletion credential key has a bounded safe format");
+    ProfileCredentialDeletionInventory {
+        profile_id: profile_id.clone(),
+        expected_revision,
+        stable_key,
+        schema_digest,
+        owned_records: Vec::new(),
+        retained_classifications: vec![
+            ProfileCredentialDataClassification::RetainedInstallationScoped,
+        ],
     }
 }
 
@@ -957,6 +1111,66 @@ mod tests {
         assert_eq!(error.kind, ProviderErrorKind::Authentication);
         assert!(!format!("{error:?} {error}").contains(SEEDED_SECRET));
         assert!(!format!("{resolver:?}").contains(SEEDED_SECRET));
+    }
+
+    #[test]
+    fn profile_deletion_is_supported_empty_revision_bound_and_replay_safe() {
+        let (_directory, store) = store();
+        let profile_id = ProfileId::new();
+        let revision = Revision::new(7);
+        let owner = CredentialOwner::Provider("openai".into());
+        let reference = CredentialRef::new("installation-provider", owner.clone()).unwrap();
+        store
+            .put(
+                reference.clone(),
+                SecretValue::new(SEEDED_SECRET).unwrap(),
+                UtcTimestamp::UNIX_EPOCH,
+            )
+            .unwrap();
+
+        let inventory = store.enumerate_profile_deletion_inventory(&profile_id, revision);
+        assert!(inventory.owned_records.is_empty());
+        assert_eq!(inventory.schema_digest.len(), 64);
+        assert_eq!(
+            inventory.retained_classifications,
+            vec![ProfileCredentialDataClassification::RetainedInstallationScoped]
+        );
+
+        let first = store
+            .erase_profile_deletion_inventory(&inventory, revision)
+            .unwrap();
+        let replay = store
+            .erase_profile_deletion_inventory(&inventory, revision)
+            .unwrap();
+        assert_eq!(first, replay);
+        assert!(first.duplicate);
+        assert_eq!(first.deleted_records, 0);
+
+        let resolved = store.resolve(&reference, &owner).unwrap();
+        resolved.with_bytes(|bytes| assert_eq!(bytes, SEEDED_SECRET.as_bytes()));
+        let scan = store.scan_profile_credential_leaks(&profile_id, revision);
+        assert!(scan.remaining_owned_records.is_empty());
+        assert_eq!(scan.stable_key, inventory.stable_key);
+        assert_eq!(scan.schema_digest, inventory.schema_digest);
+    }
+
+    #[test]
+    fn profile_deletion_rejects_stale_revision_and_forged_schema_proof() {
+        let (_directory, store) = store();
+        let profile_id = ProfileId::new();
+        let revision = Revision::new(11);
+        let inventory = store.enumerate_profile_deletion_inventory(&profile_id, revision);
+        assert!(matches!(
+            store.erase_profile_deletion_inventory(&inventory, Revision::new(12)),
+            Err(CredentialError::StaleDeletionInventory)
+        ));
+
+        let mut forged = inventory;
+        forged.schema_digest.replace_range(..1, "z");
+        assert!(matches!(
+            store.erase_profile_deletion_inventory(&forged, revision),
+            Err(CredentialError::StaleDeletionInventory)
+        ));
     }
 
     #[test]

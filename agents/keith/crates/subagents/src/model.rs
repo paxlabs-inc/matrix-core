@@ -110,6 +110,136 @@ pub struct ChildSpec {
     pub limits: ChildLimits,
     pub cancellation: ChildCancellation,
     pub retention: ChildRetention,
+    pub requested_authority: ChildAuthorityCeiling,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChildAutonomyCeiling {
+    Off,
+    Suggest,
+    ConfirmSelected,
+    Bounded,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChildModelRoute {
+    pub provider: String,
+    pub model: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChildAuthorityCeiling {
+    pub tools: BTreeSet<String>,
+    pub credential_scopes: BTreeSet<String>,
+    pub model_routes: BTreeSet<ChildModelRoute>,
+    pub network_origins: BTreeSet<String>,
+    pub readable_roots: BTreeSet<PathBuf>,
+    pub writable_roots: BTreeSet<PathBuf>,
+    pub sandbox_required: bool,
+    pub may_request_approval: bool,
+    pub may_approve: bool,
+    pub autonomy: ChildAutonomyCeiling,
+    pub computer: bool,
+    pub self_evolution: bool,
+}
+
+impl ChildAuthorityCeiling {
+    pub fn denied() -> Self {
+        Self {
+            tools: BTreeSet::new(),
+            credential_scopes: BTreeSet::new(),
+            model_routes: BTreeSet::new(),
+            network_origins: BTreeSet::new(),
+            readable_roots: BTreeSet::new(),
+            writable_roots: BTreeSet::new(),
+            sandbox_required: true,
+            may_request_approval: false,
+            may_approve: false,
+            autonomy: ChildAutonomyCeiling::Off,
+            computer: false,
+            self_evolution: false,
+        }
+    }
+
+    pub fn is_within(&self, parent: &Self) -> bool {
+        self.is_within_non_filesystem(parent)
+            && roots_are_within(&self.readable_roots, &parent.readable_roots)
+            && roots_are_within(&self.writable_roots, &parent.writable_roots)
+    }
+
+    fn is_within_non_filesystem(&self, parent: &Self) -> bool {
+        self.tools.is_subset(&parent.tools)
+            && self.credential_scopes.is_subset(&parent.credential_scopes)
+            && self.model_routes.is_subset(&parent.model_routes)
+            && self.network_origins.is_subset(&parent.network_origins)
+            && (!parent.sandbox_required || self.sandbox_required)
+            && (!self.may_request_approval || parent.may_request_approval)
+            && !self.may_approve
+            && self.autonomy <= parent.autonomy
+            && (!self.computer || parent.computer)
+            && !self.self_evolution
+    }
+
+    pub(crate) fn confined_to_workspace(
+        mut self,
+        mode: ChildWorkspaceMode,
+        workspace_root: PathBuf,
+    ) -> Self {
+        self.readable_roots.clear();
+        self.readable_roots.insert(workspace_root.clone());
+        self.writable_roots.clear();
+        if mode != ChildWorkspaceMode::ReadOnlyParent {
+            self.writable_roots.insert(workspace_root);
+        }
+        self
+    }
+
+    pub fn validate(&self) -> Result<(), ChildError> {
+        let invalid_text = self
+            .tools
+            .iter()
+            .chain(&self.credential_scopes)
+            .chain(&self.network_origins)
+            .any(|value| value.trim().is_empty() || value.len() > 2_048);
+        let invalid_route = self.model_routes.iter().any(|route| {
+            route.provider.trim().is_empty()
+                || route.provider.len() > 256
+                || route.model.trim().is_empty()
+                || route.model.len() > 512
+        });
+        if invalid_text
+            || invalid_route
+            || self.may_approve
+            || self.self_evolution
+            || !self.writable_roots.is_subset(&self.readable_roots)
+        {
+            Err(ChildError::AuthorityEscalation)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl ChildSpec {
+    pub fn validate_authority(&self, parent: &ParentAuthority) -> Result<(), ChildError> {
+        self.requested_authority.validate()?;
+        let route = ChildModelRoute {
+            provider: self.provider.clone(),
+            model: self.model.clone(),
+        };
+        if self.parent_session_id != parent.session_id
+            || self.requested_tools != self.requested_authority.tools
+            || !self.requested_authority.model_routes.contains(&route)
+            || !self.requested_authority.is_within(&parent.ceiling)
+            || !self.requested_tools.is_subset(&parent.allowed_tools)
+        {
+            return Err(ChildError::AuthorityEscalation);
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -120,6 +250,18 @@ pub struct ParentAuthority {
     pub workspace_id: WorkspaceId,
     pub workspace_root: PathBuf,
     pub allowed_tools: BTreeSet<String>,
+    pub ceiling: ChildAuthorityCeiling,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "principal")]
+pub enum ChildPrincipal {
+    DurableChild {
+        child_id: ChildId,
+        child_session_id: SessionId,
+        parent_session_id: SessionId,
+        root_tree_id: RootTreeId,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -162,6 +304,7 @@ pub struct ChildRecord {
     pub workspace_mode: ChildWorkspaceMode,
     pub workspace_root: PathBuf,
     pub allowed_tools: BTreeSet<String>,
+    pub authority: ChildAuthorityCeiling,
     pub limits: ChildLimits,
     pub depth: u16,
     pub status: ChildStatus,
@@ -174,6 +317,94 @@ pub struct ChildRecord {
     pub cancellation: ChildCancellation,
     pub retention: ChildRetention,
     pub revision: Revision,
+}
+
+impl ChildRecord {
+    pub fn principal(&self) -> ChildPrincipal {
+        ChildPrincipal::DurableChild {
+            child_id: self.id.clone(),
+            child_session_id: self.session_id.clone(),
+            parent_session_id: self.parent_session_id.clone(),
+            root_tree_id: self.root_tree_id.clone(),
+        }
+    }
+
+    pub fn validate_parent_authority(&self, parent: &ParentAuthority) -> Result<(), ChildError> {
+        self.authority.validate()?;
+        if self.parent_session_id != parent.session_id
+            || self.root_tree_id != parent.root_tree_id
+            || self.profile_id != parent.profile_id
+            || self.allowed_tools != self.authority.tools
+            || !self.authority.is_within_non_filesystem(&parent.ceiling)
+            || !self.allowed_tools.is_subset(&parent.allowed_tools)
+            || !self.authority.model_routes.contains(&ChildModelRoute {
+                provider: self.provider.clone(),
+                model: self.model.clone(),
+            })
+            || !workspace_authority_matches(self, parent)
+        {
+            return Err(ChildError::AuthorityEscalation);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_intrinsic_authority(&self) -> Result<(), ChildError> {
+        self.authority.validate()?;
+        if self.allowed_tools != self.authority.tools
+            || !self.authority.model_routes.contains(&ChildModelRoute {
+                provider: self.provider.clone(),
+                model: self.model.clone(),
+            })
+            || !workspace_record_is_confined(self)
+        {
+            return Err(ChildError::AuthorityEscalation);
+        }
+        Ok(())
+    }
+}
+
+fn roots_are_within(children: &BTreeSet<PathBuf>, parents: &BTreeSet<PathBuf>) -> bool {
+    children
+        .iter()
+        .all(|child| parents.iter().any(|parent| child.starts_with(parent)))
+}
+
+fn workspace_authority_matches(child: &ChildRecord, parent: &ParentAuthority) -> bool {
+    if !workspace_record_is_confined(child) {
+        return false;
+    }
+    match child.workspace_mode {
+        ChildWorkspaceMode::ReadOnlyParent | ChildWorkspaceMode::SharedParent => {
+            child.workspace_id == parent.workspace_id
+                && child.workspace_root == parent.workspace_root
+        }
+        ChildWorkspaceMode::IsolatedCopy | ChildWorkspaceMode::DedicatedWorkspace => {
+            child.workspace_id != parent.workspace_id
+                && child.workspace_root != parent.workspace_root
+        }
+    }
+}
+
+fn workspace_record_is_confined(child: &ChildRecord) -> bool {
+    let readable = child.authority.readable_roots.len() == 1
+        && child
+            .authority
+            .readable_roots
+            .contains(&child.workspace_root);
+    let writable = child.authority.writable_roots.len() == 1
+        && child
+            .authority
+            .writable_roots
+            .contains(&child.workspace_root);
+    match child.workspace_mode {
+        ChildWorkspaceMode::ReadOnlyParent => {
+            readable && !writable && child.authority.writable_roots.is_empty()
+        }
+        ChildWorkspaceMode::SharedParent => readable && writable,
+        ChildWorkspaceMode::IsolatedCopy | ChildWorkspaceMode::DedicatedWorkspace => {
+            readable && writable
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -263,6 +494,8 @@ pub enum ChildError {
     Invalid(String),
     #[error("child tool request exceeds parent authority")]
     ToolEscalation,
+    #[error("child authority exceeds its authenticated parent ceiling")]
+    AuthorityEscalation,
     #[error("child recursive depth or count limit was reached")]
     RecursiveLimit,
     #[error("child message rate or count limit was reached")]

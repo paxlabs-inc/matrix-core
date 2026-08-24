@@ -89,6 +89,24 @@ pub fn decode_public_key(encoded: &str) -> Result<[u8; 32], ReleaseError> {
     decode_hex_exact::<32>(encoded.trim()).map_err(|()| ReleaseError::InvalidPublicKey)
 }
 
+/// Verifies a detached Ed25519 signature with an independently trusted public key.
+///
+/// # Errors
+///
+/// Returns [`ReleaseError::InvalidSignature`] when the signature is malformed or invalid.
+pub fn verify_detached_signature(
+    message: &[u8],
+    signature: &[u8],
+    expected_public_key: &[u8; 32],
+) -> Result<(), ReleaseError> {
+    let signature: [u8; 64] = signature
+        .try_into()
+        .map_err(|_| ReleaseError::InvalidSignature)?;
+    UnparsedPublicKey::new(&ED25519, expected_public_key)
+        .verify(message, &signature)
+        .map_err(|_| ReleaseError::InvalidSignature)
+}
+
 /// Verifies release identity, publisher key, signature, component compatibility, and every file.
 ///
 /// The release's own public-key file is never treated as a trust root. The caller must supply the
@@ -111,9 +129,7 @@ pub fn verify_release(
     }
     let signature = decode_hex_exact::<64>(&fs::read_to_string(root.join(SIGNATURE_FILE))?)
         .map_err(|()| ReleaseError::InvalidSignature)?;
-    UnparsedPublicKey::new(&ED25519, packaged_public_key)
-        .verify(&manifest_bytes, &signature)
-        .map_err(|_| ReleaseError::InvalidSignature)?;
+    verify_detached_signature(&manifest_bytes, &signature, &packaged_public_key)?;
 
     let manifest: ReleaseManifest = serde_json::from_slice(&manifest_bytes)?;
     validate_manifest(&manifest)?;
@@ -424,4 +440,482 @@ mod tests {
             Err(ReleaseError::DigestMismatch(path)) if path == "bin/agentd"
         ));
     }
+}
+#[derive(
+    Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum TeammatesPackageComponent {
+    Daemon,
+    AgentWorker,
+    ChannelGateway,
+    BrowserRunner,
+    WebClient,
+    DesktopClient,
+    TerminalClient,
+    CliClient,
+    ConversationSchema,
+    CoordinationSchema,
+    ComputerSchema,
+    StateStoreSchema,
+    Migration,
+    ServiceDefinition,
+    ContainerAsset,
+    WebAsset,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammatesPackageArtifact {
+    pub component: TeammatesPackageComponent,
+    pub relative_path: String,
+    pub sha256: String,
+    pub size_bytes: u64,
+    pub executable: bool,
+    pub required: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PackageDependencyClass {
+    LocalSystem,
+    UserConfiguredProvider,
+    OptionalExternalChannel,
+    HostedControlPlane,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PackageRuntimeDependency {
+    pub name: String,
+    pub class: PackageDependencyClass,
+    pub required: bool,
+    pub version_requirement: Option<String>,
+    pub endpoint_origin: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammatesPackageCompatibility {
+    pub target_triples: BTreeSet<String>,
+    pub minimum_schema_version: u32,
+    pub maximum_schema_version: u32,
+    pub native_protocol_major: u16,
+    pub teammates_protocol_major: u16,
+    pub package_format_version: u32,
+    pub self_hosted: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammatesPackageInventory {
+    pub release_version: String,
+    pub build_id: String,
+    pub source_revision: String,
+    pub compatibility: TeammatesPackageCompatibility,
+    pub artifacts: Vec<TeammatesPackageArtifact>,
+    pub runtime_dependencies: Vec<PackageRuntimeDependency>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PackageSignatureAlgorithm {
+    Ed25519,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammatesPackageSignature {
+    pub algorithm: PackageSignatureAlgorithm,
+    pub key_id: String,
+    pub public_key: Vec<u8>,
+    pub signature: Vec<u8>,
+    pub manifest_sha256: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SignedTeammatesPackage {
+    pub manifest_bytes: Vec<u8>,
+    pub signature: TeammatesPackageSignature,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TeammatesHostCompatibility {
+    pub target_triple: String,
+    pub schema_version: u32,
+    pub native_protocol_major: u16,
+    pub teammates_protocol_major: u16,
+    pub trusted_signing_key_ids: BTreeSet<String>,
+}
+
+pub trait PackageCryptography {
+    fn sha256(&self, bytes: &[u8]) -> [u8; 32];
+
+    fn verify_ed25519(
+        &self,
+        public_key: &[u8],
+        message: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, TeammatesPackageError>;
+}
+
+pub trait PackageManifestDecoder {
+    fn decode_inventory(
+        &self,
+        manifest_bytes: &[u8],
+    ) -> Result<TeammatesPackageInventory, TeammatesPackageError>;
+}
+
+pub trait PackageArtifactReader {
+    fn read_artifact(&self, relative_path: &str) -> Result<Vec<u8>, TeammatesPackageError>;
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedTeammatesPackage {
+    pub inventory: TeammatesPackageInventory,
+    pub manifest_sha256: String,
+    pub signing_key_id: String,
+    pub verified_artifacts: usize,
+    pub verified_bytes: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TeammatesPackageError {
+    Missing(&'static str),
+    InvalidPath(String),
+    InvalidDigest(String),
+    DuplicatePath(String),
+    MissingComponent(TeammatesPackageComponent),
+    UnsupportedTarget(String),
+    UnsupportedSchema(u32),
+    UnsupportedProtocol,
+    HostedControlPlaneDependency(String),
+    RequiredProviderDependency(String),
+    UntrustedSigningKey(String),
+    InvalidSignature,
+    ArtifactMissing(String),
+    ArtifactSizeMismatch(String),
+    ArtifactDigestMismatch(String),
+    Decode(String),
+    Io(String),
+    Crypto(String),
+}
+
+impl std::fmt::Display for TeammatesPackageError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+
+impl std::error::Error for TeammatesPackageError {}
+
+impl TeammatesPackageInventory {
+    pub fn validate(&self) -> Result<(), TeammatesPackageError> {
+        for (name, value) in [
+            ("release_version", self.release_version.as_str()),
+            ("build_id", self.build_id.as_str()),
+            ("source_revision", self.source_revision.as_str()),
+        ] {
+            if value.trim().is_empty() {
+                return Err(TeammatesPackageError::Missing(name));
+            }
+        }
+        if !self.compatibility.self_hosted {
+            return Err(TeammatesPackageError::HostedControlPlaneDependency(
+                "package is not self-hosted".into(),
+            ));
+        }
+        if self.compatibility.minimum_schema_version > self.compatibility.maximum_schema_version
+            || self.compatibility.target_triples.is_empty()
+        {
+            return Err(TeammatesPackageError::UnsupportedProtocol);
+        }
+        let mut paths = BTreeSet::new();
+        let mut components = BTreeSet::new();
+        for artifact in &self.artifacts {
+            validate_relative_path(&artifact.relative_path)?;
+            validate_sha256(&artifact.sha256)?;
+            if !paths.insert(artifact.relative_path.clone()) {
+                return Err(TeammatesPackageError::DuplicatePath(
+                    artifact.relative_path.clone(),
+                ));
+            }
+            if artifact.required {
+                components.insert(artifact.component);
+            }
+        }
+        for required in [
+            TeammatesPackageComponent::Daemon,
+            TeammatesPackageComponent::AgentWorker,
+            TeammatesPackageComponent::ChannelGateway,
+            TeammatesPackageComponent::BrowserRunner,
+            TeammatesPackageComponent::WebClient,
+            TeammatesPackageComponent::DesktopClient,
+            TeammatesPackageComponent::TerminalClient,
+            TeammatesPackageComponent::CliClient,
+            TeammatesPackageComponent::ConversationSchema,
+            TeammatesPackageComponent::CoordinationSchema,
+            TeammatesPackageComponent::ComputerSchema,
+            TeammatesPackageComponent::StateStoreSchema,
+            TeammatesPackageComponent::Migration,
+            TeammatesPackageComponent::ServiceDefinition,
+            TeammatesPackageComponent::WebAsset,
+        ] {
+            if !components.contains(&required) {
+                return Err(TeammatesPackageError::MissingComponent(required));
+            }
+        }
+        for dependency in &self.runtime_dependencies {
+            if dependency.name.trim().is_empty() {
+                return Err(TeammatesPackageError::Missing("runtime dependency name"));
+            }
+            match dependency.class {
+                PackageDependencyClass::HostedControlPlane => {
+                    return Err(TeammatesPackageError::HostedControlPlaneDependency(
+                        dependency.name.clone(),
+                    ));
+                }
+                PackageDependencyClass::UserConfiguredProvider if dependency.required => {
+                    return Err(TeammatesPackageError::RequiredProviderDependency(
+                        dependency.name.clone(),
+                    ));
+                }
+                PackageDependencyClass::LocalSystem
+                    if dependency
+                        .endpoint_origin
+                        .as_deref()
+                        .is_some_and(|origin| !is_local_origin(origin)) =>
+                {
+                    return Err(TeammatesPackageError::HostedControlPlaneDependency(
+                        dependency.name.clone(),
+                    ));
+                }
+                PackageDependencyClass::LocalSystem
+                | PackageDependencyClass::UserConfiguredProvider
+                | PackageDependencyClass::OptionalExternalChannel => {}
+            }
+        }
+        Ok(())
+    }
+
+    pub fn verify_host(
+        &self,
+        host: &TeammatesHostCompatibility,
+    ) -> Result<(), TeammatesPackageError> {
+        if !self
+            .compatibility
+            .target_triples
+            .contains(&host.target_triple)
+        {
+            return Err(TeammatesPackageError::UnsupportedTarget(
+                host.target_triple.clone(),
+            ));
+        }
+        if host.schema_version < self.compatibility.minimum_schema_version
+            || host.schema_version > self.compatibility.maximum_schema_version
+        {
+            return Err(TeammatesPackageError::UnsupportedSchema(
+                host.schema_version,
+            ));
+        }
+        if host.native_protocol_major != self.compatibility.native_protocol_major
+            || host.teammates_protocol_major != self.compatibility.teammates_protocol_major
+        {
+            return Err(TeammatesPackageError::UnsupportedProtocol);
+        }
+        Ok(())
+    }
+}
+
+pub fn verify_signed_teammates_package<C, D, R>(
+    package: &SignedTeammatesPackage,
+    host: &TeammatesHostCompatibility,
+    cryptography: &C,
+    decoder: &D,
+    artifacts: &R,
+) -> Result<VerifiedTeammatesPackage, TeammatesPackageError>
+where
+    C: PackageCryptography,
+    D: PackageManifestDecoder,
+    R: PackageArtifactReader,
+{
+    if package.signature.algorithm != PackageSignatureAlgorithm::Ed25519 {
+        return Err(TeammatesPackageError::InvalidSignature);
+    }
+    if !host
+        .trusted_signing_key_ids
+        .contains(&package.signature.key_id)
+    {
+        return Err(TeammatesPackageError::UntrustedSigningKey(
+            package.signature.key_id.clone(),
+        ));
+    }
+    validate_sha256(&package.signature.manifest_sha256)?;
+    let manifest_digest = hex_digest(cryptography.sha256(&package.manifest_bytes));
+    if manifest_digest != package.signature.manifest_sha256 {
+        return Err(TeammatesPackageError::InvalidDigest("manifest".into()));
+    }
+    if !cryptography.verify_ed25519(
+        &package.signature.public_key,
+        &package.manifest_bytes,
+        &package.signature.signature,
+    )? {
+        return Err(TeammatesPackageError::InvalidSignature);
+    }
+    let inventory = decoder.decode_inventory(&package.manifest_bytes)?;
+    inventory.validate()?;
+    inventory.verify_host(host)?;
+    let mut verified_bytes = 0_u64;
+    for artifact in &inventory.artifacts {
+        let bytes = artifacts
+            .read_artifact(&artifact.relative_path)
+            .map_err(|_| TeammatesPackageError::ArtifactMissing(artifact.relative_path.clone()))?;
+        if u64::try_from(bytes.len()).ok() != Some(artifact.size_bytes) {
+            return Err(TeammatesPackageError::ArtifactSizeMismatch(
+                artifact.relative_path.clone(),
+            ));
+        }
+        if hex_digest(cryptography.sha256(&bytes)) != artifact.sha256 {
+            return Err(TeammatesPackageError::ArtifactDigestMismatch(
+                artifact.relative_path.clone(),
+            ));
+        }
+        verified_bytes = verified_bytes.checked_add(artifact.size_bytes).ok_or(
+            TeammatesPackageError::ArtifactSizeMismatch(artifact.relative_path.clone()),
+        )?;
+    }
+    Ok(VerifiedTeammatesPackage {
+        verified_artifacts: inventory.artifacts.len(),
+        inventory,
+        manifest_sha256: manifest_digest,
+        signing_key_id: package.signature.key_id.clone(),
+        verified_bytes,
+    })
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InstalledTeammatesResource {
+    pub component: TeammatesPackageComponent,
+    pub relative_path: String,
+    pub present: bool,
+    pub expected_sha256: String,
+    pub observed_sha256: Option<String>,
+    pub expected_size_bytes: u64,
+    pub observed_size_bytes: Option<u64>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InstalledTeammatesResourceReport {
+    pub release_version: String,
+    pub build_id: String,
+    pub manifest_sha256: String,
+    pub resources: Vec<InstalledTeammatesResource>,
+    pub missing_required: Vec<String>,
+    pub digest_mismatches: Vec<String>,
+}
+
+pub fn report_installed_teammates_resources<C, R>(
+    inventory: &TeammatesPackageInventory,
+    manifest_sha256: &str,
+    cryptography: &C,
+    artifacts: &R,
+) -> Result<InstalledTeammatesResourceReport, TeammatesPackageError>
+where
+    C: PackageCryptography,
+    R: PackageArtifactReader,
+{
+    validate_sha256(manifest_sha256)?;
+    let mut resources = Vec::with_capacity(inventory.artifacts.len());
+    let mut missing_required = Vec::new();
+    let mut digest_mismatches = Vec::new();
+    for artifact in &inventory.artifacts {
+        match artifacts.read_artifact(&artifact.relative_path) {
+            Ok(bytes) => {
+                let observed_sha256 = hex_digest(cryptography.sha256(&bytes));
+                let observed_size_bytes = u64::try_from(bytes.len()).ok();
+                if observed_sha256 != artifact.sha256
+                    || observed_size_bytes != Some(artifact.size_bytes)
+                {
+                    digest_mismatches.push(artifact.relative_path.clone());
+                }
+                resources.push(InstalledTeammatesResource {
+                    component: artifact.component,
+                    relative_path: artifact.relative_path.clone(),
+                    present: true,
+                    expected_sha256: artifact.sha256.clone(),
+                    observed_sha256: Some(observed_sha256),
+                    expected_size_bytes: artifact.size_bytes,
+                    observed_size_bytes,
+                });
+            }
+            Err(_) => {
+                if artifact.required {
+                    missing_required.push(artifact.relative_path.clone());
+                }
+                resources.push(InstalledTeammatesResource {
+                    component: artifact.component,
+                    relative_path: artifact.relative_path.clone(),
+                    present: false,
+                    expected_sha256: artifact.sha256.clone(),
+                    observed_sha256: None,
+                    expected_size_bytes: artifact.size_bytes,
+                    observed_size_bytes: None,
+                });
+            }
+        }
+    }
+    Ok(InstalledTeammatesResourceReport {
+        release_version: inventory.release_version.clone(),
+        build_id: inventory.build_id.clone(),
+        manifest_sha256: manifest_sha256.to_owned(),
+        resources,
+        missing_required,
+        digest_mismatches,
+    })
+}
+
+fn validate_relative_path(path: &str) -> Result<(), TeammatesPackageError> {
+    let candidate = std::path::Path::new(path);
+    if path.trim().is_empty()
+        || candidate.is_absolute()
+        || candidate.components().any(|component| {
+            matches!(
+                component,
+                std::path::Component::ParentDir
+                    | std::path::Component::RootDir
+                    | std::path::Component::Prefix(_)
+            )
+        })
+    {
+        return Err(TeammatesPackageError::InvalidPath(path.to_owned()));
+    }
+    Ok(())
+}
+
+fn validate_sha256(value: &str) -> Result<(), TeammatesPackageError> {
+    if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(TeammatesPackageError::InvalidDigest(value.to_owned()));
+    }
+    Ok(())
+}
+
+fn hex_digest(bytes: [u8; 32]) -> String {
+    let mut output = String::with_capacity(64);
+    for byte in bytes {
+        use std::fmt::Write as _;
+        write!(&mut output, "{byte:02x}").expect("writing to String cannot fail");
+    }
+    output
+}
+
+fn is_local_origin(origin: &str) -> bool {
+    let normalized = origin.to_ascii_lowercase();
+    normalized.starts_with("unix:")
+        || normalized.starts_with("file:")
+        || normalized.starts_with("http://127.0.0.1")
+        || normalized.starts_with("http://localhost")
+        || normalized.starts_with("http://[::1]")
+        || normalized.starts_with("https://127.0.0.1")
+        || normalized.starts_with("https://localhost")
+        || normalized.starts_with("https://[::1]")
 }

@@ -10,7 +10,8 @@ pub use memory_scout::{
     MemoryScoutScopeManifest, MemoryScoutSpec,
 };
 pub use model::{
-    ChildCancellation, ChildError, ChildLimits, ChildMessage, ChildMessageKind, ChildMessageSender,
+    ChildAuthorityCeiling, ChildAutonomyCeiling, ChildCancellation, ChildError, ChildLimits,
+    ChildMessage, ChildMessageKind, ChildMessageSender, ChildModelRoute, ChildPrincipal,
     ChildProjection, ChildRecord, ChildRetention, ChildSpec, ChildStatus, ChildWorkspaceMode,
     ParentAuthority,
 };

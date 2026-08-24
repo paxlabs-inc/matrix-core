@@ -239,6 +239,21 @@ where
         Ok(records)
     }
 
+    /// Resolves an experience identity against the authoritative durable repository.
+    ///
+    /// # Errors
+    /// Returns an error when persistent history cannot be read or decoded.
+    pub fn resolve_evidence(
+        &self,
+        profile_id: &ProfileId,
+        record_id: &EntityId,
+    ) -> Result<Option<ExperienceRecord>, ExperienceError> {
+        Ok(self
+            .inspect(profile_id)?
+            .into_iter()
+            .find(|record| &record.id == record_id))
+    }
+
     /// # Errors
     ///
     /// Returns an error when persistent controls cannot be inspected.

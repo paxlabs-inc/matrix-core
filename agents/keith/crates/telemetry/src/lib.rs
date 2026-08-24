@@ -8,6 +8,7 @@ use keith_agent_types::{
     ToolCallId, TurnId, UtcTimestamp,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -24,6 +25,68 @@ pub enum MetricName {
     Deliveries,
     Initiatives,
     RefinementOutcomes,
+}
+
+/// A closed health signal observed during a promoted image's watchdog window.
+///
+/// Every signal is attributed to the exact worker image and generation that produced it. The
+/// schema deliberately contains no free-form content, prompts, tool output, or failure messages.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CandidateObservation {
+    pub image_id: String,
+    pub root_tree_id: RootTreeId,
+    pub generation: keith_agent_types::Generation,
+    pub observed_at: UtcTimestamp,
+    pub signal: CandidateSignal,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum CandidateSignal {
+    HypothesisMetric {
+        metric: MetricName,
+        value: u64,
+    },
+    WorkerCrash,
+    TurnCompleted {
+        succeeded: bool,
+        latency_ms: u64,
+        token_cost_microunits: u64,
+    },
+    ResourceUse {
+        resident_bytes: Option<u64>,
+        virtual_bytes: Option<u64>,
+    },
+}
+
+impl CandidateObservation {
+    /// Constructs a content-free observation with complete candidate attribution.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the image identity is empty or unbounded.
+    pub fn new(
+        image_id: impl Into<String>,
+        root_tree_id: RootTreeId,
+        generation: keith_agent_types::Generation,
+        observed_at: UtcTimestamp,
+        signal: CandidateSignal,
+    ) -> Result<Self, TelemetryError> {
+        let image_id = image_id.into();
+        if image_id.is_empty() || image_id.len() > 256 {
+            return Err(TelemetryError::Invalid(
+                "candidate image identity must be non-empty and bounded".into(),
+            ));
+        }
+        Ok(Self {
+            image_id,
+            root_tree_id,
+            generation,
+            observed_at,
+            signal,
+        })
+    }
 }
 
 impl MetricName {
@@ -57,6 +120,40 @@ pub struct MetricSample {
     pub value: u64,
     pub context: MetricContext,
     pub recorded_at: UtcTimestamp,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MetricSlice {
+    pub name: MetricName,
+    pub context: MetricContext,
+    pub starts_at: UtcTimestamp,
+    pub ends_at: UtcTimestamp,
+    pub minimum_samples: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MetricSliceEvidence {
+    slice: MetricSlice,
+    samples: usize,
+    measured_value: f64,
+    digest: String,
+}
+
+impl MetricSliceEvidence {
+    pub fn slice(&self) -> &MetricSlice {
+        &self.slice
+    }
+    pub const fn samples(&self) -> usize {
+        self.samples
+    }
+    pub const fn measured_value(&self) -> f64 {
+        self.measured_value
+    }
+    pub fn digest(&self) -> &str {
+        &self.digest
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -475,6 +572,53 @@ impl TelemetryHub {
         let mut state = self.lock()?;
         push_bounded(&mut state.metrics, sample, self.limits.max_metrics);
         Ok(())
+    }
+
+    /// Resolves a bounded, content-free metric slice into immutable evidence metadata.
+    ///
+    /// # Errors
+    /// Returns an error for an invalid/unresolved slice or unavailable local state.
+    #[allow(clippy::cast_precision_loss)]
+    pub fn metric_slice(&self, slice: &MetricSlice) -> Result<MetricSliceEvidence, TelemetryError> {
+        if slice.minimum_samples == 0 || slice.starts_at > slice.ends_at {
+            return Err(TelemetryError::Invalid(
+                "metric slice bounds are invalid".into(),
+            ));
+        }
+        let state = self.lock()?;
+        let samples = state
+            .metrics
+            .iter()
+            .filter(|sample| {
+                sample.name == slice.name
+                    && sample.context == slice.context
+                    && sample.recorded_at >= slice.starts_at
+                    && sample.recorded_at <= slice.ends_at
+            })
+            .collect::<Vec<_>>();
+        if samples.len() < slice.minimum_samples {
+            return Err(TelemetryError::Invalid(
+                "metric slice is not resolvable".into(),
+            ));
+        }
+        let sum = samples.iter().fold(0_u128, |sum, sample| {
+            sum.saturating_add(u128::from(sample.value))
+        });
+        let measured_value = sum as f64 / samples.len() as f64;
+        let encoded = serde_json::to_vec(&(slice, &samples)).map_err(TelemetryError::Serialize)?;
+        let digest = Sha256::digest(encoded)
+            .iter()
+            .fold(String::new(), |mut output, byte| {
+                use std::fmt::Write as _;
+                let _ = write!(output, "{byte:02x}");
+                output
+            });
+        Ok(MetricSliceEvidence {
+            slice: slice.clone(),
+            samples: samples.len(),
+            measured_value,
+            digest,
+        })
     }
 
     /// Records a trace only when its declared subsystem identifier is present.
@@ -920,6 +1064,59 @@ mod tests {
                 failure: None,
                 recorded_at: UtcTimestamp::UNIX_EPOCH,
             }),
+            Err(TelemetryError::Invalid(_))
+        ));
+    }
+
+    #[test]
+    fn candidate_observations_are_closed_and_exactly_attributed() {
+        let root_tree_id = RootTreeId::new();
+        let generation = keith_agent_types::Generation::new(1);
+        let signals = [
+            CandidateSignal::HypothesisMetric {
+                metric: MetricName::RefinementOutcomes,
+                value: 9,
+            },
+            CandidateSignal::WorkerCrash,
+            CandidateSignal::TurnCompleted {
+                succeeded: true,
+                latency_ms: 23,
+                token_cost_microunits: 41,
+            },
+            CandidateSignal::TurnCompleted {
+                succeeded: false,
+                latency_ms: 67,
+                token_cost_microunits: 89,
+            },
+            CandidateSignal::ResourceUse {
+                resident_bytes: Some(4_096),
+                virtual_bytes: Some(8_192),
+            },
+        ];
+        for signal in signals {
+            let observation = CandidateObservation::new(
+                "sha256:candidate",
+                root_tree_id.clone(),
+                generation,
+                UtcTimestamp::UNIX_EPOCH,
+                signal,
+            )
+            .unwrap();
+            let encoded = serde_json::to_string(&observation).unwrap();
+            let decoded: CandidateObservation = serde_json::from_str(&encoded).unwrap();
+            assert_eq!(decoded, observation);
+            assert_eq!(decoded.root_tree_id, root_tree_id);
+            assert_eq!(decoded.generation, generation);
+            assert_eq!(decoded.image_id, "sha256:candidate");
+        }
+        assert!(matches!(
+            CandidateObservation::new(
+                "",
+                RootTreeId::new(),
+                generation,
+                UtcTimestamp::UNIX_EPOCH,
+                CandidateSignal::WorkerCrash,
+            ),
             Err(TelemetryError::Invalid(_))
         ));
     }

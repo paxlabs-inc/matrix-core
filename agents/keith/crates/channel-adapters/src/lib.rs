@@ -5,10 +5,13 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::time::Duration;
 
-use keith_agent_types::{ArtifactId, UtcTimestamp};
+use keith_agent_types::{ArtifactId, EventId, ProfileId, Revision, StableKey, UtcTimestamp};
 use keith_channel_core::{
-    AdapterCapability, AdapterEvent, AdapterFailure, AdapterFeatures, Attachment, ChannelAdapter,
-    InboundIntent, InboundMessage, OutboundMessage, RetryClass, SendReceipt,
+    AdapterCapability, AdapterEvent, AdapterFailure, AdapterFeatures, Attachment,
+    CanonicalChannelAppend, CanonicalChannelAppendReceipt, CanonicalChannelPublication,
+    CanonicalConversationIngress, ChannelAdapter, ConversationBindingReference,
+    ConversationRoutedInbound, ExternalConversationIdentity, InboundIntent, InboundMessage,
+    OutboundMessage, RetryClass, SendReceipt,
 };
 use keith_credentials::SecretValue;
 use serde::{Deserialize, Serialize};
@@ -35,6 +38,248 @@ impl From<NormalizedPlatformEvent> for AdapterEvent {
                 Self::Disconnected { safe_reason }
             }
         }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ChannelBindingSubject {
+    ExternalSender(String),
+    Participant(ProfileId),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ChannelBindingStatus {
+    Current,
+    Stale,
+    Revoked,
+}
+
+/// Resolves current authority. The binding embedded in a channel envelope is evidence only.
+pub trait ChannelBindingValidator: Send + Sync {
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    fn validate_current(
+        &self,
+        binding: &ConversationBindingReference,
+        subject: &ChannelBindingSubject,
+        now: UtcTimestamp,
+    ) -> Result<ChannelBindingStatus, Self::Error>;
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DurableChannelDisposition {
+    Accepted,
+    Duplicate,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DurableChannelPublicationReceipt {
+    pub stable_publication_key: StableKey,
+    pub event_id: EventId,
+    pub binding_revision: Revision,
+    pub disposition: DurableChannelDisposition,
+    pub accepted_at: UtcTimestamp,
+    pub client_connected: bool,
+}
+
+pub trait DurableChannelOutbox: Send + Sync {
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    fn enqueue(
+        &self,
+        publication: CanonicalChannelPublication,
+        client_connected: bool,
+        now: UtcTimestamp,
+    ) -> Result<DurableChannelPublicationReceipt, Self::Error>;
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ConversationBoundAdapterError {
+    #[error("channel adapter failed: {0}")]
+    Adapter(String),
+    #[error("channel binding resolution failed")]
+    Resolve,
+    #[error("channel binding validation failed")]
+    Validate,
+    #[error("channel binding is stale or revoked")]
+    StaleOrRevoked,
+    #[error("channel envelope identity, revision, or subject does not match")]
+    BindingMismatch,
+    #[error("canonical channel append failed")]
+    Append,
+    #[error("durable channel enqueue failed")]
+    Enqueue,
+    #[error("durable channel receipt does not match the publication")]
+    InvalidReceipt,
+    #[error("channel clock failed: {0}")]
+    Clock(#[from] keith_agent_types::TimestampError),
+}
+
+impl From<AdapterFailure> for ConversationBoundAdapterError {
+    fn from(error: AdapterFailure) -> Self {
+        Self::Adapter(error.safe_message)
+    }
+}
+
+/// Adds canonical conversation binding and durable delivery semantics to a concrete adapter.
+/// It never trusts caller-carried policy as current authority and never synchronously invokes a
+/// participant session.
+pub struct ConversationBoundAdapter<A, I, V, O> {
+    adapter: A,
+    ingress: I,
+    validator: V,
+    outbox: O,
+    connected: bool,
+    deduplication_capacity: usize,
+    inbound_receipts: BTreeMap<StableKey, CanonicalChannelAppendReceipt>,
+    inbound_order: VecDeque<StableKey>,
+}
+
+impl<A, I, V, O> ConversationBoundAdapter<A, I, V, O>
+where
+    A: ChannelAdapter,
+    I: CanonicalConversationIngress,
+    V: ChannelBindingValidator,
+    O: DurableChannelOutbox,
+{
+    pub fn new(
+        adapter: A,
+        ingress: I,
+        validator: V,
+        outbox: O,
+        deduplication_capacity: usize,
+    ) -> Result<Self, ConversationBoundAdapterError> {
+        if deduplication_capacity == 0 {
+            return Err(ConversationBoundAdapterError::BindingMismatch);
+        }
+        Ok(Self {
+            adapter,
+            ingress,
+            validator,
+            outbox,
+            connected: false,
+            deduplication_capacity,
+            inbound_receipts: BTreeMap::new(),
+            inbound_order: VecDeque::with_capacity(deduplication_capacity),
+        })
+    }
+
+    pub const fn is_connected(&self) -> bool {
+        self.connected
+    }
+
+    pub fn receive_bound(
+        &mut self,
+    ) -> Result<Option<CanonicalChannelAppendReceipt>, ConversationBoundAdapterError> {
+        let message = match self.adapter.receive()? {
+            AdapterEvent::Inbound(message) => {
+                self.connected = true;
+                *message
+            }
+            AdapterEvent::Disconnected { .. } => {
+                self.connected = false;
+                return Ok(None);
+            }
+            AdapterEvent::RateLimited { .. } => return Ok(None),
+        };
+        let now = UtcTimestamp::now()?;
+        let external = ExternalConversationIdentity::from(&message);
+        let binding = self
+            .ingress
+            .resolve(&external, now)
+            .map_err(|_| ConversationBoundAdapterError::Resolve)?;
+        if binding.external != external {
+            return Err(ConversationBoundAdapterError::BindingMismatch);
+        }
+        match self
+            .validator
+            .validate_current(
+                &binding,
+                &ChannelBindingSubject::ExternalSender(message.sender.clone()),
+                now,
+            )
+            .map_err(|_| ConversationBoundAdapterError::Validate)?
+        {
+            ChannelBindingStatus::Current => {}
+            ChannelBindingStatus::Stale | ChannelBindingStatus::Revoked => {
+                return Err(ConversationBoundAdapterError::StaleOrRevoked);
+            }
+        }
+        let source_key = message
+            .stable_source_key()
+            .map_err(|_| ConversationBoundAdapterError::BindingMismatch)?;
+        if let Some(receipt) = self.inbound_receipts.get(&source_key) {
+            return Ok(Some(receipt.clone()));
+        }
+        let append = CanonicalChannelAppend::try_from(ConversationRoutedInbound {
+            binding: binding.clone(),
+            source_key: source_key.clone(),
+            message,
+        })
+        .map_err(|_| ConversationBoundAdapterError::BindingMismatch)?;
+        let receipt = self
+            .ingress
+            .append(append, now)
+            .map_err(|_| ConversationBoundAdapterError::Append)?;
+        if receipt.binding_id != binding.binding_id
+            || receipt.binding_revision != binding.binding_revision
+            || receipt.conversation_id != binding.conversation_id
+            || receipt.source_key != source_key
+        {
+            return Err(ConversationBoundAdapterError::BindingMismatch);
+        }
+        self.inbound_order.push_back(source_key.clone());
+        self.inbound_receipts.insert(source_key, receipt.clone());
+        while self.inbound_order.len() > self.deduplication_capacity {
+            if let Some(oldest) = self.inbound_order.pop_front() {
+                self.inbound_receipts.remove(&oldest);
+            }
+        }
+        Ok(Some(receipt))
+    }
+
+    pub fn enqueue_bound(
+        &self,
+        publication: CanonicalChannelPublication,
+    ) -> Result<DurableChannelPublicationReceipt, ConversationBoundAdapterError> {
+        let now = UtcTimestamp::now()?;
+        let subject =
+            ChannelBindingSubject::Participant(publication.binding.participant_profile_id.clone());
+        match self
+            .validator
+            .validate_current(&publication.binding, &subject, now)
+            .map_err(|_| ConversationBoundAdapterError::Validate)?
+        {
+            ChannelBindingStatus::Current => {}
+            ChannelBindingStatus::Stale | ChannelBindingStatus::Revoked => {
+                return Err(ConversationBoundAdapterError::StaleOrRevoked);
+            }
+        }
+        OutboundMessage::try_from(publication.clone())
+            .map_err(|_| ConversationBoundAdapterError::BindingMismatch)?;
+        let expected_key = publication.stable_publication_key.clone();
+        let expected_event = publication.event_id.clone();
+        let expected_revision = publication.binding.binding_revision;
+        let receipt = self
+            .outbox
+            .enqueue(publication, self.connected, now)
+            .map_err(|_| ConversationBoundAdapterError::Enqueue)?;
+        if receipt.stable_publication_key != expected_key
+            || receipt.event_id != expected_event
+            || receipt.binding_revision != expected_revision
+            || receipt.client_connected != self.connected
+        {
+            return Err(ConversationBoundAdapterError::InvalidReceipt);
+        }
+        Ok(receipt)
+    }
+
+    pub fn reconnect(&mut self) -> Result<(), ConversationBoundAdapterError> {
+        self.adapter.reconnect()?;
+        self.connected = true;
+        Ok(())
     }
 }
 

@@ -7,10 +7,12 @@ use std::io::{Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 use fs2::FileExt;
+use keith_agent_types::StableKey;
 use keith_agent_types::{
-    ActionId, ArtifactId, CURRENT_SCHEMA_VERSION, ChildId, EntityId, EntryId, Generation, GoalId,
-    ProfileId, Revision, RootTreeId, SchemaVersion, SessionId, ToolCallId, ToolFailure, TurnId,
-    UtcTimestamp, WorkerId, WorkspaceId, canonical_json_bytes,
+    ActionId, ArtifactId, CURRENT_SCHEMA_VERSION, ChildId, ConversationId, EntityId, EntryId,
+    EventId, Generation, GoalId, GrantId, ProfileId, Revision, RootTreeId, SchemaVersion,
+    SessionId, ToolCallId, ToolFailure, TurnId, UtcTimestamp, WorkerId, WorkspaceId,
+    canonical_json_bytes,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -20,6 +22,11 @@ const MANIFEST_FILE: &str = "manifest.json";
 const HISTORY_FILE: &str = "history.jsonl";
 const WRITER_LOCK_FILE: &str = ".writer.lock";
 const QUARANTINE_FILE: &str = "quarantine.json";
+const MAX_CONTEXT_EVENT_REFERENCES: usize = 1_000;
+const MAX_CONTEXT_SOURCE_REFERENCES: usize = 1_000;
+const MAX_CONTEXT_DIGEST_BYTES: usize = 128;
+const POLICY_DIGEST_HEX_BYTES: usize = 64;
+const MAX_RELEVANT_GRANTS: usize = 256;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -182,6 +189,98 @@ pub struct StoredMessage {
     pub provider_metadata: BTreeMap<String, String>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationContextCursor {
+    pub conversation_id: ConversationId,
+    pub applied_through_sequence: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalEventCursorReference {
+    pub event_id: EventId,
+    pub sequence: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationAuthorizationObservation {
+    #[serde(default = "default_observation_epoch")]
+    pub observation_epoch: u64,
+    pub participant_profile_id: ProfileId,
+    pub participant_revision: Revision,
+    pub conversation_revision: Revision,
+    pub relevant_grant_revisions: BTreeMap<GrantId, Revision>,
+    pub policy_digest: String,
+    pub observed_at: UtcTimestamp,
+    #[serde(default)]
+    pub state: ConversationAuthorizationState,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConversationAuthorizationInvalidationReason {
+    MembershipRevoked,
+    GrantRevoked(GrantRevocationEvidence),
+    PolicyDenied,
+    ProfileDisabled,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GrantRevocationEvidence {
+    pub grant_id: GrantId,
+    pub observed_revision: Revision,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "state", content = "reason")]
+pub enum ConversationAuthorizationState {
+    #[default]
+    Authorized,
+    Invalidated(ConversationAuthorizationInvalidationReason),
+}
+
+const fn default_observation_epoch() -> u64 {
+    1
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PrivateConversationContextReference {
+    pub context_id: EntityId,
+    pub conversation_id: ConversationId,
+    pub source_event_ids: Vec<EventId>,
+    pub content_digest: String,
+    pub compaction_generation: u64,
+    pub created_at: UtcTimestamp,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ParticipantConversationContextReference {
+    pub cursor: ConversationContextCursor,
+    pub referenced_events: Vec<CanonicalEventCursorReference>,
+    pub authorization: ConversationAuthorizationObservation,
+    pub private_context: Option<PrivateConversationContextReference>,
+    pub recorded_by: WriterIdentity,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ConversationContextRevalidation {
+    pub session_id: SessionId,
+    pub participant_profile_id: ProfileId,
+    pub cursor: ConversationContextCursor,
+    pub observed_participant_revision: Revision,
+    pub observed_conversation_revision: Revision,
+    pub relevant_grant_revisions: BTreeMap<GrantId, Revision>,
+    pub observed_policy_digest: String,
+    pub observation_epoch: u64,
+    pub authorization_state: ConversationAuthorizationState,
+    pub recorded_by: WriterIdentity,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TurnTerminalStatus {
@@ -266,8 +365,64 @@ pub struct AuthoritativeTurnSnapshot {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ParticipantPublicationFinalizationRequest {
+    pub stable_publication_key: StableKey,
+    pub conversation_id: ConversationId,
+    pub source_event_id: EventId,
+    pub turn_id: TurnId,
+    pub result_entry_id: EntryId,
+    pub result_digest: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ParticipantTerminalFinalization {
+    pub stable_publication_key: StableKey,
+    pub conversation_id: ConversationId,
+    pub source_event_id: EventId,
+    pub participant_session_id: SessionId,
+    pub participant_profile_id: ProfileId,
+    pub turn_id: TurnId,
+    pub result_entry_id: EntryId,
+    pub result_digest: String,
+    pub finalized_at: UtcTimestamp,
+    pub recorded_by: WriterIdentity,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ParticipantPublicationIntent {
+    pub stable_publication_key: StableKey,
+    pub conversation_id: ConversationId,
+    pub source_event_id: EventId,
+    pub participant_session_id: SessionId,
+    pub participant_profile_id: ProfileId,
+    pub turn_id: TurnId,
+    pub finalization_entry_id: EntryId,
+    pub result_entry_id: EntryId,
+    pub result_digest: String,
+    pub created_at: UtcTimestamp,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ParticipantPublicationCommit {
+    pub finalization_entry: SessionEntry,
+    pub publication_intent_entry: SessionEntry,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "payload")]
 pub enum SessionEntryPayload {
+    ParticipantTerminalFinalization {
+        finalization: ParticipantTerminalFinalization,
+    },
+    ParticipantPublicationIntent {
+        intent: ParticipantPublicationIntent,
+    },
+    ConversationContextCursor {
+        reference: ParticipantConversationContextReference,
+    },
     UserMessage {
         message: StoredMessage,
     },
@@ -460,6 +615,7 @@ impl SessionEntry {
             payload,
             checksum: String::new(),
         };
+        entry.validate_payload()?;
         entry.checksum = entry.expected_checksum()?;
         Ok(entry)
     }
@@ -473,6 +629,7 @@ impl SessionEntry {
         {
             return Err(SessionStoreError::UnsupportedVersion(self.version));
         }
+        self.validate_payload()?;
         let expected = self.expected_checksum()?;
         if self.checksum == expected {
             Ok(())
@@ -499,6 +656,22 @@ impl SessionEntry {
         }
         Ok(checksum)
     }
+
+    fn validate_payload(&self) -> Result<(), SessionStoreError> {
+        if let SessionEntryPayload::ConversationContextCursor { reference } = &self.payload {
+            validate_participant_conversation_context(reference)?;
+        }
+        match &self.payload {
+            SessionEntryPayload::ParticipantTerminalFinalization { finalization } => {
+                validate_publication_digest(&finalization.result_digest)?;
+            }
+            SessionEntryPayload::ParticipantPublicationIntent { intent } => {
+                validate_publication_digest(&intent.result_digest)?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -522,6 +695,28 @@ impl SessionIndex {
 
     pub fn children_of(&self, id: Option<&EntryId>) -> &[EntryId] {
         self.children.get(&id.cloned()).map_or(&[], Vec::as_slice)
+    }
+
+    pub fn latest_conversation_context(
+        &self,
+        conversation_id: &ConversationId,
+    ) -> Option<&ParticipantConversationContextReference> {
+        self.entries
+            .values()
+            .filter_map(|entry| match &entry.payload {
+                SessionEntryPayload::ConversationContextCursor { reference }
+                    if &reference.cursor.conversation_id == conversation_id =>
+                {
+                    Some(reference)
+                }
+                _ => None,
+            })
+            .max_by_key(|reference| {
+                (
+                    reference.cursor.applied_through_sequence,
+                    reference.authorization.observation_epoch,
+                )
+            })
     }
 
     /// # Errors
@@ -704,7 +899,10 @@ impl SessionIndex {
                     compaction_summary = Some(summary.clone());
                     boundary_index = Some(index);
                 }
-                SessionEntryPayload::UserMessage { .. }
+                SessionEntryPayload::ParticipantTerminalFinalization { .. }
+                | SessionEntryPayload::ParticipantPublicationIntent { .. }
+                | SessionEntryPayload::UserMessage { .. }
+                | SessionEntryPayload::ConversationContextCursor { .. }
                 | SessionEntryPayload::AssistantMessage { .. }
                 | SessionEntryPayload::AssistantActivity { .. }
                 | SessionEntryPayload::AssistantFinalCandidate { .. }
@@ -1088,6 +1286,8 @@ pub enum SessionStoreError {
     StaleProfileSnapshot,
     #[error("legacy session export exceeded its configured bound")]
     LegacyExportLimit,
+    #[error("participant conversation context is invalid: {0}")]
+    InvalidConversationContext(String),
 }
 
 #[derive(Clone, Debug)]
@@ -1214,6 +1414,38 @@ impl SessionStore {
             return Err(SessionStoreError::Quarantined(session_id.clone()));
         }
         parse_complete_history(&directory.join(HISTORY_FILE))
+    }
+
+    /// # Errors
+    ///
+    /// Returns an error when the session or its durable cursor history cannot be validated.
+    pub fn conversation_context_revalidation(
+        &self,
+        session_id: &SessionId,
+        conversation_id: &ConversationId,
+    ) -> Result<Option<ConversationContextRevalidation>, SessionStoreError> {
+        let manifest = self.manifest(session_id)?;
+        let index = self.load_index(session_id)?;
+        let Some(reference) = index.latest_conversation_context(conversation_id) else {
+            return Ok(None);
+        };
+        if reference.authorization.participant_profile_id != manifest.profile_id {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "stored participant profile does not own the session".into(),
+            ));
+        }
+        Ok(Some(ConversationContextRevalidation {
+            session_id: session_id.clone(),
+            participant_profile_id: manifest.profile_id,
+            cursor: reference.cursor.clone(),
+            observed_participant_revision: reference.authorization.participant_revision,
+            observed_conversation_revision: reference.authorization.conversation_revision,
+            relevant_grant_revisions: reference.authorization.relevant_grant_revisions.clone(),
+            observed_policy_digest: reference.authorization.policy_digest.clone(),
+            observation_epoch: reference.authorization.observation_epoch,
+            authorization_state: reference.authorization.state.clone(),
+            recorded_by: reference.recorded_by.clone(),
+        }))
     }
 
     /// # Errors
@@ -1537,6 +1769,266 @@ impl SessionWriter {
 
     pub fn identity(&self) -> &WriterIdentity {
         &self.identity
+    }
+
+    /// # Errors
+    ///
+    /// Returns an error for a conflicting publication key, missing result, corrupt history, or a
+    /// failed durable commit.
+    pub fn finalize_participant_publication(
+        &mut self,
+        timestamp: UtcTimestamp,
+        request: ParticipantPublicationFinalizationRequest,
+    ) -> Result<ParticipantPublicationCommit, SessionStoreError> {
+        self.finalize_participant_publication_inner(timestamp, request, false)
+    }
+
+    fn finalize_participant_publication_inner(
+        &mut self,
+        timestamp: UtcTimestamp,
+        request: ParticipantPublicationFinalizationRequest,
+        stop_after_history_sync: bool,
+    ) -> Result<ParticipantPublicationCommit, SessionStoreError> {
+        self.ensure_writable()?;
+        validate_publication_digest(&request.result_digest)?;
+        let history_path = self.directory.join(HISTORY_FILE);
+        let mut index = parse_history_for_finalization(&history_path)?;
+        if !index.entries.contains_key(&request.result_entry_id) {
+            return Err(SessionStoreError::MissingEntry(request.result_entry_id));
+        }
+        let matching_finalizations = index
+            .entries
+            .values()
+            .filter(|entry| {
+                matches!(
+                    &entry.payload,
+                    SessionEntryPayload::ParticipantTerminalFinalization { finalization }
+                        if finalization.stable_publication_key == request.stable_publication_key
+                )
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        if matching_finalizations.len() > 1 {
+            return Err(SessionStoreError::InvalidTerminalTurn(
+                "publication key has multiple participant finalizations".into(),
+            ));
+        }
+        let finalization_entry = if let Some(existing) = matching_finalizations.first() {
+            let SessionEntryPayload::ParticipantTerminalFinalization { finalization } =
+                &existing.payload
+            else {
+                unreachable!();
+            };
+            if finalization.conversation_id != request.conversation_id
+                || finalization.source_event_id != request.source_event_id
+                || finalization.participant_session_id != self.manifest.session_id
+                || finalization.participant_profile_id != self.manifest.profile_id
+                || finalization.turn_id != request.turn_id
+                || finalization.result_entry_id != request.result_entry_id
+                || finalization.result_digest != request.result_digest
+            {
+                return Err(SessionStoreError::InvalidTerminalTurn(
+                    "publication key conflicts with a different participant result".into(),
+                ));
+            }
+            existing.clone()
+        } else {
+            let entry = SessionEntry::new(
+                EntryId::new(),
+                self.manifest.active_leaf.clone(),
+                timestamp,
+                SessionEntryPayload::ParticipantTerminalFinalization {
+                    finalization: ParticipantTerminalFinalization {
+                        stable_publication_key: request.stable_publication_key.clone(),
+                        conversation_id: request.conversation_id.clone(),
+                        source_event_id: request.source_event_id.clone(),
+                        participant_session_id: self.manifest.session_id.clone(),
+                        participant_profile_id: self.manifest.profile_id.clone(),
+                        turn_id: request.turn_id.clone(),
+                        result_entry_id: request.result_entry_id.clone(),
+                        result_digest: request.result_digest.clone(),
+                        finalized_at: timestamp,
+                        recorded_by: self.identity.clone(),
+                    },
+                },
+            )?;
+            index.insert(entry.clone())?;
+            entry
+        };
+        let matching_intents = index
+            .entries
+            .values()
+            .filter(|entry| {
+                matches!(
+                    &entry.payload,
+                    SessionEntryPayload::ParticipantPublicationIntent { intent }
+                        if intent.stable_publication_key == request.stable_publication_key
+                )
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        if matching_intents.len() > 1 {
+            return Err(SessionStoreError::InvalidTerminalTurn(
+                "publication key has multiple durable intents".into(),
+            ));
+        }
+        if let Some(existing_intent) = matching_intents.first() {
+            let SessionEntryPayload::ParticipantPublicationIntent { intent } =
+                &existing_intent.payload
+            else {
+                unreachable!();
+            };
+            if intent.finalization_entry_id != finalization_entry.id
+                || intent.conversation_id != request.conversation_id
+                || intent.source_event_id != request.source_event_id
+                || intent.participant_session_id != self.manifest.session_id
+                || intent.participant_profile_id != self.manifest.profile_id
+                || intent.turn_id != request.turn_id
+                || intent.result_entry_id != request.result_entry_id
+                || intent.result_digest != request.result_digest
+            {
+                return Err(SessionStoreError::InvalidTerminalTurn(
+                    "publication intent conflicts with participant finalization".into(),
+                ));
+            }
+            if self.manifest.active_leaf.as_ref() == finalization_entry.parent_id.as_ref()
+                || self.manifest.active_leaf.as_ref() == Some(&finalization_entry.id)
+            {
+                let mut next_manifest = self.manifest.clone();
+                next_manifest.active_leaf = Some(existing_intent.id.clone());
+                write_manifest(&self.directory, &next_manifest)?;
+                self.manifest = next_manifest;
+            }
+            return Ok(ParticipantPublicationCommit {
+                finalization_entry,
+                publication_intent_entry: existing_intent.clone(),
+            });
+        }
+        let intent_entry = SessionEntry::new(
+            EntryId::new(),
+            Some(finalization_entry.id.clone()),
+            timestamp,
+            SessionEntryPayload::ParticipantPublicationIntent {
+                intent: ParticipantPublicationIntent {
+                    stable_publication_key: request.stable_publication_key,
+                    conversation_id: request.conversation_id,
+                    source_event_id: request.source_event_id,
+                    participant_session_id: self.manifest.session_id.clone(),
+                    participant_profile_id: self.manifest.profile_id.clone(),
+                    turn_id: request.turn_id,
+                    finalization_entry_id: finalization_entry.id.clone(),
+                    result_entry_id: request.result_entry_id,
+                    result_digest: request.result_digest,
+                    created_at: timestamp,
+                },
+            },
+        )?;
+        let mut bytes = Vec::new();
+        if !index.entries.contains_key(&finalization_entry.id) {
+            return Err(SessionStoreError::InvalidTerminalTurn(
+                "participant finalization was not indexed".into(),
+            ));
+        }
+        if !parse_complete_history(&history_path)?
+            .entries
+            .contains_key(&finalization_entry.id)
+        {
+            bytes.extend(canonical_json_bytes(&finalization_entry)?);
+            bytes.push(b'\n');
+        }
+        bytes.extend(canonical_json_bytes(&intent_entry)?);
+        bytes.push(b'\n');
+        let mut history = OpenOptions::new().append(true).open(&history_path)?;
+        history.write_all(&bytes)?;
+        history.sync_all()?;
+        if stop_after_history_sync {
+            return Err(SessionStoreError::InvalidTerminalTurn(
+                "injected crash after participant publication history sync".into(),
+            ));
+        }
+        let mut next_manifest = self.manifest.clone();
+        next_manifest.active_leaf = Some(intent_entry.id.clone());
+        write_manifest(&self.directory, &next_manifest)?;
+        self.manifest = next_manifest;
+        Ok(ParticipantPublicationCommit {
+            finalization_entry,
+            publication_intent_entry: intent_entry,
+        })
+    }
+
+    #[cfg(test)]
+    fn finalize_participant_publication_after_history_crash(
+        &mut self,
+        timestamp: UtcTimestamp,
+        request: ParticipantPublicationFinalizationRequest,
+    ) -> Result<ParticipantPublicationCommit, SessionStoreError> {
+        self.finalize_participant_publication_inner(timestamp, request, true)
+    }
+
+    /// Appends a profile-bound reference to canonical conversation context without copying event
+    /// content into the private session history.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the writer is stale, the reference is malformed or belongs to a
+    /// different profile, the cursor regresses, or durable history cannot be read or appended.
+    pub fn append_conversation_context(
+        &mut self,
+        timestamp: UtcTimestamp,
+        reference: ParticipantConversationContextReference,
+    ) -> Result<SessionEntry, SessionStoreError> {
+        self.ensure_writable()?;
+        validate_participant_conversation_context(&reference)?;
+        if reference.authorization.participant_profile_id != self.manifest.profile_id {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "participant profile does not own the session".into(),
+            ));
+        }
+        if reference.recorded_by != self.identity {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "cursor observation was not authored by the acquired writer".into(),
+            ));
+        }
+        let index = parse_complete_history(&self.directory.join(HISTORY_FILE))?;
+        if let Some(previous) = index.latest_conversation_context(&reference.cursor.conversation_id)
+        {
+            if &reference == previous {
+                return index
+                    .entries
+                    .values()
+                    .find(|entry| {
+                        matches!(
+                            &entry.payload,
+                            SessionEntryPayload::ConversationContextCursor { reference: stored }
+                                if stored == previous
+                        )
+                    })
+                    .cloned()
+                    .ok_or_else(|| {
+                        SessionStoreError::InvalidConversationContext(
+                            "stored cursor reference could not be resolved".into(),
+                        )
+                    });
+            }
+            if reference.cursor.applied_through_sequence < previous.cursor.applied_through_sequence
+                || reference.authorization.observation_epoch
+                    < previous.authorization.observation_epoch
+                || (reference.cursor.applied_through_sequence
+                    == previous.cursor.applied_through_sequence
+                    && reference.authorization.observation_epoch
+                        <= previous.authorization.observation_epoch)
+            {
+                return Err(SessionStoreError::InvalidConversationContext(
+                    "cursor and authorization observation must advance monotonically".into(),
+                ));
+            }
+            validate_authorization_transition(previous, &reference)?;
+        }
+        self.append(
+            self.manifest.active_leaf.clone(),
+            timestamp,
+            SessionEntryPayload::ConversationContextCursor { reference },
+        )
     }
 
     /// Durably records the obligation created by accepted ingress work.
@@ -2452,6 +2944,189 @@ fn parse_complete_history(path: &Path) -> Result<SessionIndex, SessionStoreError
     Ok(inspection.index)
 }
 
+fn validate_publication_digest(digest: &str) -> Result<(), SessionStoreError> {
+    if digest.len() != 64 || !digest.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "participant publication result digest must be hexadecimal SHA-256".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_participant_conversation_context(
+    reference: &ParticipantConversationContextReference,
+) -> Result<(), SessionStoreError> {
+    if reference.authorization.observation_epoch == 0 {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "authorization observation epoch must be nonzero".into(),
+        ));
+    }
+    if matches!(
+        &reference.authorization.state,
+        ConversationAuthorizationState::Invalidated(_)
+    ) && reference.private_context.is_some()
+    {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "an invalidated observation cannot retain private derived context".into(),
+        ));
+    }
+    if reference.authorization.relevant_grant_revisions.len() > MAX_RELEVANT_GRANTS {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "relevant grant evidence bound exceeded".into(),
+        ));
+    }
+    if let ConversationAuthorizationState::Invalidated(
+        ConversationAuthorizationInvalidationReason::GrantRevoked(evidence),
+    ) = &reference.authorization.state
+        && (evidence.observed_revision == Revision::ZERO
+            || reference
+                .authorization
+                .relevant_grant_revisions
+                .get(&evidence.grant_id)
+                != Some(&evidence.observed_revision))
+    {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "grant revocation must name the exact authoritative nonzero revision".into(),
+        ));
+    }
+    if reference.referenced_events.len() > MAX_CONTEXT_EVENT_REFERENCES {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "canonical event reference bound exceeded".into(),
+        ));
+    }
+    let mut prior_sequence = None;
+    let mut event_ids = BTreeSet::new();
+    for event in &reference.referenced_events {
+        if event.sequence == 0
+            || event.sequence > reference.cursor.applied_through_sequence
+            || prior_sequence.is_some_and(|prior| event.sequence <= prior)
+            || !event_ids.insert(event.event_id.clone())
+        {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "event references must be unique, ordered, nonzero, and within the cursor".into(),
+            ));
+        }
+        prior_sequence = Some(event.sequence);
+    }
+    if reference.cursor.applied_through_sequence == 0 && !reference.referenced_events.is_empty() {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "an empty cursor cannot reference canonical events".into(),
+        ));
+    }
+    if reference.authorization.policy_digest.len() != POLICY_DIGEST_HEX_BYTES
+        || !reference
+            .authorization
+            .policy_digest
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "policy digest must be canonical lowercase sha256 provenance".into(),
+        ));
+    }
+    if let Some(private_context) = &reference.private_context {
+        if private_context.conversation_id != reference.cursor.conversation_id
+            || private_context.source_event_ids.is_empty()
+            || private_context.source_event_ids.len() > MAX_CONTEXT_SOURCE_REFERENCES
+            || private_context.content_digest.is_empty()
+            || private_context.content_digest.len() > MAX_CONTEXT_DIGEST_BYTES
+            || !private_context
+                .content_digest
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "private context provenance is missing, mismatched, or out of bounds".into(),
+            ));
+        }
+        let sources = private_context
+            .source_event_ids
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        if sources.len() != private_context.source_event_ids.len()
+            || !sources.iter().all(|source| event_ids.contains(source))
+        {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "private context sources must be unique referenced canonical events".into(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_authorization_transition(
+    previous: &ParticipantConversationContextReference,
+    current: &ParticipantConversationContextReference,
+) -> Result<(), SessionStoreError> {
+    let authorization_changed = previous.authorization.participant_revision
+        != current.authorization.participant_revision
+        || previous.authorization.conversation_revision
+            != current.authorization.conversation_revision
+        || previous.authorization.relevant_grant_revisions
+            != current.authorization.relevant_grant_revisions
+        || previous.authorization.policy_digest != current.authorization.policy_digest
+        || previous.authorization.state != current.authorization.state;
+    if authorization_changed {
+        let expected_epoch = previous
+            .authorization
+            .observation_epoch
+            .checked_add(1)
+            .ok_or_else(|| {
+                SessionStoreError::InvalidConversationContext(
+                    "authorization observation epoch overflow".into(),
+                )
+            })?;
+        if current.authorization.observation_epoch != expected_epoch {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "authorization changes must advance the observation epoch exactly once".into(),
+            ));
+        }
+        if current.private_context.is_some() {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "authorization changes must clear private derived context".into(),
+            ));
+        }
+    }
+
+    if let ConversationAuthorizationState::Invalidated(
+        ConversationAuthorizationInvalidationReason::GrantRevoked(evidence),
+    ) = &current.authorization.state
+    {
+        let Some(previous_revision) = previous
+            .authorization
+            .relevant_grant_revisions
+            .get(&evidence.grant_id)
+        else {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "grant revocation is not tied to previously relevant authority".into(),
+            ));
+        };
+        if evidence.observed_revision <= *previous_revision {
+            return Err(SessionStoreError::InvalidConversationContext(
+                "grant revocation revision must advance authoritative evidence".into(),
+            ));
+        }
+    }
+
+    if matches!(
+        &current.authorization.state,
+        ConversationAuthorizationState::Authorized
+    ) && let ConversationAuthorizationState::Invalidated(
+        ConversationAuthorizationInvalidationReason::GrantRevoked(evidence),
+    ) = &previous.authorization.state
+        && current
+            .authorization
+            .relevant_grant_revisions
+            .contains_key(&evidence.grant_id)
+    {
+        return Err(SessionStoreError::InvalidConversationContext(
+            "fresh authorization cannot reuse revoked grant authority".into(),
+        ));
+    }
+    Ok(())
+}
+
 fn parse_history_for_finalization(path: &Path) -> Result<SessionIndex, SessionStoreError> {
     let bytes = fs::read(path)?;
     let inspection = inspect_bytes(&bytes);
@@ -2978,6 +3653,494 @@ mod tests {
             )
             .unwrap();
         (user, terminal)
+    }
+
+    fn conversation_context_reference(
+        profile_id: ProfileId,
+        conversation_id: ConversationId,
+        sequence: u64,
+        recorded_by: WriterIdentity,
+    ) -> ParticipantConversationContextReference {
+        let event = CanonicalEventCursorReference {
+            event_id: EventId::new(),
+            sequence,
+        };
+        let grant_id = GrantId::new();
+        ParticipantConversationContextReference {
+            cursor: ConversationContextCursor {
+                conversation_id: conversation_id.clone(),
+                applied_through_sequence: sequence,
+            },
+            referenced_events: vec![event.clone()],
+            authorization: ConversationAuthorizationObservation {
+                observation_epoch: 1,
+                participant_profile_id: profile_id,
+                participant_revision: Revision::new(3),
+                conversation_revision: Revision::new(7),
+                relevant_grant_revisions: BTreeMap::from([(grant_id, Revision::new(2))]),
+                policy_digest: "ab".repeat(32),
+                observed_at: UtcTimestamp::UNIX_EPOCH,
+                state: ConversationAuthorizationState::Authorized,
+            },
+            private_context: Some(PrivateConversationContextReference {
+                context_id: EntityId::new(),
+                conversation_id,
+                source_event_ids: vec![event.event_id],
+                content_digest: "cd".repeat(32),
+                compaction_generation: 1,
+                created_at: UtcTimestamp::UNIX_EPOCH,
+            }),
+            recorded_by,
+        }
+    }
+
+    #[test]
+    fn participant_publication_finalization_recovers_before_and_after_intent_commit() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        store.create(new_session(session_id.clone())).unwrap();
+        let request = {
+            let mut writer = store.acquire_writer(&session_id, identity(1)).unwrap();
+            let result = writer
+                .append(
+                    None,
+                    UtcTimestamp::UNIX_EPOCH,
+                    message("private derived result"),
+                )
+                .unwrap();
+            let request = ParticipantPublicationFinalizationRequest {
+                stable_publication_key: StableKey::parse("participant-publication:test").unwrap(),
+                conversation_id: ConversationId::new(),
+                source_event_id: EventId::new(),
+                turn_id: TurnId::new(),
+                result_entry_id: result.id,
+                result_digest: "ab".repeat(32),
+            };
+            assert!(store.load_index(&session_id).unwrap().entries.values().all(
+                |entry| !matches!(
+                    entry.payload,
+                    SessionEntryPayload::ParticipantTerminalFinalization { .. }
+                        | SessionEntryPayload::ParticipantPublicationIntent { .. }
+                )
+            ));
+            assert!(
+                writer
+                    .finalize_participant_publication_after_history_crash(
+                        UtcTimestamp::from_unix_millis(1),
+                        request.clone(),
+                    )
+                    .is_err()
+            );
+            request
+        };
+        let mut recovered = store.acquire_writer(&session_id, identity(2)).unwrap();
+        let commit = recovered
+            .finalize_participant_publication(UtcTimestamp::from_unix_millis(2), request.clone())
+            .unwrap();
+        let replay = recovered
+            .finalize_participant_publication(UtcTimestamp::from_unix_millis(3), request.clone())
+            .unwrap();
+        assert_eq!(commit, replay);
+        assert_eq!(
+            recovered.manifest().active_leaf.as_ref(),
+            Some(&commit.publication_intent_entry.id)
+        );
+        let index = store.load_index(&session_id).unwrap();
+        assert_eq!(
+            index
+                .entries
+                .values()
+                .filter(|entry| matches!(
+                    entry.payload,
+                    SessionEntryPayload::ParticipantTerminalFinalization { .. }
+                ))
+                .count(),
+            1
+        );
+        assert_eq!(
+            index
+                .entries
+                .values()
+                .filter(|entry| matches!(
+                    entry.payload,
+                    SessionEntryPayload::ParticipantPublicationIntent { .. }
+                ))
+                .count(),
+            1
+        );
+        let mut conflict = request;
+        conflict.result_digest = "cd".repeat(32);
+        assert!(matches!(
+            recovered
+                .finalize_participant_publication(UtcTimestamp::from_unix_millis(4), conflict,),
+            Err(SessionStoreError::InvalidTerminalTurn(_))
+        ));
+    }
+
+    #[test]
+    fn conversation_context_cursor_survives_restart_without_transcript_bytes() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        let manifest = store.create(new_session(session_id.clone())).unwrap();
+        let conversation_id = ConversationId::new();
+        let writer_identity = identity(1);
+        let reference = conversation_context_reference(
+            manifest.profile_id.clone(),
+            conversation_id.clone(),
+            4,
+            writer_identity.clone(),
+        );
+        {
+            let mut writer = store.acquire_writer(&session_id, writer_identity).unwrap();
+            let first = writer
+                .append_conversation_context(UtcTimestamp::UNIX_EPOCH, reference.clone())
+                .unwrap();
+            let replay = writer
+                .append_conversation_context(UtcTimestamp::from_unix_millis(1), reference.clone())
+                .unwrap();
+            assert_eq!(first, replay);
+        }
+
+        let history = fs::read(
+            directory
+                .path()
+                .join("sessions")
+                .join(session_id.to_string())
+                .join(HISTORY_FILE),
+        )
+        .unwrap();
+        assert!(
+            !history
+                .windows(b"canonical transcript must stay elsewhere".len())
+                .any(|window| window == b"canonical transcript must stay elsewhere")
+        );
+        let reopened = SessionStore::open(directory.path()).unwrap();
+        let index = reopened.load_index(&session_id).unwrap();
+        assert_eq!(
+            index.latest_conversation_context(&conversation_id),
+            Some(&reference)
+        );
+        let revalidation = reopened
+            .conversation_context_revalidation(&session_id, &conversation_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(revalidation.participant_profile_id, manifest.profile_id);
+        assert_eq!(revalidation.cursor, reference.cursor);
+        assert_eq!(
+            revalidation.relevant_grant_revisions,
+            reference.authorization.relevant_grant_revisions
+        );
+    }
+
+    #[test]
+    fn same_head_grant_revocation_and_fresh_authorization_survive_restart() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        let manifest = store.create(new_session(session_id.clone())).unwrap();
+        let conversation_id = ConversationId::new();
+        let writer_identity = identity(1);
+        let reference = conversation_context_reference(
+            manifest.profile_id,
+            conversation_id.clone(),
+            4,
+            writer_identity.clone(),
+        );
+        let (grant_id, authorized_revision) = reference
+            .authorization
+            .relevant_grant_revisions
+            .first_key_value()
+            .map(|(id, revision)| (id.clone(), *revision))
+            .unwrap();
+        let revoked_revision = authorized_revision.checked_next().unwrap();
+        {
+            let mut writer = store
+                .acquire_writer(&session_id, writer_identity.clone())
+                .unwrap();
+            writer
+                .append_conversation_context(UtcTimestamp::UNIX_EPOCH, reference.clone())
+                .unwrap();
+            let mut revoked = reference.clone();
+            revoked.authorization.observation_epoch = 2;
+            revoked.authorization.relevant_grant_revisions =
+                BTreeMap::from([(grant_id.clone(), revoked_revision)]);
+            revoked.authorization.policy_digest = "bc".repeat(32);
+            revoked.authorization.observed_at = UtcTimestamp::from_unix_millis(1);
+            revoked.authorization.state = ConversationAuthorizationState::Invalidated(
+                ConversationAuthorizationInvalidationReason::GrantRevoked(
+                    GrantRevocationEvidence {
+                        grant_id: grant_id.clone(),
+                        observed_revision: revoked_revision,
+                    },
+                ),
+            );
+            revoked.private_context = None;
+            writer
+                .append_conversation_context(UtcTimestamp::from_unix_millis(1), revoked)
+                .unwrap();
+        }
+
+        let reopened = SessionStore::open(directory.path()).unwrap();
+        let invalidated = reopened
+            .conversation_context_revalidation(&session_id, &conversation_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(invalidated.cursor, reference.cursor);
+        assert_eq!(invalidated.observation_epoch, 2);
+        assert_eq!(
+            invalidated.authorization_state,
+            ConversationAuthorizationState::Invalidated(
+                ConversationAuthorizationInvalidationReason::GrantRevoked(
+                    GrantRevocationEvidence {
+                        grant_id: grant_id.clone(),
+                        observed_revision: revoked_revision,
+                    }
+                )
+            )
+        );
+
+        {
+            let mut writer = reopened
+                .acquire_writer(&session_id, writer_identity)
+                .unwrap();
+            let index = reopened.load_index(&session_id).unwrap();
+            let mut fresh = index
+                .latest_conversation_context(&conversation_id)
+                .unwrap()
+                .clone();
+            fresh.authorization.observation_epoch = 3;
+            fresh.authorization.relevant_grant_revisions.clear();
+            fresh.authorization.policy_digest = "cd".repeat(32);
+            fresh.authorization.observed_at = UtcTimestamp::from_unix_millis(2);
+            fresh.authorization.state = ConversationAuthorizationState::Authorized;
+            writer
+                .append_conversation_context(UtcTimestamp::from_unix_millis(2), fresh)
+                .unwrap();
+        }
+
+        let reopened = SessionStore::open(directory.path()).unwrap();
+        let index = reopened.load_index(&session_id).unwrap();
+        assert_eq!(index.len(), 3);
+        assert!(index.entries.values().all(|entry| matches!(
+            entry.payload,
+            SessionEntryPayload::ConversationContextCursor { .. }
+        )));
+        let revalidation = reopened
+            .conversation_context_revalidation(&session_id, &conversation_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(revalidation.cursor, reference.cursor);
+        assert_eq!(revalidation.observation_epoch, 3);
+        assert_eq!(
+            revalidation.authorization_state,
+            ConversationAuthorizationState::Authorized
+        );
+        assert!(revalidation.relevant_grant_revisions.is_empty());
+    }
+
+    #[test]
+    fn legacy_cursor_without_typed_grant_evidence_fails_closed_on_restart() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        let manifest = store.create(new_session(session_id.clone())).unwrap();
+        let writer_identity = identity(1);
+        {
+            let mut writer = store
+                .acquire_writer(&session_id, writer_identity.clone())
+                .unwrap();
+            writer
+                .append_conversation_context(
+                    UtcTimestamp::UNIX_EPOCH,
+                    conversation_context_reference(
+                        manifest.profile_id,
+                        ConversationId::new(),
+                        1,
+                        writer_identity,
+                    ),
+                )
+                .unwrap();
+        }
+        let history_path = directory
+            .path()
+            .join("sessions")
+            .join(session_id.to_string())
+            .join(HISTORY_FILE);
+        let history = fs::read_to_string(&history_path).unwrap();
+        let mut entry: serde_json::Value = serde_json::from_str(history.trim()).unwrap();
+        entry["payload"]["reference"]["authorization"]
+            .as_object_mut()
+            .unwrap()
+            .remove("relevant_grant_revisions");
+        let mut legacy = canonical_json_bytes(&entry).unwrap();
+        legacy.push(b'\n');
+        fs::write(history_path, legacy).unwrap();
+
+        assert!(matches!(
+            SessionStore::open(directory.path())
+                .unwrap()
+                .load_index(&session_id),
+            Err(SessionStoreError::CorruptHistory { .. })
+        ));
+    }
+
+    #[test]
+    fn conversation_context_rejects_cross_profile_and_cursor_regression() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        let manifest = store.create(new_session(session_id.clone())).unwrap();
+        let conversation_id = ConversationId::new();
+        let writer_identity = identity(1);
+        let mut writer = store
+            .acquire_writer(&session_id, writer_identity.clone())
+            .unwrap();
+        writer
+            .append_conversation_context(
+                UtcTimestamp::UNIX_EPOCH,
+                conversation_context_reference(
+                    manifest.profile_id.clone(),
+                    conversation_id.clone(),
+                    5,
+                    writer_identity.clone(),
+                ),
+            )
+            .unwrap();
+        assert!(matches!(
+            writer.append_conversation_context(
+                UtcTimestamp::from_unix_millis(1),
+                conversation_context_reference(
+                    manifest.profile_id,
+                    conversation_id.clone(),
+                    4,
+                    writer_identity.clone(),
+                ),
+            ),
+            Err(SessionStoreError::InvalidConversationContext(_))
+        ));
+        assert!(matches!(
+            writer.append_conversation_context(
+                UtcTimestamp::from_unix_millis(2),
+                conversation_context_reference(
+                    ProfileId::new(),
+                    conversation_id,
+                    6,
+                    writer_identity,
+                ),
+            ),
+            Err(SessionStoreError::InvalidConversationContext(_))
+        ));
+        let owning_profile = writer.manifest().profile_id.clone();
+        assert!(matches!(
+            writer.append_conversation_context(
+                UtcTimestamp::from_unix_millis(3),
+                conversation_context_reference(
+                    owning_profile,
+                    ConversationId::new(),
+                    1,
+                    identity(2),
+                ),
+            ),
+            Err(SessionStoreError::InvalidConversationContext(_))
+        ));
+    }
+
+    #[test]
+    fn conversation_context_rejects_unbounded_and_unproven_grant_evidence() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        let manifest = store.create(new_session(session_id.clone())).unwrap();
+        let conversation_id = ConversationId::new();
+        let writer_identity = identity(1);
+        let mut writer = store
+            .acquire_writer(&session_id, writer_identity.clone())
+            .unwrap();
+        let mut unbounded = conversation_context_reference(
+            manifest.profile_id.clone(),
+            conversation_id.clone(),
+            1,
+            writer_identity.clone(),
+        );
+        unbounded.authorization.relevant_grant_revisions = (0..=MAX_RELEVANT_GRANTS)
+            .map(|index| (GrantId::new(), Revision::new(index as u64 + 1)))
+            .collect();
+        assert!(matches!(
+            writer.append_conversation_context(UtcTimestamp::UNIX_EPOCH, unbounded),
+            Err(SessionStoreError::InvalidConversationContext(_))
+        ));
+
+        let authorized = conversation_context_reference(
+            manifest.profile_id,
+            conversation_id,
+            1,
+            writer_identity,
+        );
+        writer
+            .append_conversation_context(UtcTimestamp::UNIX_EPOCH, authorized.clone())
+            .unwrap();
+        let mut unproven = authorized;
+        unproven.authorization.observation_epoch = 2;
+        let unrelated_grant_id = GrantId::new();
+        unproven.authorization.relevant_grant_revisions =
+            BTreeMap::from([(unrelated_grant_id.clone(), Revision::new(9))]);
+        unproven.authorization.state = ConversationAuthorizationState::Invalidated(
+            ConversationAuthorizationInvalidationReason::GrantRevoked(GrantRevocationEvidence {
+                grant_id: unrelated_grant_id,
+                observed_revision: Revision::new(9),
+            }),
+        );
+        unproven.private_context = None;
+        assert!(matches!(
+            writer.append_conversation_context(UtcTimestamp::from_unix_millis(1), unproven),
+            Err(SessionStoreError::InvalidConversationContext(_))
+        ));
+    }
+
+    #[test]
+    fn conversation_context_semantic_corruption_is_rejected_on_reload() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        let manifest = store.create(new_session(session_id.clone())).unwrap();
+        let mut reference = conversation_context_reference(
+            manifest.profile_id,
+            ConversationId::new(),
+            2,
+            identity(1),
+        );
+        reference
+            .referenced_events
+            .push(CanonicalEventCursorReference {
+                event_id: EventId::new(),
+                sequence: 1,
+            });
+        let mut entry = SessionEntry {
+            version: CURRENT_SCHEMA_VERSION,
+            id: EntryId::new(),
+            parent_id: None,
+            timestamp: UtcTimestamp::UNIX_EPOCH,
+            payload: SessionEntryPayload::ConversationContextCursor { reference },
+            checksum: String::new(),
+        };
+        entry.checksum = entry.expected_checksum().unwrap();
+        let history_path = directory
+            .path()
+            .join("sessions")
+            .join(session_id.to_string())
+            .join(HISTORY_FILE);
+        let mut history = OpenOptions::new().append(true).open(history_path).unwrap();
+        history
+            .write_all(&canonical_json_bytes(&entry).unwrap())
+            .unwrap();
+        history.write_all(b"\n").unwrap();
+        history.sync_all().unwrap();
+        assert!(matches!(
+            store.load_index(&session_id),
+            Err(SessionStoreError::CorruptHistory { .. })
+        ));
     }
 
     #[test]
@@ -3630,6 +4793,103 @@ mod tests {
                 .entries
                 .iter()
                 .any(|entry| entry.id == message_entry.id)
+        );
+    }
+
+    #[test]
+    fn conversation_context_cursor_survives_compaction() {
+        let directory = tempdir().unwrap();
+        let store = SessionStore::open(directory.path()).unwrap();
+        let session_id = SessionId::new();
+        let manifest = store.create(new_session(session_id.clone())).unwrap();
+        let writer_identity = identity(1);
+        let conversation_id = ConversationId::new();
+        let reference = conversation_context_reference(
+            manifest.profile_id,
+            conversation_id.clone(),
+            9,
+            writer_identity.clone(),
+        );
+        let mut writer = store.acquire_writer(&session_id, writer_identity).unwrap();
+        writer
+            .append_conversation_context(UtcTimestamp::UNIX_EPOCH, reference.clone())
+            .unwrap();
+        let mut reobserved = reference.clone();
+        reobserved.authorization.observation_epoch = 2;
+        reobserved.authorization.participant_revision = Revision::new(4);
+        reobserved.authorization.conversation_revision = Revision::new(8);
+        reobserved.authorization.policy_digest = "ef".repeat(32);
+        reobserved.private_context = None;
+        let reobservation_entry = writer
+            .append_conversation_context(UtcTimestamp::from_unix_millis(1), reobserved.clone())
+            .unwrap();
+        assert_eq!(
+            writer
+                .append_conversation_context(UtcTimestamp::from_unix_millis(2), reobserved.clone(),)
+                .unwrap(),
+            reobservation_entry
+        );
+        let mut invalidated = reobserved;
+        invalidated.authorization.observation_epoch = 3;
+        invalidated.authorization.state = ConversationAuthorizationState::Invalidated(
+            ConversationAuthorizationInvalidationReason::MembershipRevoked,
+        );
+        invalidated.private_context = None;
+        let invalidation_entry = writer
+            .append_conversation_context(UtcTimestamp::from_unix_millis(3), invalidated.clone())
+            .unwrap();
+        assert_eq!(
+            writer
+                .append_conversation_context(
+                    UtcTimestamp::from_unix_millis(4),
+                    invalidated.clone(),
+                )
+                .unwrap(),
+            invalidation_entry
+        );
+        let (source, _) = append_completed_turn(&mut writer, "source context", 10);
+        append_completed_turn(&mut writer, "retained context", 20);
+        let request = writer
+            .request_compaction(
+                100_000,
+                CompactionPolicy {
+                    target_tokens: 1,
+                    ..CompactionPolicy::default()
+                },
+                None,
+                CompactionTrigger::Pressure,
+            )
+            .unwrap()
+            .unwrap();
+        let request = writer
+            .begin_compaction(request, UtcTimestamp::from_unix_millis(30))
+            .unwrap();
+        writer
+            .commit_compaction(
+                &request,
+                compaction_output(&request, &source.id, "derived summary"),
+                UtcTimestamp::from_unix_millis(40),
+            )
+            .unwrap();
+        drop(writer);
+
+        let reopened = SessionStore::open(directory.path()).unwrap();
+        let revalidation = reopened
+            .conversation_context_revalidation(&session_id, &conversation_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(revalidation.cursor, invalidated.cursor);
+        assert_eq!(revalidation.recorded_by, invalidated.recorded_by);
+        assert_eq!(revalidation.observation_epoch, 3);
+        assert_eq!(
+            revalidation.relevant_grant_revisions,
+            invalidated.authorization.relevant_grant_revisions
+        );
+        assert_eq!(
+            revalidation.authorization_state,
+            ConversationAuthorizationState::Invalidated(
+                ConversationAuthorizationInvalidationReason::MembershipRevoked
+            )
         );
     }
 

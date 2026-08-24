@@ -195,11 +195,25 @@ impl OpenAiProvider {
         cancellation: &CancellationToken,
         sink: &mut dyn ModelEventSink,
     ) -> Result<Usage, ProviderError> {
-        let body = openai_request(request)?;
+        let uses_responses_api = self.provider_id == "openai"
+            && request.model == "gpt-5.6-luna"
+            && !request.tools.is_empty()
+            && request.reasoning_effort.as_deref() != Some("none");
+        let body = if uses_responses_api {
+            openai_responses_request(request)?
+        } else {
+            openai_request(request)?
+        };
+        let path = if uses_responses_api {
+            "/v1/responses"
+        } else {
+            &self.chat_path
+        };
         let http_request = self
             .runtime
             .agent
-            .post(self.runtime.url(&self.chat_path))
+            .post(self.runtime.url(path))
+            .header("accept", "text/event-stream")
             .header("content-type", "application/json");
         let response = if self.api_key_header {
             http_request
@@ -215,6 +229,15 @@ impl OpenAiProvider {
         }
         .map_err(map_http_error)?;
         let response = check_provider_response(response, self.runtime.config.max_response_bytes)?;
+        if uses_responses_api {
+            return parse_openai_responses_stream(
+                response,
+                request,
+                cancellation,
+                sink,
+                self.runtime.config.max_response_bytes,
+            );
+        }
         emit(
             sink,
             cancellation,
@@ -2449,6 +2472,51 @@ mod tests {
         assert!(request.contains("chatgpt-account-id: acct-test"));
         assert!(request.contains("openai-beta: responses=experimental"));
         assert!(!request.split("\r\n\r\n").nth(1).unwrap().contains(token));
+    }
+
+    #[test]
+    fn openai_luna_uses_responses_when_reasoning_and_tools_are_enabled() {
+        let stream_body = concat!(
+            "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_luna\"}}\n\n",
+            "data: {\"type\":\"response.reasoning_summary_text.delta\",\"delta\":\"Checking the request.\"}\n\n",
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Luna is live.\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":7,\"output_tokens\":4,\"input_tokens_details\":{\"cached_tokens\":1}}}}\n\n"
+        );
+        let server = TestServer::start(vec![response("text/event-stream", stream_body)]);
+        let provider =
+            OpenAiProvider::new(ProviderHttpConfig::new(&server.base_url).unwrap()).unwrap();
+        let credential = ProviderCredential::new("openai-secret").unwrap();
+        let mut luna_request = request();
+        luna_request.model = "gpt-5.6-luna".into();
+        luna_request.reasoning_effort = Some("medium".into());
+        let mut events = Vec::new();
+        let usage = provider
+            .stream(
+                &luna_request,
+                &credential,
+                &CancellationToken::default(),
+                &mut |event| {
+                    events.push(event);
+                    Ok(StreamControl::Continue)
+                },
+            )
+            .unwrap();
+
+        assert_eq!(usage.total_tokens(), 11);
+        assert!(events.iter().any(|event| matches!(
+            event,
+            ModelEvent::ReasoningDelta { text } if text == "Checking the request."
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            ModelEvent::TextDelta { text } if text == "Luna is live."
+        )));
+        let request = server.request();
+        assert!(request.starts_with("POST /v1/responses "));
+        assert!(request.contains("authorization: Bearer openai-secret"));
+        let body = request.split("\r\n\r\n").nth(1).unwrap();
+        assert!(body.contains("\"reasoning\":{\"effort\":\"medium\",\"summary\":\"auto\"}"));
+        assert!(!body.contains("openai-secret"));
     }
 
     #[test]

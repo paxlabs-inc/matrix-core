@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
 use keith_agent_types::{
-    ActionId, ArtifactId, ClientId, CommandId, EntryId, Generation, MessageId, ProfileId,
-    RootTreeId, SessionId, ToolCallId, TurnId, UtcTimestamp,
+    ActionId, ArtifactId, ClientId, CommandId, EntityId, EntryId, Generation, MessageId, ProfileId,
+    RootTreeId, SessionId, ToolCallId, TurnId, UtcTimestamp, WorkerId,
 };
 use keith_protocol::{
     ClientCommand, CommandResult, CreateSession, ModelSelection, ProfileSummary, SessionSnapshot,
@@ -29,6 +29,70 @@ pub struct AcceptedPrompt {
     pub turn_id: TurnId,
     pub prompt: SubmitPrompt,
     pub accepted_at: UtcTimestamp,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "authority")]
+pub enum RuntimeCommandAuthority {
+    HumanOwner,
+    Agent {
+        profile_id: ProfileId,
+        session_id: SessionId,
+    },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuntimeWorkerBinding {
+    pub root_tree_id: RootTreeId,
+    pub worker_id: WorkerId,
+    pub generation: Generation,
+    pub lease_authentication: EntityId,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CandidateCanaryRequest {
+    pub corpus_version: u32,
+    pub corpus_sha256: String,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CandidateCanaryOutcome {
+    Completed,
+    ToolUse,
+    Rejected,
+    Failed,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CandidateCanaryVerdict {
+    Improved,
+    Equivalent,
+    Regressed,
+    Inconclusive,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CandidateCanaryMeasurement {
+    pub journey_id: String,
+    pub outcome: CandidateCanaryOutcome,
+    pub output_sha256: String,
+    pub tokens: u64,
+    pub latency_ms: u64,
+    pub operations: u64,
+    pub verdict: CandidateCanaryVerdict,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CandidateCanaryReport {
+    pub corpus_version: u32,
+    pub corpus_sha256: String,
+    pub measurements: Vec<CandidateCanaryMeasurement>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -62,11 +126,14 @@ pub enum RuntimeRequest {
     },
     ExecuteFeature {
         client_id: ClientId,
+        requester_authority: RuntimeCommandAuthority,
+        worker_binding: RuntimeWorkerBinding,
         scope_session_id: Option<SessionId>,
         command: ClientCommand,
         generation: Generation,
     },
     Maintain,
+    CandidateCanary(CandidateCanaryRequest),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -78,6 +145,7 @@ pub enum RuntimeResponse {
     Snapshot(Box<SessionSnapshot>),
     Command(Box<CommandResult>),
     Complete,
+    CandidateCanary(CandidateCanaryReport),
     Failed(String),
 }
 
@@ -208,13 +276,25 @@ impl RuntimeRequest {
                 .map(|snapshot| RuntimeResponse::Snapshot(Box::new(snapshot))),
             Self::ExecuteFeature {
                 client_id,
+                requester_authority,
+                worker_binding,
                 scope_session_id,
                 command,
                 generation,
             } => runtime
-                .execute_feature(client_id, scope_session_id.as_ref(), command, *generation)
+                .execute_feature_authorized(
+                    client_id,
+                    requester_authority,
+                    worker_binding,
+                    scope_session_id.as_ref(),
+                    command,
+                    *generation,
+                )
                 .map(|result| RuntimeResponse::Command(Box::new(result))),
             Self::Maintain => runtime.maintain().map(|()| RuntimeResponse::Complete),
+            Self::CandidateCanary(request) => runtime
+                .candidate_canary(request)
+                .map(RuntimeResponse::CandidateCanary),
         };
         response.unwrap_or_else(RuntimeResponse::Failed)
     }
@@ -275,5 +355,92 @@ pub trait CommandRuntime: Send + Sync {
         command: &ClientCommand,
         generation: Generation,
     ) -> Result<CommandResult, String>;
+    fn execute_feature_authorized(
+        &self,
+        client_id: &ClientId,
+        requester_authority: &RuntimeCommandAuthority,
+        worker_binding: &RuntimeWorkerBinding,
+        scope_session_id: Option<&SessionId>,
+        command: &ClientCommand,
+        generation: Generation,
+    ) -> Result<CommandResult, String> {
+        let _ = requester_authority;
+        let _ = worker_binding;
+        self.execute_feature(client_id, scope_session_id, command, generation)
+    }
     fn maintain(&self) -> Result<(), String>;
+    fn candidate_canary(
+        &self,
+        _request: &CandidateCanaryRequest,
+    ) -> Result<CandidateCanaryReport, String> {
+        Err("candidate canary evaluation is unavailable".into())
+    }
+}
+
+#[cfg(test)]
+mod authority_tests {
+    use super::*;
+
+    fn worker_binding() -> RuntimeWorkerBinding {
+        RuntimeWorkerBinding {
+            root_tree_id: RootTreeId::new(),
+            worker_id: WorkerId::new(),
+            generation: Generation::ZERO,
+            lease_authentication: EntityId::new(),
+        }
+    }
+
+    #[test]
+    fn execution_request_preserves_requester_authority_separately_from_route() {
+        let client_id = ClientId::new();
+        let profile_id = ProfileId::new();
+        let requester_session = SessionId::new();
+        let target_session = SessionId::new();
+        let request = RuntimeRequest::ExecuteFeature {
+            client_id,
+            requester_authority: RuntimeCommandAuthority::Agent {
+                profile_id,
+                session_id: requester_session,
+            },
+            worker_binding: worker_binding(),
+            scope_session_id: Some(target_session.clone()),
+            command: ClientCommand::AgentLifecycle(keith_protocol::AgentLifecycleCommand::List),
+            generation: Generation::ZERO,
+        };
+        let RuntimeRequest::ExecuteFeature {
+            requester_authority,
+            scope_session_id,
+            ..
+        } = request
+        else {
+            panic!("expected feature request")
+        };
+        assert!(matches!(
+            requester_authority,
+            RuntimeCommandAuthority::Agent { .. }
+        ));
+        assert_eq!(scope_session_id, Some(target_session));
+    }
+
+    #[test]
+    fn unscoped_owner_authority_is_explicit_on_the_wire() {
+        let request = RuntimeRequest::ExecuteFeature {
+            client_id: ClientId::new(),
+            requester_authority: RuntimeCommandAuthority::HumanOwner,
+            worker_binding: worker_binding(),
+            scope_session_id: None,
+            command: ClientCommand::AgentLifecycle(keith_protocol::AgentLifecycleCommand::List),
+            generation: Generation::ZERO,
+        };
+        let RuntimeRequest::ExecuteFeature {
+            requester_authority,
+            scope_session_id,
+            ..
+        } = request
+        else {
+            panic!("expected feature request")
+        };
+        assert_eq!(requester_authority, RuntimeCommandAuthority::HumanOwner);
+        assert!(scope_session_id.is_none());
+    }
 }

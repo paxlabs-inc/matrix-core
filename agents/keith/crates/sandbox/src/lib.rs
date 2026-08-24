@@ -8,6 +8,80 @@ use std::process::{Command, Stdio};
 
 use serde::{Deserialize, Serialize};
 
+pub fn configure_owned_process(command: &mut std::process::Command) {
+    configure_process_group(command);
+}
+
+/// Terminates and reaps the complete process tree previously configured by
+/// [`configure_owned_process`].
+///
+/// # Errors
+///
+/// Returns an I/O error when the process tree cannot be terminated or reaped.
+pub fn terminate_owned_process_tree(child: &mut std::process::Child) -> std::io::Result<()> {
+    terminate_process_tree(child)
+}
+
+#[cfg(unix)]
+fn configure_process_group(command: &mut std::process::Command) {
+    use std::os::unix::process::CommandExt as _;
+    command.process_group(0);
+}
+
+#[cfg(windows)]
+fn configure_process_group(command: &mut std::process::Command) {
+    use std::os::windows::process::CommandExt as _;
+    command.creation_flags(0x0000_0200);
+}
+
+#[cfg(not(any(unix, windows)))]
+fn configure_process_group(_command: &mut std::process::Command) {}
+
+#[cfg(unix)]
+fn terminate_process_tree(child: &mut std::process::Child) -> std::io::Result<()> {
+    use nix::sys::signal::{Signal, killpg};
+    use nix::unistd::Pid;
+    if let Ok(pid) = i32::try_from(child.id()) {
+        let group = Pid::from_raw(pid);
+        if let Err(error) = killpg(group, Signal::SIGTERM)
+            && error != nix::errno::Errno::ESRCH
+        {
+            return Err(std::io::Error::other(error));
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        if let Err(error) = killpg(group, Signal::SIGKILL)
+            && error != nix::errno::Errno::ESRCH
+        {
+            return Err(std::io::Error::other(error));
+        }
+    }
+    match child.kill() {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::InvalidInput => {}
+        Err(error) => return Err(error),
+    }
+    child.wait().map(|_| ())
+}
+
+#[cfg(windows)]
+fn terminate_process_tree(child: &mut std::process::Child) -> std::io::Result<()> {
+    let status = std::process::Command::new("taskkill")
+        .args(["/PID", &child.id().to_string(), "/T", "/F"])
+        .status()?;
+    if !status.success() && child.try_wait()?.is_none() {
+        return Err(std::io::Error::other("taskkill failed"));
+    }
+    child.wait().map(|_| ())
+}
+
+#[cfg(not(any(unix, windows)))]
+fn terminate_process_tree(child: &mut std::process::Child) -> std::io::Result<()> {
+    if child.try_wait()?.is_none() {
+        child.kill()?;
+    }
+    child.wait().map(|_| ())
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SandboxBackend {
@@ -98,8 +172,21 @@ fn bubblewrap_probe(launcher: &Path) -> Result<(), String> {
             "--new-session",
             "--unshare-all",
             "--ro-bind",
-            "/",
-            "/",
+            "/usr",
+            "/usr",
+            "--symlink",
+            "usr/bin",
+            "/bin",
+            "--symlink",
+            "usr/lib",
+            "/lib",
+            "--symlink",
+            "usr/lib64",
+            "/lib64",
+            "--dev",
+            "/dev",
+            "--proc",
+            "/proc",
             "--",
             "/usr/bin/true",
         ])

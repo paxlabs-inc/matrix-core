@@ -4,8 +4,8 @@ use std::fmt::Display;
 use std::sync::{Mutex, MutexGuard};
 
 use keith_agent_types::{
-    ArtifactId, CURRENT_SCHEMA_VERSION, CommitmentId, DeliveryId, EntityId, EntryId, GoalId, JobId,
-    ProfileId, Revision, SessionId, TurnId, UtcTimestamp,
+    ArtifactId, CURRENT_SCHEMA_VERSION, CommitmentId, ConversationId, DeliveryId, EntityId,
+    EntryId, EventId, GoalId, JobId, ProfileId, Revision, SessionId, TurnId, UtcTimestamp,
 };
 use keith_channel_core::{AdapterFailure, OutboundMessage, ReplyRoute, RetryClass, SendReceipt};
 use keith_protocol::DeliveryProjection;
@@ -17,6 +17,11 @@ use thiserror::Error;
 #[serde(rename_all = "snake_case", tag = "source", content = "id")]
 pub enum DeliverySource {
     Interactive(EntityId),
+    Conversation {
+        conversation_id: ConversationId,
+        source_event_id: EventId,
+        destination_profile_id: ProfileId,
+    },
     Scheduled(JobId),
     Child(EntityId),
     Commitment(CommitmentId),

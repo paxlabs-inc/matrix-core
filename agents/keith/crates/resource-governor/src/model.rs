@@ -20,6 +20,8 @@ pub enum ResourceScope {
     Child(SessionId),
     Kernel(SessionId),
     Browser(SessionId),
+    Computer(ProfileId),
+    Display(ProfileId),
     Process(SessionId),
     Channel(String),
     Scheduler(ProfileId),
@@ -41,6 +43,8 @@ impl ResourceScope {
             Self::Child(id) => format!("child:{id}"),
             Self::Kernel(id) => format!("kernel:{id}"),
             Self::Browser(id) => format!("browser:{id}"),
+            Self::Computer(id) => format!("computer:{id}"),
+            Self::Display(id) => format!("display:{id}"),
             Self::Process(id) => format!("process:{id}"),
             Self::Channel(name) => format!("channel:{name}"),
             Self::Scheduler(id) => format!("scheduler:{id}"),
@@ -60,14 +64,20 @@ pub enum ResourceKind {
     RecursiveDepth,
     Kernels,
     Browsers,
+    Displays,
     Processes,
     Channels,
     Schedules,
     BackgroundInitiatives,
     McpSessions,
+    EvolutionHypotheses,
+    EvolutionShadowTrees,
+    EvolutionBuilds,
+    EvolutionCanaries,
     Tokens,
     ModelCostMicros,
     WallTimeMs,
+    CpuTimeMs,
     ToolCalls,
     MemoryBytes,
     StorageBytes,
@@ -88,11 +98,16 @@ impl ResourceKind {
                 | Self::RecursiveDepth
                 | Self::Kernels
                 | Self::Browsers
+                | Self::Displays
                 | Self::Processes
                 | Self::Channels
                 | Self::Schedules
                 | Self::BackgroundInitiatives
                 | Self::McpSessions
+                | Self::EvolutionHypotheses
+                | Self::EvolutionShadowTrees
+                | Self::EvolutionBuilds
+                | Self::EvolutionCanaries
         )
     }
 
@@ -106,11 +121,16 @@ impl ResourceKind {
             Self::RecursiveDepth,
             Self::Kernels,
             Self::Browsers,
+            Self::Displays,
             Self::Processes,
             Self::Channels,
             Self::Schedules,
             Self::BackgroundInitiatives,
             Self::McpSessions,
+            Self::EvolutionHypotheses,
+            Self::EvolutionShadowTrees,
+            Self::EvolutionBuilds,
+            Self::EvolutionCanaries,
         ]
     }
 }
@@ -249,6 +269,24 @@ impl ScopePath {
             _ => None,
         })
     }
+
+    pub fn profile(&self) -> Option<&ProfileId> {
+        self.0.iter().find_map(|scope| match scope {
+            ResourceScope::Profile(id)
+            | ResourceScope::Computer(id)
+            | ResourceScope::Display(id) => Some(id),
+            _ => None,
+        })
+    }
+
+    pub fn is_persistent_computer_path(&self) -> bool {
+        self.0.iter().any(|scope| {
+            matches!(
+                scope,
+                ResourceScope::Computer(_) | ResourceScope::Display(_)
+            )
+        })
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -266,6 +304,7 @@ pub enum ReclaimClass {
     Child,
     Kernel,
     Browser,
+    Display,
     McpSession,
     ToolProcess,
 }
@@ -277,6 +316,7 @@ impl ReclaimClass {
             Self::Child => ResourceKind::Children,
             Self::Kernel => ResourceKind::Kernels,
             Self::Browser => ResourceKind::Browsers,
+            Self::Display => ResourceKind::Displays,
             Self::McpSession => ResourceKind::McpSessions,
             Self::ToolProcess => ResourceKind::Processes,
         }

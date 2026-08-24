@@ -7,8 +7,8 @@ use keith_agent_types::{
     Sequence, SessionId, ToolCallId, TurnId, UtcTimestamp,
 };
 use keith_protocol::{
-    DaemonEvent, EventEnvelope, GoalState, MemoryChangeKind, MemoryChangeProjection,
-    MessageProjection, MessageRole, SessionSnapshot, TurnTerminalStatus,
+    DaemonEvent, EventEnvelope, EvolutionAvailabilityProjection, GoalState, MemoryChangeKind,
+    MemoryChangeProjection, MessageProjection, MessageRole, SessionSnapshot, TurnTerminalStatus,
 };
 pub use keith_protocol::{PresenceProjection, PresenceState};
 use serde::{Deserialize, Serialize};
@@ -38,10 +38,11 @@ pub enum OperatorSurface {
     Refinement,
     Logs,
     Diagnostics,
+    Evolution,
 }
 
 impl OperatorSurface {
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 22] = [
         Self::Chat,
         Self::Queue,
         Self::Sessions,
@@ -63,6 +64,7 @@ impl OperatorSurface {
         Self::Refinement,
         Self::Logs,
         Self::Diagnostics,
+        Self::Evolution,
     ];
 
     pub const fn route(self) -> &'static str {
@@ -88,6 +90,7 @@ impl OperatorSurface {
             Self::Refinement => "refinement",
             Self::Logs => "logs",
             Self::Diagnostics => "diagnostics",
+            Self::Evolution => "evolution",
         }
     }
 
@@ -114,6 +117,7 @@ impl OperatorSurface {
             Self::Refinement => "Refinement",
             Self::Logs => "Logs",
             Self::Diagnostics => "Diagnostics",
+            Self::Evolution => "Evolution",
         }
     }
 }
@@ -144,10 +148,17 @@ pub enum OperatorCommand {
     QueryMemory,
     Export,
     SetBackgroundControl,
+    EvolutionStatus,
+    EvolutionEnable,
+    EvolutionDisable,
+    EvolutionApprove,
+    EvolutionRevert,
+    EvolutionRestoreBaseline,
+    EvolutionBrowseLedger,
 }
 
 impl OperatorCommand {
-    pub const ALL: [Self; 23] = [
+    pub const ALL: [Self; 30] = [
         Self::SubmitPrompt,
         Self::Steer,
         Self::Cancel,
@@ -171,6 +182,13 @@ impl OperatorCommand {
         Self::QueryMemory,
         Self::Export,
         Self::SetBackgroundControl,
+        Self::EvolutionStatus,
+        Self::EvolutionEnable,
+        Self::EvolutionDisable,
+        Self::EvolutionApprove,
+        Self::EvolutionRevert,
+        Self::EvolutionRestoreBaseline,
+        Self::EvolutionBrowseLedger,
     ];
 }
 
@@ -190,6 +208,97 @@ impl ClientParity {
 
     pub fn is_full(&self) -> bool {
         self == &Self::full()
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct EvolutionLedgerItem {
+    pub title: String,
+    pub state: String,
+    pub occurred_at: UtcTimestamp,
+    pub evidence: Vec<String>,
+    pub readable_diff: Option<String>,
+    pub measured_result: Option<String>,
+    pub reversal_promotion_id: Option<EntityId>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct EvolutionSurfaceProjection {
+    pub status: String,
+    pub availability: String,
+    pub guidance: Option<String>,
+    pub disclosure: Vec<(String, String)>,
+    pub active_title: Option<String>,
+    pub active_state: Option<String>,
+    pub evidence: Vec<String>,
+    pub readable_diff: Option<String>,
+    pub measured_result: Option<String>,
+    pub approval_hypothesis_id: Option<EntityId>,
+    pub ledger: Vec<EvolutionLedgerItem>,
+    pub has_more_ledger: bool,
+}
+
+#[must_use]
+pub fn project_evolution(
+    projection: &keith_protocol::EvolutionProjection,
+) -> EvolutionSurfaceProjection {
+    let availability = match &projection.availability {
+        EvolutionAvailabilityProjection::Available { rustc, cargo } => {
+            format!("Available with {rustc} and {cargo}")
+        }
+        EvolutionAvailabilityProjection::Unavailable { reasons } => {
+            format!("Unavailable: {}", reasons.join("; "))
+        }
+    };
+    let active = projection.active.as_ref();
+    EvolutionSurfaceProjection {
+        status: if projection.enabled {
+            format!(
+                "Self-evolution is enabled — {}",
+                humanize_state(&projection.state)
+            )
+        } else {
+            format!(
+                "Self-evolution is disabled — {}",
+                humanize_state(&projection.state)
+            )
+        },
+        availability,
+        guidance: projection.guidance.clone(),
+        disclosure: vec![
+            (
+                "May change".into(),
+                projection.disclosure.editable_surface.clone(),
+            ),
+            (
+                "Never changes".into(),
+                projection.disclosure.protected_surface.clone(),
+            ),
+            ("Autonomy".into(), projection.disclosure.autonomy.clone()),
+            ("Reversal".into(), projection.disclosure.reversal.clone()),
+        ],
+        active_title: active.map(|item| format!("Improving {}", item.target)),
+        active_state: active.map(|item| humanize_state(&item.state)),
+        evidence: active.map_or_else(Vec::new, |item| item.evidence.clone()),
+        readable_diff: active.and_then(|item| item.readable_diff.clone()),
+        measured_result: active.and_then(|item| item.measured_result.clone()),
+        approval_hypothesis_id: active
+            .filter(|item| item.approval_required)
+            .map(|item| item.hypothesis_id.clone()),
+        ledger: projection
+            .ledger
+            .iter()
+            .map(|item| EvolutionLedgerItem {
+                title: item.summary.clone(),
+                state: humanize_state(&item.state),
+                occurred_at: item.occurred_at,
+                evidence: item.evidence.clone(),
+                readable_diff: item.readable_diff.clone(),
+                measured_result: item.measured_result.clone(),
+                reversal_promotion_id: item.reversible.then(|| item.promotion_id.clone()).flatten(),
+            })
+            .collect(),
+        has_more_ledger: projection.has_more_ledger,
     }
 }
 
@@ -1140,6 +1249,9 @@ fn apply_event_payload(snapshot: &mut SessionSnapshot, event: &DaemonEvent) {
         DaemonEvent::CommandAccepted { .. }
         | DaemonEvent::CommandRejected(_)
         | DaemonEvent::AgentActivity(_)
+        | DaemonEvent::Teammates(_)
+        | DaemonEvent::Computer(_)
+        | DaemonEvent::EvolutionChanged(_)
         | DaemonEvent::Warning(_)
         | DaemonEvent::Error(_) => {}
     }
@@ -1158,7 +1270,1161 @@ fn upsert_memory(items: &mut Vec<MemoryChangeProjection>, value: MemoryChangePro
     upsert(items, value, |item| item.entry_id.clone());
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectionCursor {
+    pub version: keith_agent_types::SchemaVersion,
+    pub generation: keith_agent_types::Generation,
+    pub sequence: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuthoritativeProjectionOrigin {
+    pub authority_key: keith_agent_types::StableKey,
+    pub producer: keith_agent_types::StableKey,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RosterAgentProjection {
+    pub profile_id: keith_agent_types::ProfileId,
+    pub name: String,
+    pub role: String,
+    pub avatar: Option<String>,
+    pub lifecycle: keith_protocol::AgentLifecycleState,
+    pub hidden: bool,
+    pub enabled: bool,
+    pub revision: keith_agent_types::Revision,
+    pub presence: Option<keith_protocol::PresenceProjection>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RosterSnapshot {
+    pub cursor: ProjectionCursor,
+    pub origin: AuthoritativeProjectionOrigin,
+    pub agents: Vec<RosterAgentProjection>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind", deny_unknown_fields)]
+pub enum RosterChange {
+    Upsert {
+        agent: RosterAgentProjection,
+    },
+    Remove {
+        profile_id: keith_agent_types::ProfileId,
+        expected_revision: keith_agent_types::Revision,
+    },
+    Presence {
+        profile_id: keith_agent_types::ProfileId,
+        profile_revision: keith_agent_types::Revision,
+        presence: Option<keith_protocol::PresenceProjection>,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RosterDelta {
+    pub cursor: ProjectionCursor,
+    pub origin: AuthoritativeProjectionOrigin,
+    pub changes: Vec<RosterChange>,
+}
+
+#[derive(Clone, Debug)]
+pub struct RosterProjection {
+    trusted_authority_key: keith_agent_types::StableKey,
+    cursor: Option<ProjectionCursor>,
+    agents: std::collections::BTreeMap<keith_agent_types::ProfileId, RosterAgentProjection>,
+}
+
+impl RosterProjection {
+    #[must_use]
+    pub fn new(trusted_authority_key: keith_agent_types::StableKey) -> Self {
+        Self {
+            trusted_authority_key,
+            cursor: None,
+            agents: std::collections::BTreeMap::new(),
+        }
+    }
+
+    #[must_use]
+    pub const fn cursor(&self) -> Option<ProjectionCursor> {
+        self.cursor
+    }
+
+    #[must_use]
+    pub fn agents(
+        &self,
+    ) -> &std::collections::BTreeMap<keith_agent_types::ProfileId, RosterAgentProjection> {
+        &self.agents
+    }
+
+    pub fn apply_snapshot(
+        &mut self,
+        snapshot: RosterSnapshot,
+    ) -> Result<(), TeammateProjectionError> {
+        validate_origin(&self.trusted_authority_key, &snapshot.origin)?;
+        validate_snapshot_cursor(self.cursor, snapshot.cursor)?;
+        if snapshot.agents.len() > MAX_ROSTER_AGENTS {
+            return Err(TeammateProjectionError::InvalidRoster);
+        }
+        let mut agents = std::collections::BTreeMap::new();
+        for agent in snapshot.agents {
+            validate_roster_agent(&agent)?;
+            if agents.insert(agent.profile_id.clone(), agent).is_some() {
+                return Err(TeammateProjectionError::InvalidRoster);
+            }
+        }
+        self.agents = agents;
+        self.cursor = Some(snapshot.cursor);
+        Ok(())
+    }
+
+    pub fn apply_delta(&mut self, delta: RosterDelta) -> Result<(), TeammateProjectionError> {
+        validate_origin(&self.trusted_authority_key, &delta.origin)?;
+        validate_delta_cursor(self.cursor, delta.cursor)?;
+        if delta.changes.len() > MAX_PROJECTION_CHANGES {
+            return Err(TeammateProjectionError::InvalidRoster);
+        }
+        let mut agents = self.agents.clone();
+        for change in delta.changes {
+            match change {
+                RosterChange::Upsert { agent } => {
+                    validate_roster_agent(&agent)?;
+                    if let Some(previous) = agents.get(&agent.profile_id) {
+                        if agent.revision < previous.revision {
+                            return Err(TeammateProjectionError::RevisionRegression);
+                        }
+                    }
+                    agents.insert(agent.profile_id.clone(), agent);
+                }
+                RosterChange::Remove {
+                    profile_id,
+                    expected_revision,
+                } => {
+                    let Some(current) = agents.get(&profile_id) else {
+                        return Err(TeammateProjectionError::UnknownMember);
+                    };
+                    if current.revision != expected_revision {
+                        return Err(TeammateProjectionError::RevisionRegression);
+                    }
+                    agents.remove(&profile_id);
+                }
+                RosterChange::Presence {
+                    profile_id,
+                    profile_revision,
+                    presence,
+                } => {
+                    let Some(current) = agents.get_mut(&profile_id) else {
+                        return Err(TeammateProjectionError::UnknownMember);
+                    };
+                    if current.revision != profile_revision {
+                        return Err(TeammateProjectionError::RevisionRegression);
+                    }
+                    validate_presence(presence.as_ref())?;
+                    current.presence = presence;
+                }
+            }
+        }
+        self.agents = agents;
+        self.cursor = Some(delta.cursor);
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind", content = "profile_id")]
+pub enum ConversationAuthorProjection {
+    Human,
+    Agent(keith_agent_types::ProfileId),
+    System,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationMemberProjection {
+    pub profile_id: keith_agent_types::ProfileId,
+    pub display_name: String,
+    pub role: String,
+    pub revision: keith_agent_types::Revision,
+    pub active: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationAuthorizationProjection {
+    pub authorized: bool,
+    pub participant_revision: keith_agent_types::Revision,
+    pub conversation_revision: keith_agent_types::Revision,
+    pub relevant_grant_revisions:
+        std::collections::BTreeMap<keith_agent_types::GrantId, keith_agent_types::Revision>,
+    pub policy_digest_sha256: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConversationDeliveryState {
+    Pending,
+    Claimed,
+    Published,
+    Retryable,
+    DeadLetter,
+    Cancelled,
+    Superseded,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationDeliveryProjection {
+    pub delivery_id: Option<keith_agent_types::DeliveryId>,
+    pub state: ConversationDeliveryState,
+    pub attempt_count: u32,
+    pub safe_error: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationAttachmentProjection {
+    pub artifact_id: keith_agent_types::EntityId,
+    pub name: String,
+    pub media_type: String,
+    pub delivery: ConversationDeliveryProjection,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalTranscriptEventProjection {
+    pub event_id: keith_agent_types::EventId,
+    pub sequence: u64,
+    pub author: ConversationAuthorProjection,
+    pub content: String,
+    pub created_at: keith_agent_types::UtcTimestamp,
+    pub thread_root_event_id: Option<keith_agent_types::EventId>,
+    pub reactions: std::collections::BTreeMap<
+        String,
+        std::collections::BTreeSet<keith_agent_types::ProfileId>,
+    >,
+    pub attachments: Vec<ConversationAttachmentProjection>,
+    pub delivery: ConversationDeliveryProjection,
+    pub client_correlation_key: Option<keith_agent_types::StableKey>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationSearchHitProjection {
+    pub event_id: keith_agent_types::EventId,
+    pub sequence: u64,
+    pub excerpt: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationRoundProjection {
+    pub round_id: keith_agent_types::RoundId,
+    pub state: String,
+    pub revision: keith_agent_types::Revision,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationAssignmentProjection {
+    pub assignment_id: keith_agent_types::AssignmentId,
+    pub owner_profile_id: keith_agent_types::ProfileId,
+    pub state: String,
+    pub revision: keith_agent_types::Revision,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationThreadProjection {
+    pub root_event_id: keith_agent_types::EventId,
+    pub event_ids: Vec<keith_agent_types::EventId>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LegacyConversationProjection {
+    pub session_id: keith_agent_types::SessionId,
+    pub label: String,
+    pub archived: bool,
+    pub last_updated_at: keith_agent_types::UtcTimestamp,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalConversationProjection {
+    pub conversation_id: keith_agent_types::ConversationId,
+    pub title: String,
+    pub revision: keith_agent_types::Revision,
+    pub authorization: ConversationAuthorizationProjection,
+    pub members:
+        std::collections::BTreeMap<keith_agent_types::ProfileId, ConversationMemberProjection>,
+    pub transcript: Vec<CanonicalTranscriptEventProjection>,
+    pub unread_count: u64,
+    pub read_through_sequence: u64,
+    pub search_results: Vec<ConversationSearchHitProjection>,
+    pub rounds: std::collections::BTreeMap<keith_agent_types::RoundId, ConversationRoundProjection>,
+    pub assignments: std::collections::BTreeMap<
+        keith_agent_types::AssignmentId,
+        ConversationAssignmentProjection,
+    >,
+    pub threads:
+        std::collections::BTreeMap<keith_agent_types::EventId, ConversationThreadProjection>,
+    pub pinned: bool,
+    pub hidden: bool,
+    pub archived: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationProjectionSnapshot {
+    pub cursor: ProjectionCursor,
+    pub origin: AuthoritativeProjectionOrigin,
+    pub conversations: Vec<CanonicalConversationProjection>,
+    pub legacy: Vec<LegacyConversationProjection>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind", deny_unknown_fields)]
+pub enum ConversationProjectionChange {
+    UpsertConversation {
+        conversation: CanonicalConversationProjection,
+    },
+    AuthorizationUpdated {
+        conversation_id: keith_agent_types::ConversationId,
+        expected_revision: keith_agent_types::Revision,
+        authorization: ConversationAuthorizationProjection,
+    },
+    MemberUpsert {
+        conversation_id: keith_agent_types::ConversationId,
+        member: ConversationMemberProjection,
+    },
+    MemberRemove {
+        conversation_id: keith_agent_types::ConversationId,
+        profile_id: keith_agent_types::ProfileId,
+        expected_revision: keith_agent_types::Revision,
+    },
+    CanonicalEventAppended {
+        conversation_id: keith_agent_types::ConversationId,
+        event: CanonicalTranscriptEventProjection,
+    },
+    UnreadUpdated {
+        conversation_id: keith_agent_types::ConversationId,
+        read_through_sequence: u64,
+        unread_count: u64,
+    },
+    SearchResultsReplaced {
+        conversation_id: keith_agent_types::ConversationId,
+        results: Vec<ConversationSearchHitProjection>,
+    },
+    RoundUpsert {
+        conversation_id: keith_agent_types::ConversationId,
+        round: ConversationRoundProjection,
+    },
+    AssignmentUpsert {
+        conversation_id: keith_agent_types::ConversationId,
+        assignment: ConversationAssignmentProjection,
+    },
+    ThreadUpsert {
+        conversation_id: keith_agent_types::ConversationId,
+        thread: ConversationThreadProjection,
+    },
+    ReactionSet {
+        conversation_id: keith_agent_types::ConversationId,
+        event_id: keith_agent_types::EventId,
+        reaction: String,
+        profile_ids: std::collections::BTreeSet<keith_agent_types::ProfileId>,
+    },
+    AttachmentDeliveryUpdated {
+        conversation_id: keith_agent_types::ConversationId,
+        event_id: keith_agent_types::EventId,
+        artifact_id: keith_agent_types::EntityId,
+        delivery: ConversationDeliveryProjection,
+    },
+    ConversationFlagsUpdated {
+        conversation_id: keith_agent_types::ConversationId,
+        pinned: bool,
+        hidden: bool,
+        archived: bool,
+    },
+    LegacyUpsert {
+        legacy: LegacyConversationProjection,
+    },
+    LegacyRemove {
+        session_id: keith_agent_types::SessionId,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationProjectionDelta {
+    pub cursor: ProjectionCursor,
+    pub origin: AuthoritativeProjectionOrigin,
+    pub changes: Vec<ConversationProjectionChange>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PendingConversationSend {
+    pub correlation_key: keith_agent_types::StableKey,
+    pub conversation_id: keith_agent_types::ConversationId,
+    pub destination_profile_id: keith_agent_types::ProfileId,
+    pub content: String,
+    pub queued_at: keith_agent_types::UtcTimestamp,
+}
+
+#[derive(Clone, Debug)]
+pub struct ConversationProjectionReducer {
+    trusted_authority_key: keith_agent_types::StableKey,
+    cursor: Option<ProjectionCursor>,
+    conversations: std::collections::BTreeMap<
+        keith_agent_types::ConversationId,
+        CanonicalConversationProjection,
+    >,
+    legacy: std::collections::BTreeMap<keith_agent_types::SessionId, LegacyConversationProjection>,
+    pending_sends:
+        std::collections::BTreeMap<keith_agent_types::StableKey, PendingConversationSend>,
+}
+
+impl ConversationProjectionReducer {
+    #[must_use]
+    pub fn new(trusted_authority_key: keith_agent_types::StableKey) -> Self {
+        Self {
+            trusted_authority_key,
+            cursor: None,
+            conversations: std::collections::BTreeMap::new(),
+            legacy: std::collections::BTreeMap::new(),
+            pending_sends: std::collections::BTreeMap::new(),
+        }
+    }
+
+    #[must_use]
+    pub const fn cursor(&self) -> Option<ProjectionCursor> {
+        self.cursor
+    }
+
+    #[must_use]
+    pub fn conversations(
+        &self,
+    ) -> &std::collections::BTreeMap<
+        keith_agent_types::ConversationId,
+        CanonicalConversationProjection,
+    > {
+        &self.conversations
+    }
+
+    #[must_use]
+    pub fn legacy(
+        &self,
+    ) -> &std::collections::BTreeMap<keith_agent_types::SessionId, LegacyConversationProjection>
+    {
+        &self.legacy
+    }
+
+    #[must_use]
+    pub fn pending_sends(
+        &self,
+    ) -> &std::collections::BTreeMap<keith_agent_types::StableKey, PendingConversationSend> {
+        &self.pending_sends
+    }
+
+    pub fn record_pending_send(
+        &mut self,
+        pending: PendingConversationSend,
+    ) -> Result<(), TeammateProjectionError> {
+        validate_bounded_text(&pending.content, MAX_MESSAGE_BYTES, false)?;
+        if let Some(existing) = self.pending_sends.get(&pending.correlation_key) {
+            if existing != &pending {
+                return Err(TeammateProjectionError::PendingSendConflict);
+            }
+            return Ok(());
+        }
+        if self.pending_sends.len() >= MAX_PENDING_SENDS {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+        self.pending_sends
+            .insert(pending.correlation_key.clone(), pending);
+        Ok(())
+    }
+
+    pub fn apply_snapshot(
+        &mut self,
+        snapshot: ConversationProjectionSnapshot,
+    ) -> Result<(), TeammateProjectionError> {
+        validate_origin(&self.trusted_authority_key, &snapshot.origin)?;
+        validate_snapshot_cursor(self.cursor, snapshot.cursor)?;
+        if snapshot.conversations.len() > MAX_CONVERSATIONS
+            || snapshot.legacy.len() > MAX_LEGACY_CONVERSATIONS
+        {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+        let mut conversations = std::collections::BTreeMap::new();
+        for conversation in snapshot.conversations {
+            validate_conversation(&conversation)?;
+            if conversations
+                .insert(conversation.conversation_id.clone(), conversation)
+                .is_some()
+            {
+                return Err(TeammateProjectionError::InvalidConversation);
+            }
+        }
+        let mut legacy = std::collections::BTreeMap::new();
+        for item in snapshot.legacy {
+            validate_legacy(&item)?;
+            if legacy.insert(item.session_id.clone(), item).is_some() {
+                return Err(TeammateProjectionError::InvalidConversation);
+            }
+        }
+        self.conversations = conversations;
+        self.legacy = legacy;
+        self.cursor = Some(snapshot.cursor);
+        self.reconcile_authoritative_receipts();
+        Ok(())
+    }
+
+    pub fn apply_delta(
+        &mut self,
+        delta: ConversationProjectionDelta,
+    ) -> Result<(), TeammateProjectionError> {
+        validate_origin(&self.trusted_authority_key, &delta.origin)?;
+        validate_delta_cursor(self.cursor, delta.cursor)?;
+        if delta.changes.len() > MAX_PROJECTION_CHANGES {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+        let mut conversations = self.conversations.clone();
+        let mut legacy = self.legacy.clone();
+        let mut acknowledged = std::collections::BTreeSet::new();
+        for change in delta.changes {
+            apply_conversation_change(&mut conversations, &mut legacy, &mut acknowledged, change)?;
+        }
+        self.conversations = conversations;
+        self.legacy = legacy;
+        for key in acknowledged {
+            self.pending_sends.remove(&key);
+        }
+        self.cursor = Some(delta.cursor);
+        Ok(())
+    }
+
+    fn reconcile_authoritative_receipts(&mut self) {
+        let acknowledged = self
+            .conversations
+            .values()
+            .flat_map(|conversation| conversation.transcript.iter())
+            .filter_map(|event| event.client_correlation_key.clone())
+            .collect::<Vec<_>>();
+        for key in acknowledged {
+            self.pending_sends.remove(&key);
+        }
+    }
+}
+
+fn apply_conversation_change(
+    conversations: &mut std::collections::BTreeMap<
+        keith_agent_types::ConversationId,
+        CanonicalConversationProjection,
+    >,
+    legacy: &mut std::collections::BTreeMap<
+        keith_agent_types::SessionId,
+        LegacyConversationProjection,
+    >,
+    acknowledged: &mut std::collections::BTreeSet<keith_agent_types::StableKey>,
+    change: ConversationProjectionChange,
+) -> Result<(), TeammateProjectionError> {
+    match change {
+        ConversationProjectionChange::UpsertConversation { conversation } => {
+            validate_conversation(&conversation)?;
+            if let Some(previous) = conversations.get(&conversation.conversation_id) {
+                if conversation.revision < previous.revision {
+                    return Err(TeammateProjectionError::RevisionRegression);
+                }
+            }
+            for event in &conversation.transcript {
+                if let Some(key) = &event.client_correlation_key {
+                    acknowledged.insert(key.clone());
+                }
+            }
+            conversations.insert(conversation.conversation_id.clone(), conversation);
+        }
+        ConversationProjectionChange::AuthorizationUpdated {
+            conversation_id,
+            expected_revision,
+            authorization,
+        } => {
+            validate_authorization(&authorization)?;
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            if conversation.revision != expected_revision
+                || authorization.conversation_revision < conversation.revision
+            {
+                return Err(TeammateProjectionError::RevisionRegression);
+            }
+            conversation.authorization = authorization;
+        }
+        ConversationProjectionChange::MemberUpsert {
+            conversation_id,
+            member,
+        } => {
+            validate_member(&member)?;
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            if let Some(previous) = conversation.members.get(&member.profile_id) {
+                if member.revision < previous.revision {
+                    return Err(TeammateProjectionError::RevisionRegression);
+                }
+            }
+            conversation
+                .members
+                .insert(member.profile_id.clone(), member);
+        }
+        ConversationProjectionChange::MemberRemove {
+            conversation_id,
+            profile_id,
+            expected_revision,
+        } => {
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            let Some(member) = conversation.members.get(&profile_id) else {
+                return Err(TeammateProjectionError::UnknownMember);
+            };
+            if member.revision != expected_revision {
+                return Err(TeammateProjectionError::RevisionRegression);
+            }
+            conversation.members.remove(&profile_id);
+        }
+        ConversationProjectionChange::CanonicalEventAppended {
+            conversation_id,
+            event,
+        } => {
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            validate_transcript_event(&event, &conversation.members)?;
+            let expected = conversation
+                .transcript
+                .last()
+                .map_or(Some(1), |last| last.sequence.checked_add(1))
+                .ok_or(TeammateProjectionError::SequenceGap)?;
+            if event.sequence != expected
+                || conversation
+                    .transcript
+                    .iter()
+                    .any(|existing| existing.event_id == event.event_id)
+            {
+                return Err(TeammateProjectionError::DuplicateEvent);
+            }
+            if let Some(root) = &event.thread_root_event_id {
+                if !conversation
+                    .transcript
+                    .iter()
+                    .any(|existing| &existing.event_id == root)
+                {
+                    return Err(TeammateProjectionError::UnknownEvent);
+                }
+            }
+            if let Some(key) = &event.client_correlation_key {
+                acknowledged.insert(key.clone());
+            }
+            conversation.transcript.push(event);
+        }
+        ConversationProjectionChange::UnreadUpdated {
+            conversation_id,
+            read_through_sequence,
+            unread_count,
+        } => {
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            validate_unread(
+                conversation
+                    .transcript
+                    .last()
+                    .map_or(0, |event| event.sequence),
+                read_through_sequence,
+                unread_count,
+            )?;
+            conversation.read_through_sequence = read_through_sequence;
+            conversation.unread_count = unread_count;
+        }
+        ConversationProjectionChange::SearchResultsReplaced {
+            conversation_id,
+            results,
+        } => {
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            validate_search_results(&results, &conversation.transcript)?;
+            conversation.search_results = results;
+        }
+        ConversationProjectionChange::RoundUpsert {
+            conversation_id,
+            round,
+        } => {
+            validate_bounded_text(&round.state, MAX_STATE_BYTES, false)?;
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            if let Some(previous) = conversation.rounds.get(&round.round_id) {
+                if round.revision < previous.revision {
+                    return Err(TeammateProjectionError::RevisionRegression);
+                }
+            }
+            conversation.rounds.insert(round.round_id.clone(), round);
+        }
+        ConversationProjectionChange::AssignmentUpsert {
+            conversation_id,
+            assignment,
+        } => {
+            validate_bounded_text(&assignment.state, MAX_STATE_BYTES, false)?;
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            if !conversation
+                .members
+                .contains_key(&assignment.owner_profile_id)
+            {
+                return Err(TeammateProjectionError::UnknownMember);
+            }
+            if let Some(previous) = conversation.assignments.get(&assignment.assignment_id) {
+                if assignment.revision < previous.revision {
+                    return Err(TeammateProjectionError::RevisionRegression);
+                }
+            }
+            conversation
+                .assignments
+                .insert(assignment.assignment_id.clone(), assignment);
+        }
+        ConversationProjectionChange::ThreadUpsert {
+            conversation_id,
+            thread,
+        } => {
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            validate_thread(&thread, &conversation.transcript)?;
+            conversation
+                .threads
+                .insert(thread.root_event_id.clone(), thread);
+        }
+        ConversationProjectionChange::ReactionSet {
+            conversation_id,
+            event_id,
+            reaction,
+            profile_ids,
+        } => {
+            validate_bounded_text(&reaction, MAX_REACTION_BYTES, false)?;
+            if profile_ids.len() > MAX_REACTION_ACTORS {
+                return Err(TeammateProjectionError::InvalidConversation);
+            }
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            if profile_ids
+                .iter()
+                .any(|profile_id| !conversation.members.contains_key(profile_id))
+            {
+                return Err(TeammateProjectionError::UnknownMember);
+            }
+            let event = event_mut(conversation, &event_id)?;
+            if profile_ids.is_empty() {
+                event.reactions.remove(&reaction);
+            } else {
+                event.reactions.insert(reaction, profile_ids);
+            }
+        }
+        ConversationProjectionChange::AttachmentDeliveryUpdated {
+            conversation_id,
+            event_id,
+            artifact_id,
+            delivery,
+        } => {
+            validate_delivery(&delivery)?;
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            let event = event_mut(conversation, &event_id)?;
+            let Some(attachment) = event
+                .attachments
+                .iter_mut()
+                .find(|attachment| attachment.artifact_id == artifact_id)
+            else {
+                return Err(TeammateProjectionError::UnknownEvent);
+            };
+            attachment.delivery = delivery;
+        }
+        ConversationProjectionChange::ConversationFlagsUpdated {
+            conversation_id,
+            pinned,
+            hidden,
+            archived,
+        } => {
+            let conversation = conversation_mut(conversations, &conversation_id)?;
+            conversation.pinned = pinned;
+            conversation.hidden = hidden;
+            conversation.archived = archived;
+        }
+        ConversationProjectionChange::LegacyUpsert { legacy: item } => {
+            validate_legacy(&item)?;
+            legacy.insert(item.session_id.clone(), item);
+        }
+        ConversationProjectionChange::LegacyRemove { session_id } => {
+            if legacy.remove(&session_id).is_none() {
+                return Err(TeammateProjectionError::UnknownConversation);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn conversation_mut<'a>(
+    conversations: &'a mut std::collections::BTreeMap<
+        keith_agent_types::ConversationId,
+        CanonicalConversationProjection,
+    >,
+    conversation_id: &keith_agent_types::ConversationId,
+) -> Result<&'a mut CanonicalConversationProjection, TeammateProjectionError> {
+    conversations
+        .get_mut(conversation_id)
+        .ok_or(TeammateProjectionError::UnknownConversation)
+}
+
+fn event_mut<'a>(
+    conversation: &'a mut CanonicalConversationProjection,
+    event_id: &keith_agent_types::EventId,
+) -> Result<&'a mut CanonicalTranscriptEventProjection, TeammateProjectionError> {
+    conversation
+        .transcript
+        .iter_mut()
+        .find(|event| &event.event_id == event_id)
+        .ok_or(TeammateProjectionError::UnknownEvent)
+}
+
+fn validate_origin(
+    trusted: &keith_agent_types::StableKey,
+    origin: &AuthoritativeProjectionOrigin,
+) -> Result<(), TeammateProjectionError> {
+    if trusted != &origin.authority_key {
+        return Err(TeammateProjectionError::ForgedFrame);
+    }
+    Ok(())
+}
+
+fn validate_cursor(cursor: ProjectionCursor) -> Result<(), TeammateProjectionError> {
+    if cursor.version != keith_agent_types::CURRENT_SCHEMA_VERSION || cursor.sequence == 0 {
+        return Err(TeammateProjectionError::UnsupportedVersion);
+    }
+    Ok(())
+}
+
+fn validate_snapshot_cursor(
+    current: Option<ProjectionCursor>,
+    incoming: ProjectionCursor,
+) -> Result<(), TeammateProjectionError> {
+    validate_cursor(incoming)?;
+    if let Some(current) = current {
+        if incoming.generation < current.generation
+            || (incoming.generation == current.generation && incoming.sequence <= current.sequence)
+        {
+            return Err(TeammateProjectionError::GenerationRegression);
+        }
+    }
+    Ok(())
+}
+
+fn validate_delta_cursor(
+    current: Option<ProjectionCursor>,
+    incoming: ProjectionCursor,
+) -> Result<(), TeammateProjectionError> {
+    validate_cursor(incoming)?;
+    let Some(current) = current else {
+        return Err(TeammateProjectionError::SnapshotRequired);
+    };
+    if incoming.generation != current.generation
+        || current.sequence.checked_add(1) != Some(incoming.sequence)
+    {
+        return Err(TeammateProjectionError::SequenceGap);
+    }
+    Ok(())
+}
+
+fn validate_roster_agent(agent: &RosterAgentProjection) -> Result<(), TeammateProjectionError> {
+    validate_bounded_text(&agent.name, MAX_NAME_BYTES, false)?;
+    validate_bounded_text(&agent.role, MAX_ROLE_BYTES, false)?;
+    if let Some(avatar) = &agent.avatar {
+        validate_bounded_text(avatar, MAX_AVATAR_BYTES, false)?;
+    }
+    validate_presence(agent.presence.as_ref())
+}
+
+fn validate_presence(
+    presence: Option<&keith_protocol::PresenceProjection>,
+) -> Result<(), TeammateProjectionError> {
+    if let Some(presence) = presence {
+        if let Some(safe_error) = &presence.safe_error {
+            validate_bounded_text(safe_error, MAX_SAFE_ERROR_BYTES, false)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_conversation(
+    conversation: &CanonicalConversationProjection,
+) -> Result<(), TeammateProjectionError> {
+    validate_bounded_text(&conversation.title, MAX_TITLE_BYTES, true)?;
+    validate_authorization(&conversation.authorization)?;
+    if conversation.members.len() > MAX_MEMBERS
+        || conversation.transcript.len() > MAX_TRANSCRIPT_EVENTS
+        || conversation.search_results.len() > MAX_SEARCH_RESULTS
+        || conversation.rounds.len() > MAX_ROUNDS
+        || conversation.assignments.len() > MAX_ASSIGNMENTS
+        || conversation.threads.len() > MAX_THREADS
+    {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    for (profile_id, member) in &conversation.members {
+        if profile_id != &member.profile_id {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+        validate_member(member)?;
+    }
+    let mut event_ids = std::collections::BTreeSet::new();
+    for (index, event) in conversation.transcript.iter().enumerate() {
+        validate_transcript_event(event, &conversation.members)?;
+        if event.sequence != (index as u64 + 1) || !event_ids.insert(event.event_id.clone()) {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+        if let Some(root) = &event.thread_root_event_id {
+            if !event_ids.contains(root) {
+                return Err(TeammateProjectionError::InvalidConversation);
+            }
+        }
+    }
+    validate_unread(
+        conversation
+            .transcript
+            .last()
+            .map_or(0, |event| event.sequence),
+        conversation.read_through_sequence,
+        conversation.unread_count,
+    )?;
+    validate_search_results(&conversation.search_results, &conversation.transcript)?;
+    for round in conversation.rounds.values() {
+        validate_bounded_text(&round.state, MAX_STATE_BYTES, false)?;
+    }
+    for assignment in conversation.assignments.values() {
+        validate_bounded_text(&assignment.state, MAX_STATE_BYTES, false)?;
+        if !conversation
+            .members
+            .contains_key(&assignment.owner_profile_id)
+        {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+    }
+    for thread in conversation.threads.values() {
+        validate_thread(thread, &conversation.transcript)?;
+    }
+    Ok(())
+}
+
+fn validate_member(member: &ConversationMemberProjection) -> Result<(), TeammateProjectionError> {
+    validate_bounded_text(&member.display_name, MAX_NAME_BYTES, false)?;
+    validate_bounded_text(&member.role, MAX_ROLE_BYTES, false)
+}
+
+fn validate_authorization(
+    authorization: &ConversationAuthorizationProjection,
+) -> Result<(), TeammateProjectionError> {
+    if authorization.relevant_grant_revisions.len() > MAX_GRANT_EVIDENCE
+        || authorization.policy_digest_sha256.len() != 64
+        || !authorization
+            .policy_digest_sha256
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    Ok(())
+}
+
+fn validate_transcript_event(
+    event: &CanonicalTranscriptEventProjection,
+    members: &std::collections::BTreeMap<
+        keith_agent_types::ProfileId,
+        ConversationMemberProjection,
+    >,
+) -> Result<(), TeammateProjectionError> {
+    if event.sequence == 0
+        || event.reactions.len() > MAX_REACTIONS
+        || event.attachments.len() > MAX_ATTACHMENTS
+    {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    validate_bounded_text(&event.content, MAX_MESSAGE_BYTES, false)?;
+    if let ConversationAuthorProjection::Agent(profile_id) = &event.author {
+        if !members.get(profile_id).is_some_and(|member| member.active) {
+            return Err(TeammateProjectionError::UnknownMember);
+        }
+    }
+    for (reaction, profiles) in &event.reactions {
+        validate_bounded_text(reaction, MAX_REACTION_BYTES, false)?;
+        if profiles.len() > MAX_REACTION_ACTORS
+            || profiles
+                .iter()
+                .any(|profile_id| !members.contains_key(profile_id))
+        {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+    }
+    let mut artifacts = std::collections::BTreeSet::new();
+    for attachment in &event.attachments {
+        validate_bounded_text(&attachment.name, MAX_ATTACHMENT_NAME_BYTES, false)?;
+        validate_bounded_text(&attachment.media_type, MAX_MEDIA_TYPE_BYTES, false)?;
+        validate_delivery(&attachment.delivery)?;
+        if !artifacts.insert(attachment.artifact_id.clone()) {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+    }
+    validate_delivery(&event.delivery)
+}
+
+fn validate_delivery(
+    delivery: &ConversationDeliveryProjection,
+) -> Result<(), TeammateProjectionError> {
+    if let Some(safe_error) = &delivery.safe_error {
+        validate_bounded_text(safe_error, MAX_SAFE_ERROR_BYTES, false)?;
+    }
+    match delivery.state {
+        ConversationDeliveryState::Pending | ConversationDeliveryState::Claimed
+            if delivery.safe_error.is_some() =>
+        {
+            Err(TeammateProjectionError::InvalidConversation)
+        }
+        _ => Ok(()),
+    }
+}
+
+fn validate_search_results(
+    results: &[ConversationSearchHitProjection],
+    transcript: &[CanonicalTranscriptEventProjection],
+) -> Result<(), TeammateProjectionError> {
+    if results.len() > MAX_SEARCH_RESULTS {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for result in results {
+        validate_bounded_text(&result.excerpt, MAX_SEARCH_EXCERPT_BYTES, true)?;
+        if !seen.insert(result.event_id.clone())
+            || !transcript
+                .iter()
+                .any(|event| event.event_id == result.event_id && event.sequence == result.sequence)
+        {
+            return Err(TeammateProjectionError::UnknownEvent);
+        }
+    }
+    Ok(())
+}
+
+fn validate_thread(
+    thread: &ConversationThreadProjection,
+    transcript: &[CanonicalTranscriptEventProjection],
+) -> Result<(), TeammateProjectionError> {
+    if thread.event_ids.is_empty() || thread.event_ids.len() > MAX_THREAD_EVENTS {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    let mut previous_sequence = None;
+    let mut seen = std::collections::BTreeSet::new();
+    for event_id in &thread.event_ids {
+        let Some(event) = transcript.iter().find(|event| &event.event_id == event_id) else {
+            return Err(TeammateProjectionError::UnknownEvent);
+        };
+        if !seen.insert(event_id.clone())
+            || previous_sequence.is_some_and(|previous| previous >= event.sequence)
+            || (event.event_id != thread.root_event_id
+                && event.thread_root_event_id.as_ref() != Some(&thread.root_event_id))
+        {
+            return Err(TeammateProjectionError::InvalidConversation);
+        }
+        previous_sequence = Some(event.sequence);
+    }
+    if thread.event_ids.first() != Some(&thread.root_event_id) {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    Ok(())
+}
+
+fn validate_unread(
+    last_sequence: u64,
+    read_through_sequence: u64,
+    unread_count: u64,
+) -> Result<(), TeammateProjectionError> {
+    if read_through_sequence > last_sequence
+        || unread_count != last_sequence.saturating_sub(read_through_sequence)
+    {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    Ok(())
+}
+
+fn validate_legacy(legacy: &LegacyConversationProjection) -> Result<(), TeammateProjectionError> {
+    validate_bounded_text(&legacy.label, MAX_TITLE_BYTES, false)
+}
+
+fn validate_bounded_text(
+    value: &str,
+    max_bytes: usize,
+    allow_empty: bool,
+) -> Result<(), TeammateProjectionError> {
+    if value.len() > max_bytes
+        || (!allow_empty && value.is_empty())
+        || value.trim() != value
+        || value.chars().any(char::is_control)
+    {
+        return Err(TeammateProjectionError::InvalidConversation);
+    }
+    Ok(())
+}
+
+const MAX_ROSTER_AGENTS: usize = 1_024;
+const MAX_PROJECTION_CHANGES: usize = 4_096;
+const MAX_CONVERSATIONS: usize = 2_048;
+const MAX_LEGACY_CONVERSATIONS: usize = 2_048;
+const MAX_MEMBERS: usize = 256;
+const MAX_TRANSCRIPT_EVENTS: usize = 16_384;
+const MAX_SEARCH_RESULTS: usize = 512;
+const MAX_ROUNDS: usize = 512;
+const MAX_ASSIGNMENTS: usize = 2_048;
+const MAX_THREADS: usize = 2_048;
+const MAX_THREAD_EVENTS: usize = 2_048;
+const MAX_REACTIONS: usize = 128;
+const MAX_REACTION_ACTORS: usize = 512;
+const MAX_ATTACHMENTS: usize = 128;
+const MAX_GRANT_EVIDENCE: usize = 256;
+const MAX_PENDING_SENDS: usize = 1_024;
+const MAX_NAME_BYTES: usize = 256;
+const MAX_ROLE_BYTES: usize = 128;
+const MAX_AVATAR_BYTES: usize = 2_048;
+const MAX_TITLE_BYTES: usize = 512;
+const MAX_MESSAGE_BYTES: usize = 64 * 1024;
+const MAX_STATE_BYTES: usize = 128;
+const MAX_REACTION_BYTES: usize = 64;
+const MAX_ATTACHMENT_NAME_BYTES: usize = 512;
+const MAX_MEDIA_TYPE_BYTES: usize = 256;
+const MAX_SEARCH_EXCERPT_BYTES: usize = 2_048;
+const MAX_SAFE_ERROR_BYTES: usize = 2_048;
+
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+pub enum TeammateProjectionError {
+    #[error("unsupported projection version")]
+    UnsupportedVersion,
+    #[error("projection frame did not come from the trusted authority")]
+    ForgedFrame,
+    #[error("a projection snapshot is required before deltas")]
+    SnapshotRequired,
+    #[error("projection generation or snapshot sequence regressed")]
+    GenerationRegression,
+    #[error("projection delta sequence is not contiguous")]
+    SequenceGap,
+    #[error("roster projection is invalid")]
+    InvalidRoster,
+    #[error("conversation projection is invalid")]
+    InvalidConversation,
+    #[error("projection revision regressed or did not match")]
+    RevisionRegression,
+    #[error("conversation does not exist")]
+    UnknownConversation,
+    #[error("conversation member does not exist")]
+    UnknownMember,
+    #[error("canonical event does not exist")]
+    UnknownEvent,
+    #[error("canonical event is duplicate or out of order")]
+    DuplicateEvent,
+    #[error("pending send idempotency key conflicts")]
+    PendingSendConflict,
+}
+
 pub enum RuntimeFact {
     ActionStarted {
         at: UtcTimestamp,
@@ -1493,6 +2759,7 @@ mod tests {
     };
     use keith_protocol::{
         ActionProjection, ChildProjection, CommitmentProjection, DeliveryProjection,
+        EvolutionDisclosureProjection, EvolutionLedgerProjection, EvolutionProjection,
         GoalProjection, GoalState, KernelProjection, MemoryChangeKind, PlanProjection,
         ScheduleExpression, ScheduleProjection, SessionState, SessionSummary, ToolProjection,
         UsageProjection, WaitProjection,
@@ -2101,5 +3368,58 @@ mod tests {
                 Err(PresenceError::Fabricated)
             );
         }
+    }
+
+    #[test]
+    fn evolution_projection_uses_readable_labels_and_keeps_ids_out_of_titles() {
+        let promotion_id = EntityId::new();
+        let projection = EvolutionProjection {
+            protocol_version: CURRENT_PROTOCOL_VERSION,
+            enabled: true,
+            state: "observing_candidate".into(),
+            availability: EvolutionAvailabilityProjection::Available {
+                rustc: "rustc 1.90".into(),
+                cargo: "cargo 1.90".into(),
+            },
+            disclosure: EvolutionDisclosureProjection {
+                editable_surface: "the worker harness".into(),
+                protected_surface: "memory and recovery".into(),
+                autonomy: "verified changes only".into(),
+                reversal: "one action".into(),
+            },
+            active: None,
+            ledger: vec![EvolutionLedgerProjection {
+                sequence: 4,
+                occurred_at: UtcTimestamp::UNIX_EPOCH,
+                kind: "promotion".into(),
+                summary: "Reduced repeated tool calls".into(),
+                state: "observing".into(),
+                evidence: vec!["Repeated calls fell from 4 to 1".into()],
+                measured_result: Some("75% fewer repeated calls".into()),
+                readable_diff: Some("Stops after the first matching result".into()),
+                hypothesis_id: None,
+                promotion_id: Some(promotion_id.clone()),
+                reversible: true,
+            }],
+            has_more_ledger: false,
+            guidance: None,
+        };
+        let view = project_evolution(&projection);
+        assert_eq!(view.ledger[0].title, "Reduced repeated tool calls");
+        assert!(!view.ledger[0].title.contains(&promotion_id.to_string()));
+        assert_eq!(view.ledger[0].reversal_promotion_id, Some(promotion_id));
+        assert_eq!(view.ledger[0].state, "Observing");
+        assert_eq!(
+            view.ledger[0].evidence,
+            vec!["Repeated calls fell from 4 to 1"]
+        );
+        assert_eq!(
+            view.ledger[0].readable_diff.as_deref(),
+            Some("Stops after the first matching result")
+        );
+        assert_eq!(
+            view.ledger[0].measured_result.as_deref(),
+            Some("75% fewer repeated calls")
+        );
     }
 }

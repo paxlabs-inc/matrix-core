@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 
+pub use keith_agent_types::ProfileLifecycleState;
 use keith_agent_types::{
     CURRENT_SCHEMA_VERSION, ProfileId, Revision, SchemaVersion, TimeZoneName, WorkspaceId,
     canonical_json_bytes,
@@ -131,7 +132,21 @@ pub struct RuntimeConfig {
     pub autonomy: AutonomyConfig,
     pub retrieval: RetrievalConfig,
     pub telemetry: TelemetryConfig,
+    pub self_evolution: SelfEvolutionConfig,
     pub profile: Option<AgentProfile>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SelfEvolutionConfig {
+    enabled: bool,
+}
+
+impl SelfEvolutionConfig {
+    #[must_use]
+    pub const fn enabled(&self) -> bool {
+        self.enabled
+    }
 }
 
 impl RuntimeConfig {
@@ -164,6 +179,7 @@ impl RuntimeConfig {
                 local_metrics: true,
                 export: false,
             },
+            self_evolution: SelfEvolutionConfig { enabled: false },
             profile: None,
         }
     }
@@ -262,6 +278,63 @@ pub struct AgentProfile {
     pub autonomy: ProfileAutonomy,
     pub notifications: NotificationSettings,
     pub refinement: RefinementSettings,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct ComputerPolicy {
+    pub enabled: bool,
+    pub allow_downloads: bool,
+    pub allow_uploads: bool,
+    pub require_confirmation_for_consequential_actions: bool,
+    pub max_idle_seconds: u32,
+}
+
+impl Default for ComputerPolicy {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            allow_downloads: false,
+            allow_uploads: false,
+            require_confirmation_for_consequential_actions: true,
+            max_idle_seconds: 900,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AgentProfilePresentation {
+    pub role: String,
+    pub description: String,
+    pub avatar: Option<String>,
+    pub lifecycle: ProfileLifecycleState,
+    pub hidden: bool,
+    pub computer_policy: ComputerPolicy,
+}
+
+impl AgentProfilePresentation {
+    /// # Errors
+    /// Returns an error when owner-visible metadata or computer bounds are malformed.
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        if self.role.trim().is_empty() || self.role.len() > 128 {
+            return Err(ConfigError::Invalid("profile role is invalid".into()));
+        }
+        if self.description.len() > 4_096
+            || self
+                .avatar
+                .as_ref()
+                .is_some_and(|value| value.is_empty() || value.len() > 2_048)
+            || self.computer_policy.max_idle_seconds == 0
+            || self.computer_policy.max_idle_seconds > 86_400
+        {
+            return Err(ConfigError::Invalid(
+                "profile presentation is invalid".into(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -915,6 +988,10 @@ fn changed_sections(before: &RuntimeConfig, after: &RuntimeConfig) -> BTreeSet<S
         ("autonomy", before.autonomy != after.autonomy),
         ("retrieval", before.retrieval != after.retrieval),
         ("telemetry", before.telemetry != after.telemetry),
+        (
+            "self_evolution",
+            before.self_evolution != after.self_evolution,
+        ),
         ("profile", before.profile != after.profile),
     ] {
         if changed {
@@ -1016,6 +1093,19 @@ mod tests {
         let resolved = first.active().profile.as_ref().unwrap();
         assert_eq!(resolved.enabled_skills, ["coding", "research"]);
         assert_eq!(resolved.channels, ["local"]);
+    }
+
+    #[test]
+    fn self_evolution_is_default_off_and_absent_from_configuration_patches() {
+        let manager = ConfigManager::new(RuntimeConfig::secure_defaults()).unwrap();
+        assert!(!manager.active().self_evolution.enabled());
+        let attempted = r#"
+version = { major = 1, minor = 0 }
+kind = "global"
+[patch.self_evolution]
+enabled = true
+"#;
+        assert!(parse_or_migrate_toml(attempted).is_err());
     }
 
     #[test]

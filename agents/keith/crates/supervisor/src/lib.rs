@@ -1,13 +1,22 @@
 #![forbid(unsafe_code)]
 
-use std::collections::BTreeMap;
+mod image;
+
+pub use image::{
+    ImageInstallRequest, ImageRegistryError, InstalledImage, WorkerImageDataInventory,
+    WorkerImageRegistry, worker_image_data_inventory,
+};
+
+use std::collections::{BTreeMap, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use keith_agent_types::{EntityId, Generation, RootTreeId, SessionId, UtcTimestamp, WorkerId};
+use keith_agent_types::{
+    EntityId, Generation, ProfileId, RootTreeId, SessionId, UtcTimestamp, WorkerId,
+};
 use keith_connection::{
     LocalStream, connect_local, set_local_read_timeout, set_local_write_timeout,
 };
@@ -22,6 +31,7 @@ use nix::errno::Errno;
 use nix::sys::signal::{Signal, kill};
 #[cfg(unix)]
 use nix::unistd::Pid;
+use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -31,6 +41,74 @@ pub enum WorkerHealth {
     Unresponsive,
     Draining,
     Exited,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AuxiliaryProcessKind {
+    Browser,
+    Display,
+    StreamBridge,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AuxiliaryProcessHealth {
+    Running,
+    Exited,
+    Quarantined,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AuxiliaryProcessSpec {
+    pub id: EntityId,
+    pub profile_id: ProfileId,
+    pub kind: AuxiliaryProcessKind,
+    pub executable: PathBuf,
+    pub arguments: Vec<String>,
+    pub runtime_directory: PathBuf,
+    pub environment: BTreeMap<String, String>,
+    pub crash_limit: usize,
+    pub crash_window: Duration,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AuxiliaryProcessStatus {
+    pub id: EntityId,
+    pub profile_id: ProfileId,
+    pub kind: AuxiliaryProcessKind,
+    pub pid: Option<u32>,
+    pub health: AuxiliaryProcessHealth,
+    pub crashes_in_window: usize,
+}
+
+struct ManagedAuxiliaryProcess {
+    spec: AuxiliaryProcessSpec,
+    child: Option<Child>,
+    crashes: VecDeque<Instant>,
+    quarantined: bool,
+}
+
+#[derive(Default)]
+pub struct AuxiliaryProcessSupervisor {
+    processes: BTreeMap<EntityId, ManagedAuxiliaryProcess>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HeadedBrowserStatus {
+    pub profile_id: ProfileId,
+    pub display: AuxiliaryProcessStatus,
+    pub browser: AuxiliaryProcessStatus,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct HeadedBrowserProcesses {
+    display_id: EntityId,
+    browser_id: EntityId,
+}
+
+#[derive(Default)]
+pub struct HeadedBrowserSupervisor {
+    auxiliary: AuxiliaryProcessSupervisor,
+    profiles: BTreeMap<ProfileId, HeadedBrowserProcesses>,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -44,11 +122,24 @@ pub struct WorkerStatus {
     pub worker_id: WorkerId,
     pub root_tree_id: RootTreeId,
     pub generation: Generation,
+    pub image_id: String,
+    pub image_manifest_sha256: String,
+    pub source_manifest_sha256: String,
     pub pid: u32,
     pub health: WorkerHealth,
     pub heartbeat_at: UtcTimestamp,
     pub idle_for: Duration,
     pub resources: WorkerResourceState,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorkerRollProof {
+    pub root_tree_id: RootTreeId,
+    pub previous_generation: Generation,
+    pub previous_image_id: String,
+    pub generation: Generation,
+    pub image_id: String,
+    pub health: WorkerHealth,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -95,22 +186,35 @@ struct ManagedWorker {
     draining: bool,
 }
 
+#[derive(Clone)]
+struct AdoptedCleanupCandidate {
+    registration: WorkerRegistration,
+    process_start_identity: Option<String>,
+    executable: PathBuf,
+    executable_sha256: String,
+}
+
 pub struct WorkerSupervisor {
     state_dir: PathBuf,
     control_directory: PathBuf,
     next_control_id: u64,
     lease_database: PathBuf,
-    executable: PathBuf,
+    images: WorkerImageRegistry,
+    pinned_images: BTreeMap<String, InstalledImage>,
+    canary_mode: bool,
     runtime_config: Option<PathBuf>,
     options: SupervisorOptions,
     leases: LeaseManager,
     workers: BTreeMap<RootTreeId, ManagedWorker>,
+    adopted_cleanup: BTreeMap<RootTreeId, AdoptedCleanupCandidate>,
 }
 
 #[derive(Debug, Error)]
 pub enum SupervisorError {
     #[error("worker process I/O failed: {0}")]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Image(#[from] ImageRegistryError),
     #[error("worker registration failed: {0}")]
     Registration(#[from] keith_worker_runtime::WorkerRuntimeError),
     #[error(transparent)]
@@ -141,6 +245,338 @@ pub enum SupervisorError {
     Runtime(String),
     #[error("worker returned a result for a different runtime request")]
     MismatchedRuntimeResponse,
+    #[error("auxiliary process {0} is already active")]
+    AuxiliaryAlreadyActive(EntityId),
+    #[error("auxiliary process {0} is not registered")]
+    AuxiliaryNotActive(EntityId),
+    #[error("auxiliary process {0} is quarantined after repeated crashes")]
+    AuxiliaryQuarantined(EntityId),
+    #[error("auxiliary process specification is invalid: {0}")]
+    InvalidAuxiliary(String),
+    #[error(
+        "worker {root_tree_id} failed to roll to image {candidate_image_id}: {roll_error}; rollback to {previous_image_id} failed: {rollback_error}"
+    )]
+    RollbackFailed {
+        root_tree_id: RootTreeId,
+        candidate_image_id: String,
+        previous_image_id: String,
+        roll_error: String,
+        rollback_error: String,
+    },
+}
+
+impl AuxiliaryProcessSupervisor {
+    /// Starts an installation-owned browser, display, or stream process with a cleared environment.
+    ///
+    /// # Errors
+    /// Returns an error for invalid process boundaries, duplicate identities, quarantine, or spawn
+    /// failure.
+    pub fn start(
+        &mut self,
+        spec: AuxiliaryProcessSpec,
+    ) -> Result<AuxiliaryProcessStatus, SupervisorError> {
+        validate_auxiliary_spec(&spec)?;
+        if let Some(existing) = self.processes.get(&spec.id) {
+            if existing.quarantined {
+                return Err(SupervisorError::AuxiliaryQuarantined(spec.id));
+            }
+            if existing.child.is_some() {
+                return Err(SupervisorError::AuxiliaryAlreadyActive(spec.id));
+            }
+        }
+        fs::create_dir_all(&spec.runtime_directory)?;
+        let child = spawn_auxiliary(&spec)?;
+        let id = spec.id.clone();
+        let process = self
+            .processes
+            .entry(id.clone())
+            .or_insert_with(|| ManagedAuxiliaryProcess {
+                spec: spec.clone(),
+                child: None,
+                crashes: VecDeque::new(),
+                quarantined: false,
+            });
+        process.spec = spec;
+        process.child = Some(child);
+        Ok(auxiliary_status(process))
+    }
+
+    /// Observes process exits and advances bounded crash-loop quarantine state.
+    ///
+    /// # Errors
+    /// Returns an error when the process is unknown or its status cannot be observed.
+    pub fn poll(&mut self, id: &EntityId) -> Result<AuxiliaryProcessStatus, SupervisorError> {
+        let process = self
+            .processes
+            .get_mut(id)
+            .ok_or_else(|| SupervisorError::AuxiliaryNotActive(id.clone()))?;
+        let exited = process
+            .child
+            .as_mut()
+            .map(|child| child.try_wait())
+            .transpose()?
+            .flatten()
+            .is_some();
+        if exited {
+            process.child = None;
+            let now = Instant::now();
+            process.crashes.push_back(now);
+            while process
+                .crashes
+                .front()
+                .is_some_and(|crash| now.duration_since(*crash) > process.spec.crash_window)
+            {
+                process.crashes.pop_front();
+            }
+            process.quarantined = process.crashes.len() >= process.spec.crash_limit;
+        }
+        Ok(auxiliary_status(process))
+    }
+
+    /// Restarts a known exited process unless its durable owner has quarantined it.
+    ///
+    /// # Errors
+    /// Returns an error for unknown, running, quarantined, invalid, or unspawnable processes.
+    pub fn restart(&mut self, id: &EntityId) -> Result<AuxiliaryProcessStatus, SupervisorError> {
+        let process = self
+            .processes
+            .get_mut(id)
+            .ok_or_else(|| SupervisorError::AuxiliaryNotActive(id.clone()))?;
+        if process.quarantined {
+            return Err(SupervisorError::AuxiliaryQuarantined(id.clone()));
+        }
+        if process.child.is_some() {
+            return Err(SupervisorError::AuxiliaryAlreadyActive(id.clone()));
+        }
+        validate_auxiliary_spec(&process.spec)?;
+        process.child = Some(spawn_auxiliary(&process.spec)?);
+        Ok(auxiliary_status(process))
+    }
+
+    /// Terminates and forgets one auxiliary process.
+    ///
+    /// # Errors
+    /// Returns an error when the identity is unknown or process control fails.
+    pub fn stop(&mut self, id: &EntityId) -> Result<AuxiliaryProcessStatus, SupervisorError> {
+        let mut process = self
+            .processes
+            .remove(id)
+            .ok_or_else(|| SupervisorError::AuxiliaryNotActive(id.clone()))?;
+        if let Some(mut child) = process.child.take() {
+            child.kill()?;
+            child.wait()?;
+        }
+        Ok(AuxiliaryProcessStatus {
+            id: process.spec.id,
+            profile_id: process.spec.profile_id,
+            kind: process.spec.kind,
+            pid: None,
+            health: AuxiliaryProcessHealth::Exited,
+            crashes_in_window: process.crashes.len(),
+        })
+    }
+
+    pub fn status(&self, id: &EntityId) -> Option<AuxiliaryProcessStatus> {
+        self.processes.get(id).map(auxiliary_status)
+    }
+}
+
+impl HeadedBrowserSupervisor {
+    /// Starts one display and one headed browser process for a profile as a single supervised
+    /// allocation. A browser spawn failure tears down the display before returning.
+    ///
+    /// # Errors
+    /// Returns an error when the pair is malformed, the profile is active, or either process
+    /// cannot be started.
+    pub fn start(
+        &mut self,
+        display: AuxiliaryProcessSpec,
+        browser: AuxiliaryProcessSpec,
+    ) -> Result<HeadedBrowserStatus, SupervisorError> {
+        if display.kind != AuxiliaryProcessKind::Display
+            || browser.kind != AuxiliaryProcessKind::Browser
+            || display.profile_id != browser.profile_id
+            || display.id == browser.id
+        {
+            return Err(SupervisorError::InvalidAuxiliary(
+                "headed browser requires distinct display and browser identities for one profile"
+                    .into(),
+            ));
+        }
+        let profile_id = display.profile_id.clone();
+        if self.profiles.contains_key(&profile_id) {
+            return Err(SupervisorError::InvalidAuxiliary(format!(
+                "headed browser is already registered for profile {profile_id}"
+            )));
+        }
+        let display_status = self.auxiliary.start(display)?;
+        let display_id = display_status.id.clone();
+        let browser_status = match self.auxiliary.start(browser) {
+            Ok(status) => status,
+            Err(error) => {
+                let _ = self.auxiliary.stop(&display_id);
+                return Err(error);
+            }
+        };
+        self.profiles.insert(
+            profile_id.clone(),
+            HeadedBrowserProcesses {
+                display_id,
+                browser_id: browser_status.id.clone(),
+            },
+        );
+        Ok(HeadedBrowserStatus {
+            profile_id,
+            display: display_status,
+            browser: browser_status,
+        })
+    }
+
+    /// Observes both processes and returns quarantine state without attempting an unbounded
+    /// automatic restart.
+    ///
+    /// # Errors
+    /// Returns an error when the profile is unknown or process status cannot be observed.
+    pub fn poll(&mut self, profile_id: &ProfileId) -> Result<HeadedBrowserStatus, SupervisorError> {
+        let pair = self.profiles.get(profile_id).cloned().ok_or_else(|| {
+            SupervisorError::InvalidAuxiliary(format!(
+                "headed browser is not registered for profile {profile_id}"
+            ))
+        })?;
+        let display = self.auxiliary.poll(&pair.display_id)?;
+        let browser = self.auxiliary.poll(&pair.browser_id)?;
+        Ok(HeadedBrowserStatus {
+            profile_id: profile_id.clone(),
+            display,
+            browser,
+        })
+    }
+
+    /// Restarts only the exited members of a registered pair. Quarantined members remain fenced.
+    ///
+    /// # Errors
+    /// Returns an error when the profile is unknown or a required restart is not permitted.
+    pub fn restart_exited(
+        &mut self,
+        profile_id: &ProfileId,
+    ) -> Result<HeadedBrowserStatus, SupervisorError> {
+        let observed = self.poll(profile_id)?;
+        let pair = self.profiles.get(profile_id).cloned().ok_or_else(|| {
+            SupervisorError::InvalidAuxiliary(format!(
+                "headed browser is not registered for profile {profile_id}"
+            ))
+        })?;
+        let display = match observed.display.health {
+            AuxiliaryProcessHealth::Running => observed.display,
+            AuxiliaryProcessHealth::Exited => self.auxiliary.restart(&pair.display_id)?,
+            AuxiliaryProcessHealth::Quarantined => {
+                return Err(SupervisorError::AuxiliaryQuarantined(pair.display_id));
+            }
+        };
+        let browser = match observed.browser.health {
+            AuxiliaryProcessHealth::Running => observed.browser,
+            AuxiliaryProcessHealth::Exited => self.auxiliary.restart(&pair.browser_id)?,
+            AuxiliaryProcessHealth::Quarantined => {
+                return Err(SupervisorError::AuxiliaryQuarantined(pair.browser_id));
+            }
+        };
+        Ok(HeadedBrowserStatus {
+            profile_id: profile_id.clone(),
+            display,
+            browser,
+        })
+    }
+
+    /// Stops and forgets both members of one profile allocation.
+    ///
+    /// # Errors
+    /// Returns an error when the profile is unknown or process control fails.
+    pub fn stop(&mut self, profile_id: &ProfileId) -> Result<HeadedBrowserStatus, SupervisorError> {
+        let pair = self.profiles.remove(profile_id).ok_or_else(|| {
+            SupervisorError::InvalidAuxiliary(format!(
+                "headed browser is not registered for profile {profile_id}"
+            ))
+        })?;
+        let browser = self.auxiliary.stop(&pair.browser_id);
+        let display = self.auxiliary.stop(&pair.display_id);
+        Ok(HeadedBrowserStatus {
+            profile_id: profile_id.clone(),
+            display: display?,
+            browser: browser?,
+        })
+    }
+
+    pub fn status(&self, profile_id: &ProfileId) -> Option<HeadedBrowserStatus> {
+        let pair = self.profiles.get(profile_id)?;
+        Some(HeadedBrowserStatus {
+            profile_id: profile_id.clone(),
+            display: self.auxiliary.status(&pair.display_id)?,
+            browser: self.auxiliary.status(&pair.browser_id)?,
+        })
+    }
+}
+
+fn validate_auxiliary_spec(spec: &AuxiliaryProcessSpec) -> Result<(), SupervisorError> {
+    const ALLOWED_ENVIRONMENT: [&str; 7] = [
+        "DISPLAY",
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "TMPDIR",
+        "TZ",
+        "XAUTHORITY",
+    ];
+    if !spec.executable.is_absolute()
+        || !spec.runtime_directory.is_absolute()
+        || spec.arguments.len() > 256
+        || spec
+            .arguments
+            .iter()
+            .any(|argument| argument.len() > 8_192 || argument.contains('\0'))
+        || spec.environment.len() > ALLOWED_ENVIRONMENT.len()
+        || spec.environment.iter().any(|(name, value)| {
+            !ALLOWED_ENVIRONMENT.contains(&name.as_str())
+                || value.len() > 8_192
+                || value.contains('\0')
+        })
+        || spec.crash_limit == 0
+        || spec.crash_window.is_zero()
+    {
+        return Err(SupervisorError::InvalidAuxiliary(
+            "paths, arguments, environment, and crash bounds must be explicit and bounded".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn spawn_auxiliary(spec: &AuxiliaryProcessSpec) -> Result<Child, SupervisorError> {
+    let mut command = Command::new(&spec.executable);
+    command
+        .args(&spec.arguments)
+        .current_dir(&spec.runtime_directory)
+        .env_clear()
+        .envs(&spec.environment)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    Ok(command.spawn()?)
+}
+
+fn auxiliary_status(process: &ManagedAuxiliaryProcess) -> AuxiliaryProcessStatus {
+    AuxiliaryProcessStatus {
+        id: process.spec.id.clone(),
+        profile_id: process.spec.profile_id.clone(),
+        kind: process.spec.kind,
+        pid: process.child.as_ref().map(Child::id),
+        health: if process.quarantined {
+            AuxiliaryProcessHealth::Quarantined
+        } else if process.child.is_some() {
+            AuxiliaryProcessHealth::Running
+        } else {
+            AuxiliaryProcessHealth::Exited
+        },
+        crashes_in_window: process.crashes.len(),
+    }
 }
 
 impl WorkerSupervisor {
@@ -190,6 +626,7 @@ impl WorkerSupervisor {
         fs::create_dir_all(&state_dir)?;
         let lease_database = state_dir.join("leases.sqlite");
         let leases = LeaseManager::open(&lease_database)?;
+        let images = WorkerImageRegistry::open(state_dir.join("worker-images"), &executable)?;
         let control_directory =
             std::env::temp_dir().join(format!("keith-agent-control-{}", WorkerId::new()));
         Ok(Self {
@@ -197,11 +634,14 @@ impl WorkerSupervisor {
             control_directory,
             next_control_id: 1,
             lease_database,
-            executable,
+            images,
+            pinned_images: BTreeMap::new(),
+            canary_mode: false,
             runtime_config,
             options,
             leases,
             workers: BTreeMap::new(),
+            adopted_cleanup: BTreeMap::new(),
         })
     }
 
@@ -227,13 +667,23 @@ impl WorkerSupervisor {
                 continue;
             }
             let registration = read_registration(&path)?;
-            if !matches!(
-                registration.state,
-                WorkerRunState::Starting | WorkerRunState::Ready | WorkerRunState::Draining
-            ) || !process_is_alive(registration.pid)
-            {
+            if !process_is_alive(registration.pid) {
                 continue;
             }
+            let image = self.resolve_image(&registration.image_id)?;
+            if registration.image_manifest_sha256 != image.manifest_sha256
+                || registration.source_manifest_sha256 != image.source_manifest_sha256
+            {
+                return Err(SupervisorError::Image(ImageRegistryError::ArtifactMismatch));
+            }
+            let cleanup = AdoptedCleanupCandidate {
+                process_start_identity: process_start_identity(registration.pid),
+                registration: registration.clone(),
+                executable: image.executable.clone(),
+                executable_sha256: image.executable_sha256.clone(),
+            };
+            self.adopted_cleanup
+                .insert(registration.root_tree_id.clone(), cleanup);
             let Some(grant) = self.leases.current(&registration.root_tree_id)? else {
                 continue;
             };
@@ -243,6 +693,12 @@ impl WorkerSupervisor {
                 continue;
             }
             let control = connect_control(&registration, &grant, self.options.startup_timeout)?;
+            if !matches!(
+                registration.state,
+                WorkerRunState::Starting | WorkerRunState::Ready | WorkerRunState::Draining
+            ) {
+                continue;
+            }
             self.workers
                 .entry(registration.root_tree_id.clone())
                 .or_insert(ManagedWorker {
@@ -263,6 +719,41 @@ impl WorkerSupervisor {
     ///
     /// Returns an error when a live worker exists or claim, process, or handshake fails.
     pub fn start(&mut self, root_tree_id: RootTreeId) -> Result<WorkerStatus, SupervisorError> {
+        let image = self.images.resolve_current()?;
+        self.start_with_image(root_tree_id, image)
+    }
+
+    /// Registers an already verified immutable candidate and enables the credential-free canary
+    /// worker entry point. The candidate identity is preserved in registration and generation
+    /// state rather than being replaced with a bootstrap identity.
+    ///
+    /// # Errors
+    /// Returns an error when the image bytes no longer match their installed digest.
+    pub fn pin_canary_image(&mut self, image: InstalledImage) -> Result<(), SupervisorError> {
+        verify_pinned_image(&image)?;
+        self.canary_mode = true;
+        self.pinned_images.insert(image.image_id.clone(), image);
+        Ok(())
+    }
+
+    /// Starts a worker generation bound to one exact pinned candidate image.
+    ///
+    /// # Errors
+    /// Returns an error when the image is absent, altered, or worker startup fails.
+    pub fn start_pinned(
+        &mut self,
+        root_tree_id: RootTreeId,
+        image_id: &str,
+    ) -> Result<WorkerStatus, SupervisorError> {
+        let image = self.resolve_image(image_id)?;
+        self.start_with_image(root_tree_id, image)
+    }
+
+    fn start_with_image(
+        &mut self,
+        root_tree_id: RootTreeId,
+        image: InstalledImage,
+    ) -> Result<WorkerStatus, SupervisorError> {
         if self
             .workers
             .get(&root_tree_id)
@@ -278,7 +769,7 @@ impl WorkerSupervisor {
             .control_directory
             .join(format!("worker-{}.sock", self.next_control_id));
         self.next_control_id = self.next_control_id.saturating_add(1);
-        let mut child = match self.spawn(&grant, &control_socket) {
+        let mut child = match self.spawn(&grant, &control_socket, &image) {
             Ok(child) => child,
             Err(error) => {
                 let _ = self.leases.release(&grant);
@@ -299,6 +790,9 @@ impl WorkerSupervisor {
                 && registration.pid == child.id()
                 && registration.worker_id == grant.worker_id
                 && registration.generation == grant.generation
+                && registration.image_id == image.image_id
+                && registration.image_manifest_sha256 == image.manifest_sha256
+                && registration.source_manifest_sha256 == image.source_manifest_sha256
                 && registration.state == WorkerRunState::Ready
             {
                 match connect_control(&registration, &grant, self.options.startup_timeout) {
@@ -336,10 +830,29 @@ impl WorkerSupervisor {
         }
     }
 
-    fn spawn(&self, grant: &LeaseGrant, control_socket: &Path) -> Result<Child, SupervisorError> {
+    fn resolve_image(&self, image_id: &str) -> Result<InstalledImage, SupervisorError> {
+        if let Some(image) = self.pinned_images.get(image_id) {
+            verify_pinned_image(image)?;
+            return Ok(image.clone());
+        }
+        Ok(self.images.resolve(image_id)?)
+    }
+
+    fn spawn(
+        &self,
+        grant: &LeaseGrant,
+        control_socket: &Path,
+        image: &InstalledImage,
+    ) -> Result<Child, SupervisorError> {
         let heartbeat_ms = self.options.heartbeat_interval.as_millis().max(1);
         let lease_ms = self.options.lease_duration.as_millis().max(1);
-        let mut command = Command::new(&self.executable);
+        let mut command = Command::new(&image.executable);
+        if self.canary_mode {
+            command.env_clear().arg("--canary");
+            if let Some(path) = std::env::var_os("PATH") {
+                command.env("PATH", path);
+            }
+        }
         command
             .arg("--state-dir")
             .arg(&self.state_dir)
@@ -353,6 +866,12 @@ impl WorkerSupervisor {
             .arg(grant.worker_id.to_string())
             .arg("--generation")
             .arg(grant.generation.get().to_string())
+            .arg("--image-id")
+            .arg(&image.image_id)
+            .arg("--image-manifest-sha256")
+            .arg(&image.manifest_sha256)
+            .arg("--source-manifest-sha256")
+            .arg(&image.source_manifest_sha256)
             .arg("--authentication")
             .arg(grant.authentication.to_string())
             .arg("--expires-at")
@@ -364,12 +883,38 @@ impl WorkerSupervisor {
         if let Some(runtime_config) = &self.runtime_config {
             command.arg("--runtime-config").arg(runtime_config);
         }
-        command
+        let child = command
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(SupervisorError::from)
+            .map_err(SupervisorError::from)?;
+        Ok(child)
+    }
+
+    #[must_use]
+    pub const fn image_registry(&self) -> &WorkerImageRegistry {
+        &self.images
+    }
+
+    pub const fn image_registry_mut(&mut self) -> &mut WorkerImageRegistry {
+        &mut self.images
+    }
+
+    /// Reclaims superseded images while protecting every live generation's bound image.
+    ///
+    /// # Errors
+    /// Returns an error when registry persistence or filesystem reclamation fails.
+    pub fn reclaim_images(
+        &mut self,
+        retained_history: usize,
+    ) -> Result<Vec<String>, SupervisorError> {
+        let live = self
+            .workers
+            .values()
+            .map(|worker| worker.registration.image_id.clone())
+            .collect();
+        Ok(self.images.reclaim(retained_history, &live)?)
     }
 
     pub fn statuses(&self) -> Vec<WorkerStatus> {
@@ -377,6 +922,11 @@ impl WorkerSupervisor {
             .values()
             .map(|worker| status_for(worker, self.options.stale_heartbeat))
             .collect()
+    }
+
+    /// Returns the exact roots currently owned by live supervisor generations.
+    pub fn active_roots(&self) -> Vec<RootTreeId> {
+        self.workers.keys().cloned().collect()
     }
 
     pub fn status(&self, root_tree_id: &RootTreeId) -> Option<WorkerStatus> {
@@ -668,6 +1218,21 @@ impl WorkerSupervisor {
                 first_error = Some(error);
             }
         }
+        let candidates = std::mem::take(&mut self.adopted_cleanup);
+        for candidate in candidates.into_values() {
+            if !cleanup_identity_matches(&self.state_dir, &candidate)? {
+                continue;
+            }
+            let pid = candidate.registration.pid;
+            signal(pid, ProcessSignal::Graceful)?;
+            let deadline = Instant::now() + self.options.drain_timeout;
+            while cleanup_process_matches(&candidate) && Instant::now() < deadline {
+                thread::sleep(Duration::from_millis(10));
+            }
+            if cleanup_process_matches(&candidate) {
+                signal(pid, ProcessSignal::Force)?;
+            }
+        }
         first_error.map_or(Ok(()), Err)
     }
 
@@ -681,6 +1246,95 @@ impl WorkerSupervisor {
             self.drain(root_tree_id)?;
         }
         self.start(root_tree_id.clone())
+    }
+
+    /// Gracefully rolls one active root to one exact installed image.
+    ///
+    /// The current image is captured before drain. If candidate startup fails, the root is
+    /// restarted from that exact image rather than from the registry's mutable current pointer.
+    /// A successful return proves both a strictly newer generation and the requested healthy
+    /// image identity.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the root is inactive, the candidate is not installed or verified,
+    /// drain/startup fails, or rollback cannot restore the pinned previous image.
+    pub fn roll_to_image(
+        &mut self,
+        root_tree_id: &RootTreeId,
+        candidate_image_id: &str,
+    ) -> Result<WorkerRollProof, SupervisorError> {
+        let previous = self
+            .status(root_tree_id)
+            .ok_or_else(|| SupervisorError::NotActive(root_tree_id.clone()))?;
+        self.resolve_image(candidate_image_id)?;
+        self.drain(root_tree_id)?;
+        match self.start_pinned(root_tree_id.clone(), candidate_image_id) {
+            Ok(candidate)
+                if candidate.generation > previous.generation
+                    && candidate.image_id == candidate_image_id
+                    && candidate.health == WorkerHealth::Healthy =>
+            {
+                Ok(WorkerRollProof {
+                    root_tree_id: root_tree_id.clone(),
+                    previous_generation: previous.generation,
+                    previous_image_id: previous.image_id,
+                    generation: candidate.generation,
+                    image_id: candidate.image_id,
+                    health: candidate.health,
+                })
+            }
+            Ok(candidate) => {
+                let roll_error = format!(
+                    "replacement proof mismatch: generation {:?}, image {}, health {:?}",
+                    candidate.generation, candidate.image_id, candidate.health
+                );
+                let _ = self.drain(root_tree_id);
+                self.rollback_after_failed_roll(
+                    root_tree_id,
+                    candidate_image_id,
+                    previous,
+                    roll_error,
+                )
+            }
+            Err(error) => self.rollback_after_failed_roll(
+                root_tree_id,
+                candidate_image_id,
+                previous,
+                error.to_string(),
+            ),
+        }
+    }
+
+    /// Compatibility name for exact-image generation replacement used by promotion orchestration.
+    pub fn restart_with_image(
+        &mut self,
+        root_tree_id: &RootTreeId,
+        image_id: &str,
+    ) -> Result<WorkerRollProof, SupervisorError> {
+        self.roll_to_image(root_tree_id, image_id)
+    }
+
+    fn rollback_after_failed_roll(
+        &mut self,
+        root_tree_id: &RootTreeId,
+        candidate_image_id: &str,
+        previous: WorkerStatus,
+        roll_error: String,
+    ) -> Result<WorkerRollProof, SupervisorError> {
+        match self.start_pinned(root_tree_id.clone(), &previous.image_id) {
+            Ok(_) => Err(SupervisorError::Runtime(format!(
+                "worker {root_tree_id} roll to image {candidate_image_id} failed and previous image {} was restored: {roll_error}",
+                previous.image_id
+            ))),
+            Err(rollback_error) => Err(SupervisorError::RollbackFailed {
+                root_tree_id: root_tree_id.clone(),
+                candidate_image_id: candidate_image_id.into(),
+                previous_image_id: previous.image_id,
+                roll_error,
+                rollback_error: rollback_error.to_string(),
+            }),
+        }
     }
 
     /// Drains workers whose supervisor-observed activity exceeds `idle_limit`.
@@ -857,6 +1511,81 @@ enum ProcessSignal {
     Force,
 }
 
+fn cleanup_identity_matches(
+    state_dir: &Path,
+    candidate: &AdoptedCleanupCandidate,
+) -> Result<bool, SupervisorError> {
+    let path = registration_path(state_dir, &candidate.registration.root_tree_id);
+    let Ok(registration) = read_registration(&path) else {
+        return Ok(false);
+    };
+    let executable_digest = fs::read(&candidate.executable)
+        .ok()
+        .map(|bytes| format!("{:x}", Sha256::digest(bytes)));
+    Ok(registration.pid == candidate.registration.pid
+        && registration.worker_id == candidate.registration.worker_id
+        && registration.generation == candidate.registration.generation
+        && registration.image_id == candidate.registration.image_id
+        && registration.image_manifest_sha256 == candidate.registration.image_manifest_sha256
+        && registration.source_manifest_sha256 == candidate.registration.source_manifest_sha256
+        && executable_digest.as_deref() == Some(candidate.executable_sha256.as_str())
+        && process_executable_matches(candidate)
+        && cleanup_process_matches(candidate))
+}
+
+fn cleanup_process_matches(candidate: &AdoptedCleanupCandidate) -> bool {
+    process_is_alive(candidate.registration.pid)
+        && process_start_identity(candidate.registration.pid) == candidate.process_start_identity
+}
+
+#[cfg(unix)]
+fn process_executable_matches(candidate: &AdoptedCleanupCandidate) -> bool {
+    fs::read_link(format!("/proc/{}/exe", candidate.registration.pid))
+        .ok()
+        .and_then(|path| fs::canonicalize(path).ok())
+        == fs::canonicalize(&candidate.executable).ok()
+}
+
+#[cfg(windows)]
+fn process_executable_matches(_candidate: &AdoptedCleanupCandidate) -> bool {
+    true
+}
+
+#[cfg(not(any(unix, windows)))]
+fn process_executable_matches(_candidate: &AdoptedCleanupCandidate) -> bool {
+    false
+}
+
+#[cfg(unix)]
+fn process_start_identity(pid: u32) -> Option<String> {
+    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    let (_, fields) = stat.rsplit_once(") ")?;
+    fields.split_whitespace().nth(19).map(str::to_owned)
+}
+
+#[cfg(windows)]
+fn process_start_identity(pid: u32) -> Option<String> {
+    let output = Command::new("wmic")
+        .args([
+            "process",
+            "where",
+            &format!("ProcessId={pid}"),
+            "get",
+            "CreationDate",
+            "/value",
+        ])
+        .output()
+        .ok()?;
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .find_map(|line| line.strip_prefix("CreationDate=").map(str::to_owned))
+}
+
+#[cfg(not(any(unix, windows)))]
+fn process_start_identity(_pid: u32) -> Option<String> {
+    None
+}
+
 #[cfg(unix)]
 fn signal(pid: u32, signal: ProcessSignal) -> Result<(), SupervisorError> {
     let raw_pid = i32::try_from(pid)
@@ -969,6 +1698,9 @@ fn status_for(worker: &ManagedWorker, stale_heartbeat: Duration) -> WorkerStatus
         worker_id: worker.registration.worker_id.clone(),
         root_tree_id: worker.registration.root_tree_id.clone(),
         generation: worker.registration.generation,
+        image_id: worker.registration.image_id.clone(),
+        image_manifest_sha256: worker.registration.image_manifest_sha256.clone(),
+        source_manifest_sha256: worker.registration.source_manifest_sha256.clone(),
         pid: worker.registration.pid,
         health,
         heartbeat_at: worker.registration.heartbeat_at,
@@ -1051,6 +1783,28 @@ fn add_duration(timestamp: UtcTimestamp, duration: Duration) -> Option<UtcTimest
         .ok()
         .and_then(|millis| timestamp.unix_millis().checked_add(millis))
         .map(UtcTimestamp::from_unix_millis)
+}
+
+fn verify_pinned_image(image: &InstalledImage) -> Result<(), SupervisorError> {
+    let metadata = fs::symlink_metadata(&image.executable)?;
+    if !image.verified || !metadata.is_file() || metadata.file_type().is_symlink() {
+        return Err(SupervisorError::Image(ImageRegistryError::ArtifactMismatch));
+    }
+    let digest = Sha256::digest(fs::read(&image.executable)?).iter().fold(
+        String::new(),
+        |mut value, byte| {
+            use std::fmt::Write as _;
+            let _ = write!(value, "{byte:02x}");
+            value
+        },
+    );
+    if digest != image.executable_sha256
+        || image.image_id != image.manifest_sha256
+        || image.source_manifest_sha256.len() != 64
+    {
+        return Err(SupervisorError::Image(ImageRegistryError::ArtifactMismatch));
+    }
+    Ok(())
 }
 
 #[cfg(test)]

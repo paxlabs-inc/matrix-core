@@ -3,7 +3,8 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use keith_agent_types::{
-    ArtifactId, CURRENT_PROTOCOL_VERSION, ClientId, CommandId, ProfileId, SessionId, UtcTimestamp,
+    ArtifactId, CURRENT_PROTOCOL_VERSION, ClientId, CommandId, ConversationId, EntityId, EventId,
+    ProfileId, Revision, SessionId, StableKey, UtcTimestamp,
 };
 use keith_connection::{AgentTransport, ConnectionError};
 use keith_protocol::{
@@ -103,6 +104,20 @@ impl InboundMessage {
         }
         Ok(())
     }
+
+    /// Returns a platform-stable source key used for canonical append deduplication.
+    pub fn stable_source_key(&self) -> Result<StableKey, GatewayError> {
+        self.validate()?;
+        StableKey::parse(format!(
+            "channel:{}:{}:{}:{}:{}",
+            self.channel,
+            self.external_account,
+            self.conversation,
+            self.thread.as_deref().unwrap_or("root"),
+            self.message_id
+        ))
+        .map_err(|_| GatewayError::Malformed)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -113,6 +128,500 @@ pub struct RoutedInbound {
     pub message: InboundMessage,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExternalConversationIdentity {
+    pub channel: String,
+    pub external_account: String,
+    pub conversation: String,
+    pub thread: Option<String>,
+}
+
+impl From<&InboundMessage> for ExternalConversationIdentity {
+    fn from(message: &InboundMessage) -> Self {
+        Self {
+            channel: message.channel.clone(),
+            external_account: message.external_account.clone(),
+            conversation: message.conversation.clone(),
+            thread: message.thread.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BoundMentionPolicy {
+    Always,
+    RequireMention,
+    Ignore,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BoundMemoryPolicy {
+    Shared,
+    PrivatePerParticipant,
+    Disabled,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "authority", content = "principals")]
+pub enum BoundChannelAuthority {
+    Disabled,
+    ProfileCallers,
+    AllowList(BTreeSet<String>),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BoundProactivePostPolicy {
+    Denied,
+    Allowed,
+}
+
+/// Policy evidence copied from the durable binding. The daemon must revalidate its revisions and
+/// digest before append or publication; gateways never widen it.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationBindingPolicy {
+    pub route_revision: Revision,
+    pub conversation_revision: Revision,
+    pub participant_revision: Revision,
+    pub policy_digest_sha256: String,
+    pub mention: BoundMentionPolicy,
+    pub memory: BoundMemoryPolicy,
+    pub tools: BoundChannelAuthority,
+    pub schedules: BoundChannelAuthority,
+    pub proactive_posts: BoundProactivePostPolicy,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationBindingReference {
+    pub binding_id: EntityId,
+    pub stable_key: StableKey,
+    pub binding_revision: Revision,
+    pub external: ExternalConversationIdentity,
+    pub conversation_id: ConversationId,
+    pub participant_profile_id: ProfileId,
+    pub participant_session_id: SessionId,
+    pub policy: ConversationBindingPolicy,
+}
+
+/// A routing-authorized, immutable snapshot of the binding used for one channel operation.
+/// Callers cannot supply capabilities separately from this snapshot; the policy is always the
+/// exact policy that was authorized with the binding revision.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelConversationBindingSnapshot {
+    pub binding: ConversationBindingReference,
+    pub state: ChannelConversationBindingState,
+    pub revalidated_at: UtcTimestamp,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelConversationBindingState {
+    Active,
+    Revoked,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuthenticatedChannelParticipant {
+    pub profile_id: ProfileId,
+    pub session_id: SessionId,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationBoundIngressRequest {
+    pub request_id: EntityId,
+    pub operation_key: StableKey,
+    pub source_message_key: StableKey,
+    pub binding: ChannelConversationBindingSnapshot,
+    pub authenticated_participant: AuthenticatedChannelParticipant,
+    pub sender_external_id: String,
+    pub occurred_at: UtcTimestamp,
+    pub text: String,
+    pub artifacts: Vec<ArtifactId>,
+    pub reply_route: ReplyRoute,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationBoundOutboundRequest {
+    pub request_id: EntityId,
+    pub operation_key: StableKey,
+    pub source_message_key: StableKey,
+    pub binding: ChannelConversationBindingSnapshot,
+    pub authenticated_participant: AuthenticatedChannelParticipant,
+    pub event_id: EventId,
+    pub stable_publication_key: StableKey,
+    pub text: String,
+    pub artifacts: Vec<ArtifactId>,
+    pub route: ReplyRoute,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConversationBoundReceiptDisposition {
+    Accepted,
+    Duplicate,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationBoundIngressReceipt {
+    pub request_id: EntityId,
+    pub operation_key: StableKey,
+    pub source_message_key: StableKey,
+    pub binding_id: EntityId,
+    pub binding_stable_key: StableKey,
+    pub binding_revision: Revision,
+    pub conversation_id: ConversationId,
+    pub authenticated_participant: AuthenticatedChannelParticipant,
+    pub policy_snapshot: ConversationBindingPolicy,
+    pub disposition: ConversationBoundReceiptDisposition,
+    pub accepted_at: UtcTimestamp,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationBoundOutboundReceipt {
+    pub request_id: EntityId,
+    pub operation_key: StableKey,
+    pub source_message_key: StableKey,
+    pub binding_id: EntityId,
+    pub binding_stable_key: StableKey,
+    pub binding_revision: Revision,
+    pub conversation_id: ConversationId,
+    pub authenticated_participant: AuthenticatedChannelParticipant,
+    pub event_id: EventId,
+    pub stable_publication_key: StableKey,
+    pub policy_snapshot: ConversationBindingPolicy,
+    pub disposition: ConversationBoundReceiptDisposition,
+    pub accepted_at: UtcTimestamp,
+}
+
+impl ChannelConversationBindingSnapshot {
+    pub fn validate_current(&self, current: &Self) -> Result<(), ConversationBoundChannelError> {
+        validate_binding_snapshot(current)?;
+        if current.state == ChannelConversationBindingState::Revoked {
+            return Err(ConversationBoundChannelError::BindingRevoked);
+        }
+        if self.binding.binding_id != current.binding.binding_id
+            || self.binding.stable_key != current.binding.stable_key
+            || self.binding.binding_revision != current.binding.binding_revision
+            || self.binding.external != current.binding.external
+            || self.binding.conversation_id != current.binding.conversation_id
+            || self.binding.participant_profile_id != current.binding.participant_profile_id
+            || self.binding.participant_session_id != current.binding.participant_session_id
+            || self.binding.policy != current.binding.policy
+        {
+            return Err(ConversationBoundChannelError::BindingStale);
+        }
+        if self.state != ChannelConversationBindingState::Active {
+            return Err(ConversationBoundChannelError::BindingRevoked);
+        }
+        Ok(())
+    }
+}
+
+impl ConversationBoundIngressRequest {
+    pub fn validate_current(
+        &self,
+        current: &ChannelConversationBindingSnapshot,
+    ) -> Result<(), ConversationBoundChannelError> {
+        self.binding.validate_current(current)?;
+        validate_authenticated_participant(&self.binding.binding, &self.authenticated_participant)?;
+        validate_channel_text(&self.sender_external_id, MAX_EXTERNAL_SENDER_BYTES)?;
+        validate_channel_text(&self.text, MAX_CONVERSATION_MESSAGE_BYTES)?;
+        validate_channel_artifacts(&self.artifacts)?;
+        validate_reply_route(&self.reply_route, &self.binding.binding.external)
+    }
+
+    pub fn accepted_receipt(
+        &self,
+        current: &ChannelConversationBindingSnapshot,
+        disposition: ConversationBoundReceiptDisposition,
+        accepted_at: UtcTimestamp,
+    ) -> Result<ConversationBoundIngressReceipt, ConversationBoundChannelError> {
+        self.validate_current(current)?;
+        Ok(ConversationBoundIngressReceipt {
+            request_id: self.request_id.clone(),
+            operation_key: self.operation_key.clone(),
+            source_message_key: self.source_message_key.clone(),
+            binding_id: current.binding.binding_id.clone(),
+            binding_stable_key: current.binding.stable_key.clone(),
+            binding_revision: current.binding.binding_revision,
+            conversation_id: current.binding.conversation_id.clone(),
+            authenticated_participant: self.authenticated_participant.clone(),
+            policy_snapshot: current.binding.policy.clone(),
+            disposition,
+            accepted_at,
+        })
+    }
+}
+
+impl ConversationBoundOutboundRequest {
+    pub fn validate_current(
+        &self,
+        current: &ChannelConversationBindingSnapshot,
+    ) -> Result<(), ConversationBoundChannelError> {
+        self.binding.validate_current(current)?;
+        validate_authenticated_participant(&self.binding.binding, &self.authenticated_participant)?;
+        validate_channel_text(&self.text, MAX_CONVERSATION_MESSAGE_BYTES)?;
+        validate_channel_artifacts(&self.artifacts)?;
+        validate_reply_route(&self.route, &self.binding.binding.external)
+    }
+
+    pub fn accepted_receipt(
+        &self,
+        current: &ChannelConversationBindingSnapshot,
+        disposition: ConversationBoundReceiptDisposition,
+        accepted_at: UtcTimestamp,
+    ) -> Result<ConversationBoundOutboundReceipt, ConversationBoundChannelError> {
+        self.validate_current(current)?;
+        Ok(ConversationBoundOutboundReceipt {
+            request_id: self.request_id.clone(),
+            operation_key: self.operation_key.clone(),
+            source_message_key: self.source_message_key.clone(),
+            binding_id: current.binding.binding_id.clone(),
+            binding_stable_key: current.binding.stable_key.clone(),
+            binding_revision: current.binding.binding_revision,
+            conversation_id: current.binding.conversation_id.clone(),
+            authenticated_participant: self.authenticated_participant.clone(),
+            event_id: self.event_id.clone(),
+            stable_publication_key: self.stable_publication_key.clone(),
+            policy_snapshot: current.binding.policy.clone(),
+            disposition,
+            accepted_at,
+        })
+    }
+}
+
+fn validate_binding_snapshot(
+    snapshot: &ChannelConversationBindingSnapshot,
+) -> Result<(), ConversationBoundChannelError> {
+    validate_external_identity(&snapshot.binding.external)?;
+    if snapshot.binding.policy.policy_digest_sha256.len() != 64
+        || !snapshot
+            .binding
+            .policy
+            .policy_digest_sha256
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(ConversationBoundChannelError::InvalidPolicySnapshot);
+    }
+    Ok(())
+}
+
+fn validate_authenticated_participant(
+    binding: &ConversationBindingReference,
+    authenticated: &AuthenticatedChannelParticipant,
+) -> Result<(), ConversationBoundChannelError> {
+    if binding.participant_profile_id != authenticated.profile_id
+        || binding.participant_session_id != authenticated.session_id
+    {
+        return Err(ConversationBoundChannelError::AuthenticatedIdentityMismatch);
+    }
+    Ok(())
+}
+
+fn validate_external_identity(
+    external: &ExternalConversationIdentity,
+) -> Result<(), ConversationBoundChannelError> {
+    validate_channel_text(&external.channel, MAX_EXTERNAL_IDENTITY_BYTES)?;
+    validate_channel_text(&external.external_account, MAX_EXTERNAL_IDENTITY_BYTES)?;
+    validate_channel_text(&external.conversation, MAX_EXTERNAL_IDENTITY_BYTES)?;
+    if let Some(thread) = &external.thread {
+        validate_channel_text(thread, MAX_EXTERNAL_IDENTITY_BYTES)?;
+    }
+    Ok(())
+}
+
+fn validate_reply_route(
+    route: &ReplyRoute,
+    external: &ExternalConversationIdentity,
+) -> Result<(), ConversationBoundChannelError> {
+    if route.channel != external.channel
+        || route.external_account != external.external_account
+        || route.conversation != external.conversation
+        || route.thread != external.thread
+    {
+        return Err(ConversationBoundChannelError::RouteMismatch);
+    }
+    if let Some(reply_to) = &route.reply_to_message {
+        validate_channel_text(reply_to, MAX_EXTERNAL_IDENTITY_BYTES)?;
+    }
+    Ok(())
+}
+
+fn validate_channel_artifacts(
+    artifacts: &[ArtifactId],
+) -> Result<(), ConversationBoundChannelError> {
+    if artifacts.len() > MAX_CONVERSATION_ARTIFACTS {
+        return Err(ConversationBoundChannelError::ArtifactLimit);
+    }
+    let unique = artifacts.iter().collect::<BTreeSet<_>>();
+    if unique.len() != artifacts.len() {
+        return Err(ConversationBoundChannelError::DuplicateArtifact);
+    }
+    Ok(())
+}
+
+fn validate_channel_text(
+    value: &str,
+    max_bytes: usize,
+) -> Result<(), ConversationBoundChannelError> {
+    if value.is_empty()
+        || value.len() > max_bytes
+        || value.trim() != value
+        || value.chars().any(char::is_control)
+    {
+        return Err(ConversationBoundChannelError::InvalidText);
+    }
+    Ok(())
+}
+
+const MAX_EXTERNAL_IDENTITY_BYTES: usize = 512;
+const MAX_EXTERNAL_SENDER_BYTES: usize = 512;
+const MAX_CONVERSATION_MESSAGE_BYTES: usize = 64 * 1024;
+const MAX_CONVERSATION_ARTIFACTS: usize = 64;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
+pub enum ConversationBoundChannelError {
+    #[error("conversation binding has been revoked")]
+    BindingRevoked,
+    #[error("conversation binding revision or policy is stale")]
+    BindingStale,
+    #[error("authenticated participant does not match the conversation binding")]
+    AuthenticatedIdentityMismatch,
+    #[error("conversation binding policy snapshot is invalid")]
+    InvalidPolicySnapshot,
+    #[error("channel route does not match the conversation binding")]
+    RouteMismatch,
+    #[error("channel text is empty, non-canonical, or exceeds its bound")]
+    InvalidText,
+    #[error("channel artifact count exceeds its bound")]
+    ArtifactLimit,
+    #[error("channel artifact identifiers must be unique")]
+    DuplicateArtifact,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationRoutedInbound {
+    pub binding: ConversationBindingReference,
+    pub source_key: StableKey,
+    pub message: InboundMessage,
+}
+
+impl ConversationRoutedInbound {
+    /// Validates that a resolver-bound message still has the same immutable external identity and
+    /// stable source identity before it is admitted to the canonical append path.
+    pub fn validate(&self) -> Result<(), GatewayError> {
+        self.message.validate()?;
+        if self.binding.external != ExternalConversationIdentity::from(&self.message)
+            || self.source_key != self.message.stable_source_key()?
+            || !valid_sha256(&self.binding.policy.policy_digest_sha256)
+        {
+            return Err(GatewayError::BindingMismatch);
+        }
+        Ok(())
+    }
+
+    pub fn dispatch_key(&self) -> ConversationDispatchKey {
+        ConversationDispatchKey {
+            conversation_id: self.binding.conversation_id.clone(),
+            participant_profile_id: self.binding.participant_profile_id.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct ConversationDispatchKey {
+    pub conversation_id: ConversationId,
+    pub participant_profile_id: ProfileId,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalChannelAppend {
+    pub binding: ConversationBindingReference,
+    pub source_key: StableKey,
+    pub sender_external_id: String,
+    pub occurred_at: UtcTimestamp,
+    pub text: String,
+    pub artifacts: Vec<ArtifactId>,
+    pub reply_route: ReplyRoute,
+}
+
+impl TryFrom<ConversationRoutedInbound> for CanonicalChannelAppend {
+    type Error = GatewayError;
+
+    fn try_from(routed: ConversationRoutedInbound) -> Result<Self, Self::Error> {
+        routed.validate()?;
+        let reply_route = routed.message.reply_route();
+        Ok(Self {
+            binding: routed.binding,
+            source_key: routed.source_key,
+            sender_external_id: routed.message.sender,
+            occurred_at: routed.message.occurred_at,
+            text: routed.message.text,
+            artifacts: routed
+                .message
+                .attachments
+                .into_iter()
+                .filter_map(|attachment| attachment.artifact_id)
+                .collect(),
+            reply_route,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalChannelAppendReceipt {
+    pub binding_id: EntityId,
+    pub binding_revision: Revision,
+    pub conversation_id: ConversationId,
+    pub event_id: EventId,
+    pub source_key: StableKey,
+    pub duplicate: bool,
+}
+
+/// Server-side adapter contract. Implementations resolve from authoritative storage at enqueue and
+/// revalidate immediately before append; a caller-supplied binding is evidence, not authority.
+pub trait CanonicalConversationIngress {
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    fn resolve(
+        &self,
+        external: &ExternalConversationIdentity,
+        now: UtcTimestamp,
+    ) -> Result<ConversationBindingReference, Self::Error>;
+
+    fn append(
+        &self,
+        append: CanonicalChannelAppend,
+        now: UtcTimestamp,
+    ) -> Result<CanonicalChannelAppendReceipt, Self::Error>;
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CanonicalChannelPublication {
+    pub binding: ConversationBindingReference,
+    pub event_id: EventId,
+    pub stable_publication_key: StableKey,
+    pub route: ReplyRoute,
+    pub text: String,
+    pub artifacts: Vec<ArtifactId>,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct OutboundMessage {
@@ -120,6 +629,37 @@ pub struct OutboundMessage {
     pub idempotency_key: String,
     pub text: String,
     pub artifacts: Vec<ArtifactId>,
+}
+
+impl TryFrom<CanonicalChannelPublication> for OutboundMessage {
+    type Error = GatewayError;
+
+    fn try_from(publication: CanonicalChannelPublication) -> Result<Self, Self::Error> {
+        let external = ExternalConversationIdentity {
+            channel: publication.route.channel.clone(),
+            external_account: publication.route.external_account.clone(),
+            conversation: publication.route.conversation.clone(),
+            thread: publication.route.thread.clone(),
+        };
+        if external != publication.binding.external
+            || !valid_sha256(&publication.binding.policy.policy_digest_sha256)
+        {
+            return Err(GatewayError::BindingMismatch);
+        }
+        Ok(Self {
+            route: publication.route,
+            idempotency_key: publication.stable_publication_key.to_string(),
+            text: publication.text,
+            artifacts: publication.artifacts,
+        })
+    }
+}
+
+fn valid_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -241,6 +781,126 @@ pub enum GatewayError {
     InvalidLimits,
     #[error("session dispatch was not in flight")]
     NotInFlight,
+    #[error("canonical conversation binding is missing or does not match the external route")]
+    BindingMismatch,
+    #[error("canonical conversation dispatch was not in flight")]
+    ConversationNotInFlight,
+}
+
+/// Bounded fair queue for canonical conversation ingress. Ordering is serialized by canonical
+/// conversation and participant, not by a legacy transcript session.
+pub struct ConversationGatewayQueue {
+    limits: GatewayLimits,
+    pending: BTreeMap<ConversationDispatchKey, VecDeque<ConversationRoutedInbound>>,
+    ready: VecDeque<ConversationDispatchKey>,
+    in_flight: BTreeSet<ConversationDispatchKey>,
+    seen: BTreeSet<StableKey>,
+    seen_order: VecDeque<StableKey>,
+    pending_count: usize,
+}
+
+impl ConversationGatewayQueue {
+    pub fn new(limits: GatewayLimits) -> Result<Self, GatewayError> {
+        if limits.global_concurrency == 0
+            || limits.max_pending == 0
+            || limits.max_pending_per_session == 0
+            || limits.max_seen_messages == 0
+            || limits.max_attachments == 0
+            || limits.max_attachment_bytes == 0
+            || limits.max_total_attachment_bytes == 0
+        {
+            return Err(GatewayError::InvalidLimits);
+        }
+        Ok(Self {
+            limits,
+            pending: BTreeMap::new(),
+            ready: VecDeque::new(),
+            in_flight: BTreeSet::new(),
+            seen: BTreeSet::new(),
+            seen_order: VecDeque::new(),
+            pending_count: 0,
+        })
+    }
+
+    pub fn enqueue(
+        &mut self,
+        routed: ConversationRoutedInbound,
+    ) -> Result<EnqueueOutcome, GatewayError> {
+        routed.validate()?;
+        self.validate_attachments(&routed.message.attachments)?;
+        if self.seen.contains(&routed.source_key) {
+            return Ok(EnqueueOutcome::Duplicate);
+        }
+        let key = routed.dispatch_key();
+        let queued = self.pending.get(&key).map_or(0, VecDeque::len);
+        if self.pending_count >= self.limits.max_pending
+            || queued >= self.limits.max_pending_per_session
+        {
+            return Err(GatewayError::Backpressure);
+        }
+        let queue = self.pending.entry(key.clone()).or_default();
+        let was_empty = queue.is_empty();
+        self.seen.insert(routed.source_key.clone());
+        self.seen_order.push_back(routed.source_key.clone());
+        queue.push_back(routed);
+        self.pending_count += 1;
+        if was_empty && !self.in_flight.contains(&key) {
+            self.ready.push_back(key);
+        }
+        while self.seen_order.len() > self.limits.max_seen_messages {
+            if let Some(expired) = self.seen_order.pop_front() {
+                self.seen.remove(&expired);
+            }
+        }
+        Ok(EnqueueOutcome::Queued)
+    }
+
+    pub fn take_ready(&mut self) -> Option<ConversationRoutedInbound> {
+        if self.in_flight.len() >= self.limits.global_concurrency {
+            return None;
+        }
+        while let Some(key) = self.ready.pop_front() {
+            if self.in_flight.contains(&key) {
+                continue;
+            }
+            let item = self.pending.get_mut(&key)?.pop_front()?;
+            self.pending_count -= 1;
+            self.in_flight.insert(key);
+            return Some(item);
+        }
+        None
+    }
+
+    pub fn complete(&mut self, key: &ConversationDispatchKey) -> Result<(), GatewayError> {
+        if !self.in_flight.remove(key) {
+            return Err(GatewayError::ConversationNotInFlight);
+        }
+        if self.pending.get(key).is_some_and(|queue| !queue.is_empty()) {
+            self.ready.push_back(key.clone());
+        } else {
+            self.pending.remove(key);
+        }
+        Ok(())
+    }
+
+    fn validate_attachments(&self, attachments: &[Attachment]) -> Result<(), GatewayError> {
+        if attachments.len() > self.limits.max_attachments {
+            return Err(GatewayError::AttachmentLimit);
+        }
+        let mut total = 0_u64;
+        for attachment in attachments {
+            if attachment.byte_length > self.limits.max_attachment_bytes {
+                return Err(GatewayError::AttachmentLimit);
+            }
+            total = total
+                .checked_add(attachment.byte_length)
+                .ok_or(GatewayError::AttachmentLimit)?;
+        }
+        if total > self.limits.max_total_attachment_bytes {
+            return Err(GatewayError::AttachmentLimit);
+        }
+        Ok(())
+    }
 }
 
 pub struct GatewayQueue {

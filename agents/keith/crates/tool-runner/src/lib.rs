@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
-use std::fmt::Write as _;
+use std::fmt::{Display, Write as _};
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -13,12 +13,344 @@ use std::time::{Duration, Instant};
 use cap_fs_ext::{FollowSymlinks, OpenOptionsFollowExt};
 use cap_std::ambient_authority;
 use cap_std::fs::{Dir, OpenOptions};
-use keith_agent_types::EntityId;
+use keith_agent_types::{
+    ActionId, AssignmentId, ChildId, ConversationId, EntityId, EventId, ProfileId, Revision,
+    StableKey, UtcTimestamp,
+};
 use keith_provider_core::CancellationToken;
 use keith_sandbox::{IsolationLevel, SandboxStatus};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PeerToolOperation {
+    MessageAgent,
+    AssignWork,
+    HandoffWork,
+    ReportAssignment,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PeerAuthorityStage {
+    Enqueue,
+    Execution,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "actor")]
+pub enum PeerToolActor {
+    Profile {
+        profile_id: ProfileId,
+    },
+    Child {
+        child_id: ChildId,
+        parent_profile_id: ProfileId,
+    },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "command")]
+pub enum PeerToolCommand {
+    MessageAgent {
+        conversation_id: ConversationId,
+        source_event_id: EventId,
+        destination_profile_id: ProfileId,
+    },
+    AssignWork {
+        conversation_id: ConversationId,
+        assignment_id: AssignmentId,
+        expected_assignment_revision: Revision,
+        owner_profile_id: ProfileId,
+    },
+    HandoffWork {
+        conversation_id: ConversationId,
+        assignment_id: AssignmentId,
+        expected_assignment_revision: Revision,
+        from_profile_id: ProfileId,
+        to_profile_id: ProfileId,
+    },
+    ReportAssignment {
+        conversation_id: ConversationId,
+        assignment_id: AssignmentId,
+        expected_assignment_revision: Revision,
+        owner_profile_id: ProfileId,
+        result_event_id: EventId,
+    },
+}
+
+impl PeerToolCommand {
+    pub const fn operation(&self) -> PeerToolOperation {
+        match self {
+            Self::MessageAgent { .. } => PeerToolOperation::MessageAgent,
+            Self::AssignWork { .. } => PeerToolOperation::AssignWork,
+            Self::HandoffWork { .. } => PeerToolOperation::HandoffWork,
+            Self::ReportAssignment { .. } => PeerToolOperation::ReportAssignment,
+        }
+    }
+
+    pub const fn conversation_id(&self) -> &ConversationId {
+        match self {
+            Self::MessageAgent {
+                conversation_id, ..
+            }
+            | Self::AssignWork {
+                conversation_id, ..
+            }
+            | Self::HandoffWork {
+                conversation_id, ..
+            }
+            | Self::ReportAssignment {
+                conversation_id, ..
+            } => conversation_id,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PeerAuthorityDimension {
+    pub revision: Revision,
+    pub policy_digest_sha256: String,
+    pub capabilities: BTreeSet<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EffectivePeerAuthority {
+    pub operation: PeerToolOperation,
+    pub stage: PeerAuthorityStage,
+    pub sender_profile_id: ProfileId,
+    pub destination_profile_id: ProfileId,
+    pub conversation_id: ConversationId,
+    pub assignment_id: Option<AssignmentId>,
+    pub sender_enabled: bool,
+    pub destination_enabled: bool,
+    pub installation: PeerAuthorityDimension,
+    pub sender: PeerAuthorityDimension,
+    pub receiver: PeerAuthorityDimension,
+    pub conversation: PeerAuthorityDimension,
+    pub assignment: Option<PeerAuthorityDimension>,
+    pub grants: PeerAuthorityDimension,
+    pub sandbox: PeerAuthorityDimension,
+    pub computer: Option<PeerAuthorityDimension>,
+    pub intersected_capabilities: BTreeSet<String>,
+    pub requested_capabilities: BTreeSet<String>,
+    pub self_evolution_allowed: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PeerToolCorrelation {
+    pub correlation_key: StableKey,
+    pub decision_key: StableKey,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PeerToolEnvelope {
+    pub request_key: StableKey,
+    pub correlation: PeerToolCorrelation,
+    pub actor: PeerToolActor,
+    pub command: PeerToolCommand,
+    pub enqueue_authority: EffectivePeerAuthority,
+    pub created_at: UtcTimestamp,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DurablePeerToolDisposition {
+    Accepted,
+    Duplicate,
+    Rejected,
+    DurableFailure,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DurablePeerToolReceipt {
+    pub request_key: StableKey,
+    pub correlation: PeerToolCorrelation,
+    pub operation: PeerToolOperation,
+    pub disposition: DurablePeerToolDisposition,
+    pub action_id: Option<ActionId>,
+    pub accepted_at: UtcTimestamp,
+    pub safe_error: Option<String>,
+}
+
+pub trait DurablePeerToolQueue: Send + Sync {
+    type Error: Display;
+
+    fn enqueue(&self, envelope: PeerToolEnvelope) -> Result<DurablePeerToolReceipt, Self::Error>;
+}
+
+pub trait PeerAuthorityVerifier: Send + Sync {
+    type Error: Display;
+
+    fn verify_current(&self, envelope: &PeerToolEnvelope) -> Result<bool, Self::Error>;
+}
+
+#[derive(Debug, Error)]
+pub enum PeerToolDispatchError {
+    #[error("peer tool actor is disabled, stale, or masquerading")]
+    RejectedActor,
+    #[error("peer tool authority is stale or does not match the typed command")]
+    StaleAuthority,
+    #[error("peer tool attempted to widen effective authority")]
+    AuthorityWidening,
+    #[error("peer tool authority metadata is malformed")]
+    InvalidAuthority,
+    #[error("peer tool current-authority verification failed: {0}")]
+    Verification(String),
+    #[error("peer tool durable enqueue failed: {0}")]
+    Queue(String),
+    #[error("peer tool queue returned a mismatched receipt")]
+    MismatchedReceipt,
+}
+
+pub struct PeerToolDispatchBoundary<Q, V> {
+    queue: Q,
+    verifier: V,
+}
+
+impl<Q, V> PeerToolDispatchBoundary<Q, V>
+where
+    Q: DurablePeerToolQueue,
+    V: PeerAuthorityVerifier,
+{
+    pub const fn new(queue: Q, verifier: V) -> Self {
+        Self { queue, verifier }
+    }
+
+    pub fn dispatch(
+        &self,
+        envelope: PeerToolEnvelope,
+    ) -> Result<DurablePeerToolReceipt, PeerToolDispatchError> {
+        validate_peer_tool_envelope(&envelope)?;
+        if !self
+            .verifier
+            .verify_current(&envelope)
+            .map_err(|error| PeerToolDispatchError::Verification(error.to_string()))?
+        {
+            return Err(PeerToolDispatchError::StaleAuthority);
+        }
+        let request_key = envelope.request_key.clone();
+        let correlation = envelope.correlation.clone();
+        let operation = envelope.command.operation();
+        let receipt = self
+            .queue
+            .enqueue(envelope)
+            .map_err(|error| PeerToolDispatchError::Queue(error.to_string()))?;
+        if receipt.request_key != request_key
+            || receipt.correlation != correlation
+            || receipt.operation != operation
+            || match receipt.disposition {
+                DurablePeerToolDisposition::Accepted | DurablePeerToolDisposition::Duplicate => {
+                    receipt.action_id.is_none() || receipt.safe_error.is_some()
+                }
+                DurablePeerToolDisposition::Rejected
+                | DurablePeerToolDisposition::DurableFailure => {
+                    receipt.action_id.is_some()
+                        || receipt
+                            .safe_error
+                            .as_deref()
+                            .is_none_or(|error| error.is_empty() || error.len() > 1_024)
+                }
+            }
+        {
+            return Err(PeerToolDispatchError::MismatchedReceipt);
+        }
+        Ok(receipt)
+    }
+}
+
+fn validate_peer_tool_envelope(envelope: &PeerToolEnvelope) -> Result<(), PeerToolDispatchError> {
+    let PeerToolActor::Profile { profile_id } = &envelope.actor else {
+        return Err(PeerToolDispatchError::RejectedActor);
+    };
+    let authority = &envelope.enqueue_authority;
+    if envelope.request_key == envelope.correlation.correlation_key
+        || envelope.request_key == envelope.correlation.decision_key
+        || envelope.correlation.correlation_key == envelope.correlation.decision_key
+    {
+        return Err(PeerToolDispatchError::InvalidAuthority);
+    }
+    if profile_id != &authority.sender_profile_id
+        || !authority.sender_enabled
+        || !authority.destination_enabled
+        || envelope.command.conversation_id() != &authority.conversation_id
+    {
+        return Err(PeerToolDispatchError::RejectedActor);
+    }
+    let (destination, assignment) = match &envelope.command {
+        PeerToolCommand::MessageAgent {
+            destination_profile_id,
+            ..
+        } => (destination_profile_id, None),
+        PeerToolCommand::AssignWork {
+            assignment_id,
+            owner_profile_id,
+            ..
+        }
+        | PeerToolCommand::ReportAssignment {
+            assignment_id,
+            owner_profile_id,
+            ..
+        } => (owner_profile_id, Some(assignment_id)),
+        PeerToolCommand::HandoffWork {
+            assignment_id,
+            from_profile_id,
+            to_profile_id,
+            ..
+        } => {
+            if from_profile_id != profile_id || from_profile_id == to_profile_id {
+                return Err(PeerToolDispatchError::RejectedActor);
+            }
+            (to_profile_id, Some(assignment_id))
+        }
+    };
+    if destination != &authority.destination_profile_id
+        || assignment != authority.assignment_id.as_ref()
+        || authority.operation != envelope.command.operation()
+        || authority.stage != PeerAuthorityStage::Enqueue
+    {
+        return Err(PeerToolDispatchError::StaleAuthority);
+    }
+    let dimensions = [
+        Some(&authority.installation),
+        Some(&authority.sender),
+        Some(&authority.receiver),
+        Some(&authority.conversation),
+        authority.assignment.as_ref(),
+        Some(&authority.grants),
+        Some(&authority.sandbox),
+        authority.computer.as_ref(),
+    ];
+    if dimensions.into_iter().flatten().any(|dimension| {
+        dimension.policy_digest_sha256.len() != 64
+            || !dimension
+                .policy_digest_sha256
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit())
+    }) {
+        return Err(PeerToolDispatchError::InvalidAuthority);
+    }
+    if authority.self_evolution_allowed
+        || !authority
+            .requested_capabilities
+            .is_subset(&authority.intersected_capabilities)
+        || dimensions.into_iter().flatten().any(|dimension| {
+            !authority
+                .intersected_capabilities
+                .is_subset(&dimension.capabilities)
+        })
+    {
+        return Err(PeerToolDispatchError::AuthorityWidening);
+    }
+    Ok(())
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorkspaceLimits {
@@ -603,9 +935,10 @@ pub enum RunError {
 pub struct RestrictedProcessRunner {
     workspace_root: PathBuf,
     workspace_handle: Dir,
-    allowed_programs: BTreeSet<PathBuf>,
+    allowed_programs: BTreeMap<PathBuf, PathBuf>,
     allowed_environment: BTreeSet<String>,
     minimal_environment: BTreeMap<String, String>,
+    read_only_paths: BTreeSet<PathBuf>,
     sandbox: SandboxStatus,
 }
 
@@ -619,18 +952,62 @@ impl RestrictedProcessRunner {
         allowed_environment: BTreeSet<String>,
         minimal_environment: BTreeMap<String, String>,
     ) -> Result<Self, RunError> {
+        Self::new_with_read_only_paths(
+            workspace_root,
+            allowed_programs,
+            allowed_environment,
+            minimal_environment,
+            Vec::new(),
+        )
+    }
+
+    /// Creates a runner with additional canonical host paths mounted read-only in a strong
+    /// sandbox. This is intended for immutable toolchains and dependency caches, not data roots.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when a workspace, executable, or read-only path cannot be resolved, or
+    /// when a read-only path would expose the filesystem root or overlap the writable workspace.
+    pub fn new_with_read_only_paths(
+        workspace_root: impl AsRef<Path>,
+        allowed_programs: impl IntoIterator<Item = PathBuf>,
+        allowed_environment: BTreeSet<String>,
+        minimal_environment: BTreeMap<String, String>,
+        read_only_paths: impl IntoIterator<Item = PathBuf>,
+    ) -> Result<Self, RunError> {
         let workspace_root = std::fs::canonicalize(workspace_root.as_ref())?;
         let workspace_handle = Dir::open_ambient_dir(&workspace_root, ambient_authority())?;
         let allowed_programs = allowed_programs
             .into_iter()
+            .map(|requested| {
+                if !requested.is_absolute() {
+                    return Err(std::io::Error::other(
+                        "allowlisted programs must use absolute paths",
+                    ));
+                }
+                let canonical = std::fs::canonicalize(&requested)?;
+                Ok((requested, canonical))
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        let read_only_paths = read_only_paths
+            .into_iter()
             .map(std::fs::canonicalize)
             .collect::<Result<BTreeSet<_>, _>>()?;
+        if read_only_paths.iter().any(|path| {
+            path.parent().is_none()
+                || path == &workspace_root
+                || workspace_root.starts_with(path)
+                || path.starts_with(&workspace_root)
+        }) {
+            return Err(RunError::WorkingDirectory);
+        }
         Ok(Self {
             workspace_root,
             workspace_handle,
             allowed_programs,
             allowed_environment,
             minimal_environment,
+            read_only_paths,
             sandbox: SandboxStatus::detect(),
         })
     }
@@ -650,9 +1027,13 @@ impl RestrictedProcessRunner {
         sink: &mut dyn OutputSink,
     ) -> Result<RunResult, RunError> {
         validate_process_limits(&request.limits)?;
-        let program =
+        let expected = self
+            .allowed_programs
+            .get(&request.program)
+            .ok_or(RunError::ProgramDenied)?;
+        let actual =
             std::fs::canonicalize(&request.program).map_err(|_| RunError::ProgramDenied)?;
-        if !self.allowed_programs.contains(&program) {
+        if &actual != expected {
             return Err(RunError::ProgramDenied);
         }
         let working =
@@ -668,7 +1049,7 @@ impl RestrictedProcessRunner {
             return Err(RunError::StrongIsolationUnavailable);
         }
         validate_available_limits(&request.limits, request.isolation, &self.sandbox)?;
-        let (launcher, arguments) = self.launch_command(&program, request)?;
+        let (launcher, arguments) = self.launch_command(&request.program, request)?;
         let mut command = Command::new(launcher);
         command
             .args(arguments)
@@ -816,10 +1197,21 @@ impl RestrictedProcessRunner {
                 if !request.limits.deny_network {
                     wrapped.push("--share-net".into());
                 }
-                for system in ["/usr", "/bin", "/lib", "/lib64"] {
-                    if Path::new(system).exists() {
-                        wrapped.extend(["--ro-bind".into(), system.into(), system.into()]);
+                if Path::new("/usr").is_dir() {
+                    wrapped.extend(["--ro-bind".into(), "/usr".into(), "/usr".into()]);
+                }
+                for (target, source) in [
+                    ("/bin", "usr/bin"),
+                    ("/lib", "usr/lib"),
+                    ("/lib64", "usr/lib64"),
+                ] {
+                    if Path::new(target).exists() {
+                        wrapped.extend(["--symlink".into(), source.into(), target.into()]);
                     }
+                }
+                for path in &self.read_only_paths {
+                    let path = path.as_os_str().to_owned();
+                    wrapped.extend(["--ro-bind".into(), path.clone(), path]);
                 }
                 wrapped.extend([
                     "--dev".into(),

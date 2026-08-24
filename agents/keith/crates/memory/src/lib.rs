@@ -37,17 +37,218 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
 use keith_agent_types::{
-    CURRENT_SCHEMA_VERSION, EntityId, EntryId, ProfileId, SchemaVersion, SessionId, UtcTimestamp,
-    canonical_json_bytes,
+    CURRENT_SCHEMA_VERSION, EntityId, EntryId, ProfileId, Revision, SchemaVersion, SessionId,
+    UtcTimestamp, canonical_json_bytes,
 };
 use keith_session_store::{
     CompactionEmission, MemoryKind, RetentionClass, Sensitivity, SessionEntryPayload,
 };
 use keith_workspace::{EditOutcome, PersonalWorkspace, WorkspaceActor};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 const LEDGER_PATH: &str = ".keith/memory-ledger.json";
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProfileMemoryProvision {
+    pub profile_id: ProfileId,
+    pub ledger_path: PathBuf,
+    pub created: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProfileMemoryDisposition {
+    pub profile_id: ProfileId,
+    pub revision: Revision,
+    pub stable_key: String,
+    pub records: usize,
+    pub managed_paths: BTreeSet<PathBuf>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProfileMemoryLeakScan {
+    pub profile_id: ProfileId,
+    pub ledger_present: bool,
+    pub materialized_paths: BTreeSet<PathBuf>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProfileMemoryEraseReport {
+    pub profile_id: ProfileId,
+    pub ledger_removed: bool,
+    pub retained_materialized_paths: BTreeSet<PathBuf>,
+}
+
+/// Idempotently persists the empty profile-owned memory ledger before profile enablement.
+/// # Errors
+/// Returns an error for incompatible existing state or durable-write failure.
+pub fn provision_profile_memory(
+    workspace: &PersonalWorkspace,
+    profile_id: &ProfileId,
+) -> Result<ProfileMemoryProvision, MemoryError> {
+    let path = workspace.layout().root.join(LEDGER_PATH);
+    if path.exists() {
+        let ledger: MemoryLedger = serde_json::from_slice(&fs::read(&path)?)?;
+        if &ledger.profile_id != profile_id || ledger.version != CURRENT_SCHEMA_VERSION {
+            return Err(MemoryError::IncompatibleLedger);
+        }
+        return Ok(ProfileMemoryProvision {
+            profile_id: profile_id.clone(),
+            ledger_path: path,
+            created: false,
+        });
+    }
+    persist_ledger(
+        &workspace.layout().root,
+        &MemoryLedger::new(profile_id.clone()),
+    )?;
+    Ok(ProfileMemoryProvision {
+        profile_id: profile_id.clone(),
+        ledger_path: path,
+        created: true,
+    })
+}
+
+/// # Errors
+/// Removes only a newly-created matching ledger during lifecycle rollback.
+pub fn rollback_profile_memory(provision: &ProfileMemoryProvision) -> Result<(), MemoryError> {
+    if !provision.created || !provision.ledger_path.ends_with(LEDGER_PATH) {
+        return Err(MemoryError::IncompatibleLedger);
+    }
+    if provision.ledger_path.exists() {
+        let ledger: MemoryLedger = serde_json::from_slice(&fs::read(&provision.ledger_path)?)?;
+        if ledger.profile_id != provision.profile_id {
+            return Err(MemoryError::IncompatibleLedger);
+        }
+        fs::remove_file(&provision.ledger_path)?;
+    }
+    Ok(())
+}
+
+/// # Errors
+/// Returns an error when the durable ledger is missing, corrupt, or belongs to another profile.
+pub fn inspect_profile_memory_disposition(
+    workspace: &PersonalWorkspace,
+    profile_id: &ProfileId,
+) -> Result<ProfileMemoryDisposition, MemoryError> {
+    let path = workspace.layout().root.join(LEDGER_PATH);
+    let bytes = fs::read(path)?;
+    let ledger: MemoryLedger = serde_json::from_slice(&bytes)?;
+    if &ledger.profile_id != profile_id || ledger.version != CURRENT_SCHEMA_VERSION {
+        return Err(MemoryError::IncompatibleLedger);
+    }
+    Ok(ProfileMemoryDisposition {
+        profile_id: profile_id.clone(),
+        revision: Revision::new(
+            u64::try_from(
+                ledger
+                    .records
+                    .len()
+                    .saturating_add(ledger.processed_boundaries.len()),
+            )
+            .map_err(|_| MemoryError::InvalidRequest)?,
+        ),
+        stable_key: format!("memory-delete:{}", memory_hex(&Sha256::digest(&bytes))),
+        records: ledger.records.len(),
+        managed_paths: ledger.managed_paths,
+    })
+}
+
+/// Erases the profile-private ledger after revalidating the exact disposition.
+/// Materialized human-readable workspace files are reported as remnants for the workspace plan.
+/// # Errors
+/// Returns an error when the disposition is stale or belongs to another profile.
+pub fn erase_profile_memory(
+    workspace: &PersonalWorkspace,
+    disposition: &ProfileMemoryDisposition,
+) -> Result<ProfileMemoryEraseReport, MemoryError> {
+    let path = workspace.layout().root.join(LEDGER_PATH);
+    if !path.exists() {
+        return Ok(ProfileMemoryEraseReport {
+            profile_id: disposition.profile_id.clone(),
+            ledger_removed: false,
+            retained_materialized_paths: disposition.managed_paths.clone(),
+        });
+    }
+    let current = inspect_profile_memory_disposition(workspace, &disposition.profile_id)?;
+    if &current != disposition {
+        return Err(MemoryError::Changed);
+    }
+    fs::remove_file(path)?;
+    Ok(ProfileMemoryEraseReport {
+        profile_id: disposition.profile_id.clone(),
+        ledger_removed: true,
+        retained_materialized_paths: disposition.managed_paths.clone(),
+    })
+}
+
+/// Reports every surviving memory-owned ledger or materialized path after erasure.
+pub fn scan_profile_memory_leaks(
+    workspace: &PersonalWorkspace,
+    disposition: &ProfileMemoryDisposition,
+) -> ProfileMemoryLeakScan {
+    let root = workspace.layout().root;
+    ProfileMemoryLeakScan {
+        profile_id: disposition.profile_id.clone(),
+        ledger_present: root.join(LEDGER_PATH).exists(),
+        materialized_paths: disposition
+            .managed_paths
+            .iter()
+            .filter(|path| root.join(path).exists())
+            .cloned()
+            .collect(),
+    }
+}
+
+fn memory_hex(bytes: &[u8]) -> String {
+    bytes
+        .iter()
+        .fold(String::with_capacity(bytes.len() * 2), |mut value, byte| {
+            use std::fmt::Write as _;
+            let _ = write!(value, "{byte:02x}");
+            value
+        })
+}
+
+#[cfg(test)]
+mod agent_lifecycle_resource_tests {
+    use super::*;
+    use keith_agent_types::EntityId;
+
+    #[test]
+    fn agent_lifecycle_memory_provision_replays_and_rollback_checks_owner() {
+        let directory = tempfile::tempdir().unwrap();
+        let workspace = PersonalWorkspace::open(
+            directory.path().join("workspace"),
+            keith_workspace::PersonalWorkspaceLimits::default(),
+            UtcTimestamp(1),
+        )
+        .unwrap();
+        let profile = ProfileId::from(EntityId::from_u128(1));
+        let created = provision_profile_memory(&workspace, &profile).unwrap();
+        let replay = provision_profile_memory(&workspace, &profile).unwrap();
+        assert!(created.created);
+        assert!(!replay.created);
+        assert_eq!(
+            inspect_profile_memory_disposition(&workspace, &profile)
+                .unwrap()
+                .records,
+            0
+        );
+        let disposition = inspect_profile_memory_disposition(&workspace, &profile).unwrap();
+        let erased = erase_profile_memory(&workspace, &disposition).unwrap();
+        assert!(erased.ledger_removed);
+        assert!(!scan_profile_memory_leaks(&workspace, &disposition).ledger_present);
+        assert!(
+            !erase_profile_memory(&workspace, &disposition)
+                .unwrap()
+                .ledger_removed
+        );
+        assert!(rollback_profile_memory(&created).is_ok());
+        assert!(!created.ledger_path.exists());
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MemoryPolicy {

@@ -1,12 +1,14 @@
 use std::collections::{BTreeMap, VecDeque};
 
 use keith_agent_types::{
-    CURRENT_PROTOCOL_VERSION, ClientId, CommandId, Generation, RootTreeId, Sequence, UtcTimestamp,
+    AssignmentId, CURRENT_PROTOCOL_VERSION, ClientId, CommandId, ConversationId, Generation,
+    ProfileId, Revision, RootTreeId, RoundId, Sequence, UtcTimestamp,
 };
 use keith_protocol::{
-    CommandResultEnvelope, ConfirmationProjection, DaemonEvent, EventEnvelope, MessageProjection,
-    MessageRole, ResumeCursor, ResumeMode, SessionSnapshot,
+    CommandResultEnvelope, ConfirmationProjection, ConversationProjection, DaemonEvent,
+    EventEnvelope, MessageProjection, MessageRole, ResumeCursor, ResumeMode, SessionSnapshot,
 };
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -14,6 +16,367 @@ pub struct RecoveryBatch {
     pub mode: ResumeMode,
     pub snapshot: Option<SessionSnapshot>,
     pub events: Vec<EventEnvelope>,
+}
+
+pub const TEAMMATE_EVENT_VERSION: u16 = 1;
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammateRosterEntry {
+    pub profile_id: ProfileId,
+    pub display_name: String,
+    pub enabled: bool,
+    pub revision: Revision,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TeammateCoordinationState {
+    Open,
+    Active,
+    Blocked,
+    Completed,
+    Cancelled,
+    Superseded,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammateRoundProjection {
+    pub round_id: RoundId,
+    pub conversation_id: ConversationId,
+    pub state: TeammateCoordinationState,
+    pub revision: Revision,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammateAssignmentProjection {
+    pub assignment_id: AssignmentId,
+    pub conversation_id: ConversationId,
+    pub owner_profile_id: ProfileId,
+    pub state: TeammateCoordinationState,
+    pub revision: Revision,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammateReadState {
+    pub conversation_id: ConversationId,
+    pub profile_id: ProfileId,
+    pub read_through_sequence: u64,
+    pub revision: Revision,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammateConversationSnapshot {
+    pub version: u16,
+    pub generation: Generation,
+    pub through_sequence: Sequence,
+    pub roster: BTreeMap<ProfileId, TeammateRosterEntry>,
+    pub conversations: BTreeMap<ConversationId, ConversationProjection>,
+    pub rounds: BTreeMap<RoundId, TeammateRoundProjection>,
+    pub assignments: BTreeMap<AssignmentId, TeammateAssignmentProjection>,
+    pub read_states: BTreeMap<ConversationId, TeammateReadState>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind", content = "value")]
+pub enum TeammateConversationDelta {
+    RosterUpsert(TeammateRosterEntry),
+    RosterRemove(ProfileId),
+    ConversationUpsert(Box<ConversationProjection>),
+    ConversationRemove(ConversationId),
+    RoundUpsert(TeammateRoundProjection),
+    RoundRemove(RoundId),
+    AssignmentUpsert(TeammateAssignmentProjection),
+    AssignmentRemove(AssignmentId),
+    ReadStateUpsert(TeammateReadState),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammateEventEnvelope {
+    pub version: u16,
+    pub generation: Generation,
+    pub sequence: Sequence,
+    pub occurred_at: UtcTimestamp,
+    pub delta: TeammateConversationDelta,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TeammateResumeCursor {
+    pub generation: Generation,
+    pub through_sequence: Sequence,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TeammateRecoveryBatch {
+    pub mode: ResumeMode,
+    pub snapshot: Option<TeammateConversationSnapshot>,
+    pub events: Vec<TeammateEventEnvelope>,
+}
+
+#[derive(Debug, Error)]
+pub enum TeammateEventError {
+    #[error("teammate event capacities must be non-zero")]
+    InvalidCapacity,
+    #[error("teammate event generation must advance")]
+    InvalidGeneration,
+    #[error("teammate event sequence overflow")]
+    SequenceOverflow,
+    #[error("teammate event clock failed: {0}")]
+    Clock(#[from] keith_agent_types::TimestampError),
+    #[error("teammate event client {0} is not attached")]
+    UnknownClient(ClientId),
+    #[error("teammate acknowledgement is forged or out of order")]
+    InvalidAcknowledgement,
+}
+
+#[derive(Clone, Debug)]
+struct TeammateClient {
+    profile_id: ProfileId,
+    generation: Generation,
+    acknowledged: Sequence,
+    pending: VecDeque<TeammateEventEnvelope>,
+}
+
+pub struct TeammateEventHub {
+    generation: Generation,
+    next_sequence: Sequence,
+    replay_capacity: usize,
+    client_queue_capacity: usize,
+    replay: VecDeque<TeammateEventEnvelope>,
+    snapshot: TeammateConversationSnapshot,
+    clients: BTreeMap<ClientId, TeammateClient>,
+}
+
+impl TeammateEventHub {
+    pub fn new(
+        generation: Generation,
+        mut snapshot: TeammateConversationSnapshot,
+        replay_capacity: usize,
+        client_queue_capacity: usize,
+    ) -> Result<Self, TeammateEventError> {
+        if replay_capacity == 0 || client_queue_capacity == 0 {
+            return Err(TeammateEventError::InvalidCapacity);
+        }
+        snapshot.version = TEAMMATE_EVENT_VERSION;
+        snapshot.generation = generation;
+        let next_sequence = snapshot.through_sequence;
+        Ok(Self {
+            generation,
+            next_sequence,
+            replay_capacity,
+            client_queue_capacity,
+            replay: VecDeque::with_capacity(replay_capacity),
+            snapshot,
+            clients: BTreeMap::new(),
+        })
+    }
+
+    pub fn snapshot(&self) -> &TeammateConversationSnapshot {
+        &self.snapshot
+    }
+
+    pub fn publish(
+        &mut self,
+        delta: TeammateConversationDelta,
+    ) -> Result<TeammateEventEnvelope, TeammateEventError> {
+        let sequence = self
+            .next_sequence
+            .checked_next()
+            .ok_or(TeammateEventError::SequenceOverflow)?;
+        apply_teammate_delta(&mut self.snapshot, &delta);
+        self.snapshot.through_sequence = sequence;
+        let envelope = TeammateEventEnvelope {
+            version: TEAMMATE_EVENT_VERSION,
+            generation: self.generation,
+            sequence,
+            occurred_at: UtcTimestamp::now()?,
+            delta,
+        };
+        self.next_sequence = sequence;
+        self.replay.push_back(envelope.clone());
+        while self.replay.len() > self.replay_capacity {
+            self.replay.pop_front();
+        }
+        let mut disconnected = Vec::new();
+        for (client_id, client) in &mut self.clients {
+            if client.pending.len() == self.client_queue_capacity {
+                disconnected.push(client_id.clone());
+            } else {
+                client.pending.push_back(envelope.clone());
+            }
+        }
+        for client_id in disconnected {
+            self.clients.remove(&client_id);
+        }
+        Ok(envelope)
+    }
+
+    pub fn recover(&self, cursor: Option<&TeammateResumeCursor>) -> TeammateRecoveryBatch {
+        let retained = cursor.is_some_and(|cursor| {
+            cursor.generation == self.generation
+                && cursor.through_sequence <= self.next_sequence
+                && (cursor.through_sequence == self.next_sequence
+                    || cursor.through_sequence.checked_next().is_some_and(|next| {
+                        self.replay
+                            .front()
+                            .is_some_and(|oldest| next >= oldest.sequence)
+                    }))
+        });
+        if retained {
+            let cursor = cursor.expect("retained cursor is present");
+            TeammateRecoveryBatch {
+                mode: ResumeMode::Delta,
+                snapshot: None,
+                events: self
+                    .replay
+                    .iter()
+                    .filter(|event| event.sequence > cursor.through_sequence)
+                    .cloned()
+                    .collect(),
+            }
+        } else {
+            TeammateRecoveryBatch {
+                mode: ResumeMode::SnapshotThenDelta,
+                snapshot: Some(self.snapshot.clone()),
+                events: Vec::new(),
+            }
+        }
+    }
+
+    pub fn attach(
+        &mut self,
+        client_id: ClientId,
+        authenticated_profile_id: ProfileId,
+        cursor: Option<&TeammateResumeCursor>,
+    ) -> TeammateRecoveryBatch {
+        let recovery = self.recover(cursor);
+        let acknowledged = cursor
+            .filter(|_| recovery.mode == ResumeMode::Delta)
+            .map_or(self.next_sequence, |cursor| cursor.through_sequence);
+        self.clients.insert(
+            client_id,
+            TeammateClient {
+                profile_id: authenticated_profile_id,
+                generation: self.generation,
+                acknowledged,
+                pending: VecDeque::with_capacity(self.client_queue_capacity),
+            },
+        );
+        recovery
+    }
+
+    pub fn acknowledge(
+        &mut self,
+        client_id: &ClientId,
+        authenticated_profile_id: &ProfileId,
+        generation: Generation,
+        sequence: Sequence,
+    ) -> Result<(), TeammateEventError> {
+        let client = self
+            .clients
+            .get_mut(client_id)
+            .ok_or_else(|| TeammateEventError::UnknownClient(client_id.clone()))?;
+        if &client.profile_id != authenticated_profile_id
+            || client.generation != generation
+            || self.generation != generation
+            || sequence < client.acknowledged
+            || sequence > self.next_sequence
+        {
+            return Err(TeammateEventError::InvalidAcknowledgement);
+        }
+        client.acknowledged = sequence;
+        Ok(())
+    }
+
+    pub fn poll(
+        &mut self,
+        client_id: &ClientId,
+        authenticated_profile_id: &ProfileId,
+        limit: usize,
+    ) -> Result<Vec<TeammateEventEnvelope>, TeammateEventError> {
+        let client = self
+            .clients
+            .get_mut(client_id)
+            .ok_or_else(|| TeammateEventError::UnknownClient(client_id.clone()))?;
+        if &client.profile_id != authenticated_profile_id {
+            return Err(TeammateEventError::InvalidAcknowledgement);
+        }
+        Ok(client
+            .pending
+            .drain(..limit.min(client.pending.len()))
+            .collect())
+    }
+
+    pub fn replace_generation(
+        &mut self,
+        generation: Generation,
+        mut snapshot: TeammateConversationSnapshot,
+    ) -> Result<(), TeammateEventError> {
+        if generation <= self.generation {
+            return Err(TeammateEventError::InvalidGeneration);
+        }
+        snapshot.version = TEAMMATE_EVENT_VERSION;
+        snapshot.generation = generation;
+        snapshot.through_sequence = Sequence::ZERO;
+        self.generation = generation;
+        self.next_sequence = Sequence::ZERO;
+        self.snapshot = snapshot;
+        self.replay.clear();
+        self.clients.clear();
+        Ok(())
+    }
+}
+
+fn apply_teammate_delta(
+    snapshot: &mut TeammateConversationSnapshot,
+    delta: &TeammateConversationDelta,
+) {
+    match delta {
+        TeammateConversationDelta::RosterUpsert(value) => {
+            snapshot
+                .roster
+                .insert(value.profile_id.clone(), value.clone());
+        }
+        TeammateConversationDelta::RosterRemove(id) => {
+            snapshot.roster.remove(id);
+        }
+        TeammateConversationDelta::ConversationUpsert(value) => {
+            snapshot
+                .conversations
+                .insert(value.conversation.conversation_id.clone(), *value.clone());
+        }
+        TeammateConversationDelta::ConversationRemove(id) => {
+            snapshot.conversations.remove(id);
+            snapshot.read_states.remove(id);
+        }
+        TeammateConversationDelta::RoundUpsert(value) => {
+            snapshot
+                .rounds
+                .insert(value.round_id.clone(), value.clone());
+        }
+        TeammateConversationDelta::RoundRemove(id) => {
+            snapshot.rounds.remove(id);
+        }
+        TeammateConversationDelta::AssignmentUpsert(value) => {
+            snapshot
+                .assignments
+                .insert(value.assignment_id.clone(), value.clone());
+        }
+        TeammateConversationDelta::AssignmentRemove(id) => {
+            snapshot.assignments.remove(id);
+        }
+        TeammateConversationDelta::ReadStateUpsert(value) => {
+            snapshot
+                .read_states
+                .insert(value.conversation_id.clone(), value.clone());
+        }
+    }
 }
 
 #[derive(Debug, Error)]
@@ -445,6 +808,9 @@ fn apply_event(
             .confirmations
             .retain(|item| item.confirmation_id != *confirmation_id),
         DaemonEvent::AgentActivity(_)
+        | DaemonEvent::EvolutionChanged(_)
+        | DaemonEvent::Teammates(_)
+        | DaemonEvent::Computer(_)
         | DaemonEvent::CommandAccepted { .. }
         | DaemonEvent::CommandRejected(_)
         | DaemonEvent::Warning(_)

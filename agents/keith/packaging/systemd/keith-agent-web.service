@@ -1,0 +1,23 @@
+[Unit]
+Description=Keith self-hosted web client
+After=keith-agentd.service
+Requires=keith-agentd.service
+
+[Service]
+Type=simple
+User=keith
+Group=keith
+EnvironmentFile=-/etc/keith/keith.env
+ExecStart=/opt/keith/bin/agent-web --bind 127.0.0.1:7341 --socket /run/keith/agentd.sock --asset-root /opt/keith/share/web
+Restart=on-failure
+RestartSec=2s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/keith/share/web
+ReadWritePaths=/run/keith
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

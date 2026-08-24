@@ -49,6 +49,12 @@ impl StartupRecoveryReport {
     pub fn endpoints_ready(&self) -> bool {
         self.stages.last() == Some(&StartupRecoveryStage::PublicEndpointsReady)
     }
+
+    pub(crate) fn mark_endpoints_ready(&mut self) {
+        if !self.endpoints_ready() {
+            self.stages.push(StartupRecoveryStage::PublicEndpointsReady);
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -475,6 +481,11 @@ pub fn recover_worker(
 pub(crate) fn recover_daemon_startup(
     data_root: &Path,
 ) -> Result<(RootCatalog, StartupRecoveryReport), RecoveryError> {
+    if crate::startup_fault_requested("migration") {
+        return Err(RecoveryError::InvalidOperation(
+            "injected daemon migration failure".into(),
+        ));
+    }
     let now = UtcTimestamp::now().map_err(|error| RecoveryError::Clock(error.to_string()))?;
     let state_path = data_root.join("state.sqlite");
     let store = EmbeddedStore::open(&state_path, Some(&FileBackupHook))?;
@@ -491,7 +502,6 @@ pub(crate) fn recover_daemon_startup(
     stages.push(StartupRecoveryStage::DeliveriesRestored);
     let channel_offsets = store.list_records(Collection::ChannelOffsets)?.len();
     stages.push(StartupRecoveryStage::ChannelOffsetsRestored);
-    stages.push(StartupRecoveryStage::PublicEndpointsReady);
     Ok((
         catalog,
         StartupRecoveryReport {
@@ -757,10 +767,9 @@ mod tests {
                 StartupRecoveryStage::WaitsRestored,
                 StartupRecoveryStage::DeliveriesRestored,
                 StartupRecoveryStage::ChannelOffsetsRestored,
-                StartupRecoveryStage::PublicEndpointsReady,
             ]
         );
-        assert!(report.endpoints_ready());
+        assert!(!report.endpoints_ready());
         assert_eq!(report.expired_scheduler_claims, 1);
         assert_eq!(report.expired_delivery_claims, 1);
         assert_eq!(report.deliveries, 1);

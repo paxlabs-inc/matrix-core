@@ -62,6 +62,37 @@ pub enum ReviewerAccess {
     SelectedFilesReadOnly,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RefinementReviewerAuthority {
+    access: ReviewerAccess,
+}
+
+impl RefinementReviewerAuthority {
+    #[must_use]
+    pub const fn selected_files_read_only() -> Self {
+        Self {
+            access: ReviewerAccess::SelectedFilesReadOnly,
+        }
+    }
+    #[must_use]
+    pub const fn shell(self) -> bool {
+        false
+    }
+    #[must_use]
+    pub const fn write(self) -> bool {
+        false
+    }
+    #[must_use]
+    pub const fn network(self) -> bool {
+        false
+    }
+    #[must_use]
+    pub const fn credentials(self) -> bool {
+        false
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReviewFile {
@@ -75,9 +106,7 @@ pub struct RefinementReviewBundle {
     pub transaction_id: EntityId,
     pub session_id: SessionId,
     pub profile_id: ProfileId,
-    pub access: ReviewerAccess,
-    pub shell_available: bool,
-    pub write_available: bool,
+    pub authority: RefinementReviewerAuthority,
     pub transcript: Vec<String>,
     pub files: Vec<ReviewFile>,
 }
@@ -163,6 +192,54 @@ pub struct RefinementOutcome {
     pub notification: Option<RefinementNotification>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RefinementDeletionClassification {
+    DeletePrivate,
+    RetainImmutableAudit,
+    ExternalRemnant,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RefinementDeletionRecord {
+    pub stable_key: String,
+    pub transaction_id: EntityId,
+    pub revision: Revision,
+    pub digest_sha256: String,
+    pub classification: RefinementDeletionClassification,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProfileRefinementDeletionInventory {
+    pub profile_id: ProfileId,
+    pub expected_profile_revision: Revision,
+    pub stable_key: String,
+    pub schema_digest: String,
+    pub records: Vec<RefinementDeletionRecord>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProfileRefinementEraseReport {
+    pub profile_id: ProfileId,
+    pub expected_profile_revision: Revision,
+    pub stable_key: String,
+    pub deleted_private_records: usize,
+    pub duplicate: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProfileRefinementLeakScan {
+    pub profile_id: ProfileId,
+    pub expected_profile_revision: Revision,
+    pub stable_key: String,
+    pub schema_digest: String,
+    pub private_leaks: Vec<RefinementDeletionRecord>,
+    pub retained_immutable: Vec<RefinementDeletionRecord>,
+    pub external_remnants: Vec<RefinementDeletionRecord>,
+}
+
 pub trait RefinementValidator: Send + Sync {
     /// # Errors
     ///
@@ -239,6 +316,8 @@ pub enum RefinementError {
     LockPoisoned,
     #[error("refinement revision overflowed")]
     RevisionOverflow,
+    #[error("refinement deletion inventory is stale or forged")]
+    StaleDeletionInventory,
 }
 
 pub struct RefinementService<R> {
@@ -319,9 +398,7 @@ where
             transaction_id,
             session_id: action.session_id.clone(),
             profile_id,
-            access: ReviewerAccess::SelectedFilesReadOnly,
-            shell_available: false,
-            write_available: false,
+            authority: RefinementReviewerAuthority::selected_files_read_only(),
             transcript,
             files,
         })
@@ -506,6 +583,119 @@ where
         transaction_id: &EntityId,
     ) -> Result<Option<RefinementTransaction>, RefinementError> {
         self.load(transaction_id)
+    }
+
+    /// Enumerates every refinement transaction owned by one profile, binding the result to the
+    /// caller's current profile revision and to exact transaction revisions and payload digests.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when repository state cannot be read or decoded.
+    pub fn enumerate_profile_deletion_inventory(
+        &self,
+        profile_id: &ProfileId,
+        expected_profile_revision: Revision,
+    ) -> Result<ProfileRefinementDeletionInventory, RefinementError> {
+        let mut records = self
+            .list()?
+            .into_iter()
+            .filter(|transaction| &transaction.profile_id == profile_id)
+            .map(|transaction| refinement_deletion_record(&transaction))
+            .collect::<Result<Vec<_>, _>>()?;
+        records.sort_by(|left, right| left.transaction_id.cmp(&right.transaction_id));
+        refinement_deletion_inventory(profile_id, expected_profile_revision, records)
+    }
+
+    /// Erases the exact profile-private transactions named by an inventory.
+    ///
+    /// Missing planned records are accepted so an interrupted erase can resume safely. Any new,
+    /// changed, cross-profile, or forged record rejects the inventory before another delete.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for stale inventory/profile revisions, corrupt state, or repository failure.
+    pub fn erase_profile_deletion_inventory(
+        &self,
+        inventory: &ProfileRefinementDeletionInventory,
+        current_profile_revision: Revision,
+    ) -> Result<ProfileRefinementEraseReport, RefinementError> {
+        let _serial = self.lock()?;
+        let canonical = refinement_deletion_inventory(
+            &inventory.profile_id,
+            inventory.expected_profile_revision,
+            inventory.records.clone(),
+        )?;
+        if current_profile_revision != inventory.expected_profile_revision
+            || &canonical != inventory
+        {
+            return Err(RefinementError::StaleDeletionInventory);
+        }
+
+        let current = self.enumerate_profile_deletion_inventory(
+            &inventory.profile_id,
+            inventory.expected_profile_revision,
+        )?;
+        for record in &current.records {
+            if !inventory.records.contains(record) {
+                return Err(RefinementError::StaleDeletionInventory);
+            }
+        }
+
+        let mut deleted = 0;
+        for record in &current.records {
+            if record.classification != RefinementDeletionClassification::DeletePrivate {
+                continue;
+            }
+            self.repository
+                .delete_refinement(
+                    &record.transaction_id,
+                    WritePrecondition::Exact(record.revision),
+                )
+                .map_err(repository_error)?;
+            deleted += 1;
+        }
+        Ok(ProfileRefinementEraseReport {
+            profile_id: inventory.profile_id.clone(),
+            expected_profile_revision: inventory.expected_profile_revision,
+            stable_key: inventory.stable_key.clone(),
+            deleted_private_records: deleted,
+            duplicate: deleted == 0,
+        })
+    }
+
+    /// Classifies all refinement-domain remnants still owned by one profile.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when repository state cannot be read or decoded.
+    pub fn scan_profile_deletion_leaks(
+        &self,
+        profile_id: &ProfileId,
+        expected_profile_revision: Revision,
+    ) -> Result<ProfileRefinementLeakScan, RefinementError> {
+        let inventory =
+            self.enumerate_profile_deletion_inventory(profile_id, expected_profile_revision)?;
+        let mut private_leaks = Vec::new();
+        let mut retained_immutable = Vec::new();
+        let mut external_remnants = Vec::new();
+        for record in inventory.records {
+            match record.classification {
+                RefinementDeletionClassification::DeletePrivate => private_leaks.push(record),
+                RefinementDeletionClassification::RetainImmutableAudit => {
+                    retained_immutable.push(record);
+                }
+                RefinementDeletionClassification::ExternalRemnant => external_remnants.push(record),
+            }
+        }
+        Ok(ProfileRefinementLeakScan {
+            profile_id: inventory.profile_id,
+            expected_profile_revision: inventory.expected_profile_revision,
+            stable_key: inventory.stable_key,
+            schema_digest: inventory.schema_digest,
+            private_leaks,
+            retained_immutable,
+            external_remnants,
+        })
     }
 
     fn commit(
@@ -884,10 +1074,13 @@ fn validate_action(action: &SessionAction) -> Result<EntityId, RefinementError> 
         ActionSource::Interactive { .. }
         | ActionSource::Channel { .. }
         | ActionSource::Child { .. }
+        | ActionSource::PeerMessage { .. }
+        | ActionSource::Coordination { .. }
         | ActionSource::Steering { .. }
         | ActionSource::FollowUp
         | ActionSource::Waiting { .. }
         | ActionSource::Awareness { .. }
+        | ActionSource::Evolution { .. }
         | ActionSource::AutonomousContinuation { .. } => false,
     };
     if valid {
@@ -1019,6 +1212,45 @@ fn decode_transaction(record: VersionedRecord) -> Result<RefinementTransaction, 
         ));
     }
     Ok(transaction)
+}
+
+fn refinement_deletion_record(
+    transaction: &RefinementTransaction,
+) -> Result<RefinementDeletionRecord, RefinementError> {
+    let payload = serde_json::to_vec(transaction)
+        .map_err(|error| RefinementError::Corrupt(error.to_string()))?;
+    Ok(RefinementDeletionRecord {
+        stable_key: format!("refinement:transaction:{}", transaction.id),
+        transaction_id: transaction.id.clone(),
+        revision: transaction.revision,
+        digest_sha256: hex_digest(&payload),
+        classification: RefinementDeletionClassification::DeletePrivate,
+    })
+}
+
+fn refinement_deletion_inventory(
+    profile_id: &ProfileId,
+    expected_profile_revision: Revision,
+    mut records: Vec<RefinementDeletionRecord>,
+) -> Result<ProfileRefinementDeletionInventory, RefinementError> {
+    records.sort_by(|left, right| left.transaction_id.cmp(&right.transaction_id));
+    let schema_digest = hex_digest(
+        b"keith-evolution/refinement/v1:RefinementTransaction.profile_id;repository=EvolutionTransactions;all_records=profile-private",
+    );
+    let binding = serde_json::to_vec(&(
+        profile_id,
+        expected_profile_revision,
+        &schema_digest,
+        &records,
+    ))
+    .map_err(|error| RefinementError::Corrupt(error.to_string()))?;
+    Ok(ProfileRefinementDeletionInventory {
+        profile_id: profile_id.clone(),
+        expected_profile_revision,
+        stable_key: format!("refinement:profile-deletion:{}", hex_digest(&binding)),
+        schema_digest,
+        records,
+    })
 }
 
 fn hex_digest(bytes: &[u8]) -> String {
@@ -1187,9 +1419,14 @@ mod tests {
                 UtcTimestamp::from_unix_millis(1),
             )
             .unwrap();
-        assert_eq!(bundle.access, ReviewerAccess::SelectedFilesReadOnly);
-        assert!(!bundle.shell_available);
-        assert!(!bundle.write_available);
+        assert_eq!(
+            bundle.authority,
+            RefinementReviewerAuthority::selected_files_read_only()
+        );
+        assert!(!bundle.authority.shell());
+        assert!(!bundle.authority.write());
+        assert!(!bundle.authority.network());
+        assert!(!bundle.authority.credentials());
         assert_eq!(bundle.files[0].content, "# AGENT\n");
 
         let pending = service
@@ -1458,5 +1695,138 @@ mod tests {
             service.inspect(&transaction_id).unwrap().unwrap().state,
             RefinementState::RolledBack
         );
+    }
+
+    #[test]
+    fn profile_deletion_inventory_is_exact_isolated_and_replay_safe() {
+        let root = TempDir::new().unwrap();
+        let database_root = TempDir::new().unwrap();
+        let database = database_root.path().join("state.sqlite");
+        let profile = ProfileId::new();
+        let other_profile = ProfileId::new();
+        let service = open_service(
+            &database,
+            open_workspace(&root),
+            policy(true),
+            vec![Box::new(ReadableTextValidator)],
+        );
+        let owned_id = EntityId::new();
+        service
+            .submit(
+                &action(&owned_id),
+                profile.clone(),
+                &proposal(&owned_id, vec![("AGENT.md", "owned")]),
+                UtcTimestamp::from_unix_millis(1),
+            )
+            .unwrap();
+        let other_id = EntityId::new();
+        service
+            .submit(
+                &action(&other_id),
+                other_profile.clone(),
+                &proposal(&other_id, vec![("USER.md", "other")]),
+                UtcTimestamp::from_unix_millis(2),
+            )
+            .unwrap();
+
+        let profile_revision = Revision::new(7);
+        let inventory = service
+            .enumerate_profile_deletion_inventory(&profile, profile_revision)
+            .unwrap();
+        assert_eq!(inventory.records.len(), 1);
+        assert_eq!(inventory.records[0].transaction_id, owned_id);
+        assert_eq!(inventory.records[0].revision, Revision::ZERO);
+        assert_eq!(inventory.records[0].digest_sha256.len(), 64);
+        assert_eq!(
+            inventory.records[0].classification,
+            RefinementDeletionClassification::DeletePrivate
+        );
+        assert!(matches!(
+            service.erase_profile_deletion_inventory(&inventory, Revision::new(8)),
+            Err(RefinementError::StaleDeletionInventory)
+        ));
+
+        let report = service
+            .erase_profile_deletion_inventory(&inventory, profile_revision)
+            .unwrap();
+        assert_eq!(report.deleted_private_records, 1);
+        assert!(!report.duplicate);
+        assert!(service.inspect(&owned_id).unwrap().is_none());
+        assert!(service.inspect(&other_id).unwrap().is_some());
+        let replay = service
+            .erase_profile_deletion_inventory(&inventory, profile_revision)
+            .unwrap();
+        assert_eq!(replay.deleted_private_records, 0);
+        assert!(replay.duplicate);
+        let scan = service
+            .scan_profile_deletion_leaks(&profile, profile_revision)
+            .unwrap();
+        assert!(scan.private_leaks.is_empty());
+        assert!(scan.retained_immutable.is_empty());
+        assert!(scan.external_remnants.is_empty());
+    }
+
+    #[test]
+    fn profile_deletion_rejects_changed_state_and_resumes_after_restart() {
+        let root = TempDir::new().unwrap();
+        let database_root = TempDir::new().unwrap();
+        let database = database_root.path().join("state.sqlite");
+        let profile = ProfileId::new();
+        let service = open_service(
+            &database,
+            open_workspace(&root),
+            policy(true),
+            vec![Box::new(ReadableTextValidator)],
+        );
+        for (path, replacement) in [("AGENT.md", "first"), ("USER.md", "second")] {
+            let id = EntityId::new();
+            service
+                .submit(
+                    &action(&id),
+                    profile.clone(),
+                    &proposal(&id, vec![(path, replacement)]),
+                    UtcTimestamp::from_unix_millis(1),
+                )
+                .unwrap();
+        }
+        let profile_revision = Revision::new(3);
+        let inventory = service
+            .enumerate_profile_deletion_inventory(&profile, profile_revision)
+            .unwrap();
+        let first = &inventory.records[0];
+        service
+            .repository
+            .delete_refinement(
+                &first.transaction_id,
+                WritePrecondition::Exact(first.revision),
+            )
+            .unwrap();
+        drop(service);
+
+        let reopened = open_service(
+            &database,
+            open_workspace(&root),
+            policy(true),
+            vec![Box::new(ReadableTextValidator)],
+        );
+        let resumed = reopened
+            .erase_profile_deletion_inventory(&inventory, profile_revision)
+            .unwrap();
+        assert_eq!(resumed.deleted_private_records, 1);
+        assert!(!resumed.duplicate);
+
+        let new_id = EntityId::new();
+        reopened
+            .submit(
+                &action(&new_id),
+                profile.clone(),
+                &proposal(&new_id, vec![("RULE.md", "new state")]),
+                UtcTimestamp::from_unix_millis(2),
+            )
+            .unwrap();
+        assert!(matches!(
+            reopened.erase_profile_deletion_inventory(&inventory, profile_revision),
+            Err(RefinementError::StaleDeletionInventory)
+        ));
     }
 }
