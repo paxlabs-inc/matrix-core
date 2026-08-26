@@ -369,6 +369,7 @@ pub struct ScheduleProjection {
     pub job_id: JobId,
     pub state: JobState,
     pub schedule: ScheduleSpec,
+    pub prompt: String,
     pub next_run: Option<UtcTimestamp>,
     pub last_run: Option<UtcTimestamp>,
     pub attempts: u32,
@@ -1713,6 +1714,7 @@ where
                 job_id: stored.job.id,
                 state: stored.job.state,
                 schedule: stored.job.schedule,
+                prompt: schedule_prompt(&stored.job.action),
                 next_run: stored.job.next_run,
                 last_run: stored.job.last_run,
                 attempts: stored.job.attempt_count,
@@ -1741,6 +1743,37 @@ where
                 job_id: stored.job.id,
                 state: stored.job.state,
                 schedule: stored.job.schedule,
+                prompt: schedule_prompt(&stored.job.action),
+                next_run: stored.job.next_run,
+                last_run: stored.job.last_run,
+                attempts: stored.job.attempt_count,
+                failures: stored.job.failure_count,
+                safe_error: stored.job.safe_error,
+            })
+            .collect::<Vec<_>>();
+        projections.sort_by(|left, right| left.job_id.cmp(&right.job_id));
+        Ok(projections)
+    }
+
+    /// Lists stable projections owned by one profile, including routines whose
+    /// execution is anchored to a durable conversation-participant session.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when persisted jobs cannot be decoded.
+    pub fn projections_for_profile(
+        &self,
+        profile_id: &ProfileId,
+    ) -> Result<Vec<ScheduleProjection>, SchedulerError> {
+        let mut projections = self
+            .load_jobs()?
+            .into_iter()
+            .filter(|stored| &stored.job.profile_id == profile_id)
+            .map(|stored| ScheduleProjection {
+                job_id: stored.job.id,
+                state: stored.job.state,
+                schedule: stored.job.schedule,
+                prompt: schedule_prompt(&stored.job.action),
                 next_run: stored.job.next_run,
                 last_run: stored.job.last_run,
                 attempts: stored.job.attempt_count,
@@ -2596,6 +2629,26 @@ fn routine_action(invocation: &RoutineInvocation) -> Result<ActionPayload, Sched
         ),
     };
     Ok(ActionPayload::Scheduled { instruction })
+}
+
+fn schedule_prompt(action: &ActionPayload) -> String {
+    match action {
+        ActionPayload::Prompt { text }
+        | ActionPayload::ChannelMessage { text, .. }
+        | ActionPayload::ChildMessage { text, .. }
+        | ActionPayload::Steering { text }
+        | ActionPayload::FollowUp { text } => text.clone(),
+        ActionPayload::Scheduled { instruction } | ActionPayload::Coordination { instruction } => {
+            instruction.clone()
+        }
+        ActionPayload::PeerMessage { content, .. } => content.clone(),
+        ActionPayload::Awareness { summary, .. } => summary.clone(),
+        ActionPayload::SystemMaintenance { operation } => operation.clone(),
+        ActionPayload::ResumeWaiting { .. }
+        | ActionPayload::ContinueGoal { .. }
+        | ActionPayload::Refinement { .. }
+        | ActionPayload::Evolution { .. } => String::new(),
+    }
 }
 
 fn validate_routine_approval(

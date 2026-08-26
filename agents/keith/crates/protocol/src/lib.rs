@@ -267,6 +267,7 @@ pub enum ConversationCommand {
     SearchSharedKnowledge(SharedKnowledgeSearchRequest),
     List(ConversationListRequest),
     ForProfile(ProfileConversationListRequest),
+    ForProfiles(ProfileConversationListsRequest),
     Teammates(TeammatesCommand),
 }
 
@@ -633,7 +634,9 @@ pub struct EventAcknowledgement {
 #[derive(Clone, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
 pub struct BranchRequest {
     pub session_id: SessionId,
-    pub parent_entry_id: EntityId,
+    pub parent_entry_id: Option<EntityId>,
+    pub conversation_id: Option<ConversationId>,
+    pub conversation_event_id: Option<EventId>,
     pub label: Option<String>,
 }
 
@@ -933,6 +936,7 @@ pub enum ResponsePayload {
     ConversationArtifactPromotion(Box<ConversationArtifactPromotionReceipt>),
     SharedKnowledgeSearch(Vec<SharedKnowledgeSearchHit>),
     ConversationList(Box<ConversationListResponse>),
+    ProfileConversationLists(Vec<ConversationListResponse>),
     TeammatesReceipt(Box<TeammatesCommandReceipt>),
     TeammatesSnapshot(Box<TeammatesSnapshot>),
     TeammatesEvent(Box<ConversationProtocolEnvelope>),
@@ -1017,6 +1021,8 @@ pub struct ProfileSummary {
     pub workspace_id: WorkspaceId,
     pub display_name: String,
     pub enabled: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background: Option<BackgroundProjection>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
@@ -1036,6 +1042,8 @@ pub struct AgentRosterProjection {
     pub profile_id: ProfileId,
     pub name: String,
     pub role: String,
+    #[serde(default)]
+    pub description: String,
     pub avatar: Option<String>,
     pub lifecycle: AgentLifecycleState,
     pub hidden: bool,
@@ -1460,7 +1468,19 @@ pub struct CommitmentProjection {
 pub struct ScheduleProjection {
     pub job_id: JobId,
     pub expression: ScheduleExpression,
+    #[serde(default)]
+    pub prompt: String,
+    #[serde(default)]
+    pub state: String,
     pub next_run: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub last_run: Option<UtcTimestamp>,
+    #[serde(default)]
+    pub attempts: u32,
+    #[serde(default)]
+    pub failures: u32,
+    #[serde(default)]
+    pub safe_error: Option<String>,
     pub paused: bool,
 }
 
@@ -2567,6 +2587,8 @@ pub enum ProtocolConversationLifecycle {
 #[derive(schemars::JsonSchema)]
 pub struct ConversationSummaryProjection {
     pub conversation_id: keith_agent_types::ConversationId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub participant_session_id: Option<keith_agent_types::SessionId>,
     pub kind: ProtocolConversationKind,
     pub lifecycle: ProtocolConversationLifecycle,
     pub title: String,
@@ -2893,6 +2915,13 @@ pub struct ProfileConversationListRequest {
     pub include_archived: bool,
     pub after_conversation_id: Option<keith_agent_types::ConversationId>,
     pub limit: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+#[derive(schemars::JsonSchema)]
+pub struct ProfileConversationListsRequest {
+    pub profiles: Vec<ProfileConversationListRequest>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]

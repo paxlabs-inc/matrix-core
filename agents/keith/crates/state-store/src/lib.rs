@@ -383,6 +383,30 @@ impl EmbeddedStore {
         Ok(TeammateMigrationOutcome::Applied(receipt))
     }
 
+    /// Reports whether an identical teammate migration has already committed.
+    ///
+    /// # Errors
+    /// Returns an error when the version is invalid or an existing marker does not match the
+    /// supplied canonical mutation batch.
+    pub fn teammate_migration_applied(
+        &self,
+        version: &str,
+        mutations: &[RecordMutation],
+    ) -> Result<bool, StoreError> {
+        if !valid_migration_version(version) {
+            return Err(StoreError::InvalidMigrationVersion);
+        }
+        let mutation_bytes = keith_agent_types::canonical_json_bytes(&mutations)
+            .map_err(|error| StoreError::InvalidMigrationMarker(error.to_string()))?;
+        let mutation_digest = hex_sha256(&mutation_bytes);
+        let marker_id = migration_marker_id(version);
+        let Some(marker) = self.get_record(Collection::SchemaMigrations, &marker_id)? else {
+            return Ok(false);
+        };
+        validate_migration_marker(&marker, version, &mutation_digest)?;
+        Ok(true)
+    }
+
     /// # Errors
     ///
     /// Returns an error if the database cannot be read or the record is corrupt.
@@ -421,10 +445,32 @@ impl EmbeddedStore {
         .collect()
     }
 
+    /// Reads multiple collections from the same SQLite snapshot.
+    ///
+    /// # Errors
+    /// Returns an error if the read transaction cannot be opened or any record is corrupt.
+    pub fn list_records_snapshot(
+        &self,
+        collections: &[Collection],
+    ) -> Result<Vec<(Collection, Vec<VersionedRecord>)>, StoreError> {
+        let mut connection = self.lock()?;
+        let transaction = connection.transaction_with_behavior(TransactionBehavior::Deferred)?;
+        let mut snapshot = Vec::with_capacity(collections.len());
+        for collection in collections {
+            snapshot.push((
+                *collection,
+                list_records_in_transaction(&transaction, *collection)?,
+            ));
+        }
+        transaction.commit()?;
+        Ok(snapshot)
+    }
+
     fn transact_records(&self, mutations: &[RecordMutation]) -> Result<CommitReceipt, StoreError> {
         self.fail_if(FaultPoint::BeforeTransaction)?;
         let mut connection = self.lock()?;
         let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        validate_teammate_uniqueness(&transaction, mutations)?;
         for mutation in mutations {
             apply_mutation(&transaction, mutation)?;
         }
@@ -514,6 +560,13 @@ impl StateRecordRepository for EmbeddedStore {
 
     fn list_records(&self, collection: Collection) -> Result<Vec<VersionedRecord>, Self::Error> {
         EmbeddedStore::list_records(self, collection)
+    }
+
+    fn list_records_snapshot(
+        &self,
+        collections: &[Collection],
+    ) -> Result<Vec<(Collection, Vec<VersionedRecord>)>, Self::Error> {
+        EmbeddedStore::list_records_snapshot(self, collections)
     }
 }
 
@@ -2029,6 +2082,13 @@ fn domain_unique_keys(
     let object = payload.as_object().ok_or_else(|| {
         StoreError::BackupVerification(format!("{collection:?} payload must be an object"))
     })?;
+    if object
+        .get("coordination_index")
+        .and_then(serde_json::Value::as_bool)
+        == Some(true)
+    {
+        return Ok(Vec::new());
+    }
     let mut keys = Vec::new();
     for field in [
         "stable_key",
@@ -2117,10 +2177,7 @@ fn domain_unique_keys(
             "supersession:{target_kind}:{target_id}:{source_event_id}:{context_revision}"
         ));
     }
-    if matches!(
-        collection,
-        Collection::ComputerRecords | Collection::TakeoverLeases
-    ) {
+    if collection == Collection::ComputerRecords {
         let owner = object
             .get("owner_profile_id")
             .and_then(serde_json::Value::as_str)
@@ -2128,6 +2185,19 @@ fn domain_unique_keys(
                 StoreError::BackupVerification(format!(
                     "{collection:?}.owner_profile_id is required"
                 ))
+            })?;
+        keys.push(format!("owner_profile_id:{owner}"));
+    }
+    if collection == Collection::TakeoverLeases {
+        let owner = object
+            .get("value")
+            .and_then(serde_json::Value::as_object)
+            .and_then(|value| value.get("owner_profile_id"))
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                StoreError::BackupVerification(
+                    "TakeoverLeases.value.owner_profile_id is required".into(),
+                )
             })?;
         keys.push(format!("owner_profile_id:{owner}"));
     }
@@ -3968,13 +4038,16 @@ fn validate_collection_transition(
             let previous = current
                 .payload
                 .get(*field)
-                .and_then(serde_json::Value::as_u64)
-                .unwrap_or(0);
-            record
+                .and_then(serde_json::Value::as_u64);
+            let next = record
                 .payload
                 .get(*field)
-                .and_then(serde_json::Value::as_u64)
-                .is_none_or(|next| next < previous)
+                .and_then(serde_json::Value::as_u64);
+            match (previous, next) {
+                (Some(previous), Some(next)) => next < previous,
+                (Some(_), None) => true,
+                (None, _) => false,
+            }
         });
         let claim_invalid = match (
             current
@@ -4809,6 +4882,44 @@ mod tests {
             thread.join().unwrap();
         }
         assert_eq!(store.list_leases().unwrap().len(), 200);
+    }
+
+    #[test]
+    fn multi_collection_snapshots_never_observe_half_an_atomic_batch() {
+        let store = Arc::new(EmbeddedStore::open_in_memory().unwrap());
+        let start = Arc::new(Barrier::new(2));
+        let writer_store = Arc::clone(&store);
+        let writer_start = Arc::clone(&start);
+        let writer = thread::spawn(move || {
+            writer_start.wait();
+            for value in 0..500 {
+                writer_store
+                    .transact(&[
+                        RecordMutation::Put {
+                            collection: Collection::WorkerLeases,
+                            record: record(EntityId::new(), 0, value),
+                            precondition: WritePrecondition::Missing,
+                        },
+                        RecordMutation::Put {
+                            collection: Collection::PendingActions,
+                            record: record(EntityId::new(), 0, value),
+                            precondition: WritePrecondition::Missing,
+                        },
+                    ])
+                    .unwrap();
+                thread::yield_now();
+            }
+        });
+
+        start.wait();
+        for _ in 0..500 {
+            let snapshot = store
+                .list_records_snapshot(&[Collection::WorkerLeases, Collection::PendingActions])
+                .unwrap();
+            assert_eq!(snapshot[0].1.len(), snapshot[1].1.len());
+            thread::yield_now();
+        }
+        writer.join().unwrap();
     }
 
     #[test]

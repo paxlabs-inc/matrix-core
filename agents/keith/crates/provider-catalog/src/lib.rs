@@ -79,7 +79,7 @@ pub const BUILTIN_PROVIDERS: &[ProviderSpec] = &[
         BearerToken,
         "OPENAI_API_KEY",
         Some("https://api.openai.com/v1"),
-        "gpt-4.1-mini"
+        "gpt-5.6-sol"
     ),
     provider!(
         "anthropic",

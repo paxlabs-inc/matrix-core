@@ -68,6 +68,21 @@ pub struct DeliveryClaim {
     pub expires_at: UtcTimestamp,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConversationDeliveryPurpose {
+    #[default]
+    Peer,
+    CoordinationRound,
+    Assignment,
+}
+
+impl ConversationDeliveryPurpose {
+    const fn is_peer(value: &Self) -> bool {
+        matches!(value, Self::Peer)
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ConversationDelivery {
@@ -78,6 +93,8 @@ pub struct ConversationDelivery {
     pub source_event_id: EventId,
     pub source_profile_id: ProfileId,
     pub destination_profile_id: ProfileId,
+    #[serde(default, skip_serializing_if = "ConversationDeliveryPurpose::is_peer")]
+    pub purpose: ConversationDeliveryPurpose,
     pub participant_session_id: SessionId,
     pub policy_snapshot_key: String,
     pub state: DeliveryState,
@@ -725,7 +742,9 @@ fn validate_delivery(value: &ConversationDelivery) -> Result<(), CoordinationErr
     {
         return Err(CoordinationError::Invalid("delivery version or stable key"));
     }
-    if value.source_profile_id == value.destination_profile_id {
+    if value.source_profile_id == value.destination_profile_id
+        && value.purpose != ConversationDeliveryPurpose::CoordinationRound
+    {
         return Err(CoordinationError::Invalid(
             "delivery source and destination must differ",
         ));
@@ -1359,7 +1378,7 @@ impl<R: StateRecordRepository> DurableCoordinationRepository<R> {
     pub fn audits(
         &self,
     ) -> Result<Vec<CoordinationAuditRecord>, DurableCoordinationError<R::Error>> {
-        let records = self.list_data_records(Collection::TeammateAudits)?;
+        let records = self.coordination_audit_records()?;
         if records.len() > MAX_BATCH_OPERATIONS {
             return Err(CoordinationError::BatchTooLarge.into());
         }
@@ -1401,13 +1420,31 @@ impl<R: StateRecordRepository> DurableCoordinationRepository<R> {
             let bytes = canonical_bytes(&value)?;
             snapshot.assignments.insert(value.id, bytes);
         }
-        for record in self.list_data_records(Collection::TeammateAudits)? {
+        for record in self.coordination_audit_records()? {
             let value: CoordinationAuditRecord = decode_state_record(record, validate_audit)?;
             let bytes = canonical_bytes(&value)?;
             snapshot.audits.insert(value.id, bytes);
         }
         snapshot.validate_snapshot()?;
         Ok(snapshot)
+    }
+
+    fn coordination_audit_records(
+        &self,
+    ) -> Result<Vec<VersionedRecord>, DurableCoordinationError<R::Error>> {
+        self.list_data_records(Collection::TeammateAudits)?
+            .into_iter()
+            .filter_map(
+                |record| match teammate_audit_payload_kind(&record.payload) {
+                    Ok(TeammateAuditPayloadKind::Coordination) => Some(Ok(record)),
+                    Ok(
+                        TeammateAuditPayloadKind::Conversation
+                        | TeammateAuditPayloadKind::CoordinationIndex,
+                    ) => None,
+                    Err(error) => Some(Err(error.into())),
+                },
+            )
+            .collect()
     }
 
     fn list_data_records(
@@ -1436,6 +1473,41 @@ impl<R: StateRecordRepository> DurableCoordinationRepository<R> {
             }
         }
         Ok(data)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum TeammateAuditPayloadKind {
+    Conversation,
+    Coordination,
+    CoordinationIndex,
+}
+
+fn teammate_audit_payload_kind(
+    payload: &serde_json::Value,
+) -> Result<TeammateAuditPayloadKind, CoordinationError> {
+    let object = payload.as_object().ok_or_else(|| {
+        CoordinationError::Corrupt("teammate audit payload is not an object".into())
+    })?;
+    let conversation = object.contains_key("schema_version")
+        && object.contains_key("actor")
+        && object.contains_key("correlation_key");
+    let coordination = object.contains_key("version")
+        && object.contains_key("stable_key")
+        && object.contains_key("actor_profile_id")
+        && object.contains_key("resulting_revision");
+    let coordination_index = object.contains_key("coordination_index")
+        && object.contains_key("record_id")
+        && object.contains_key("stable_key");
+    if coordination_index && !conversation && !coordination {
+        return Ok(TeammateAuditPayloadKind::CoordinationIndex);
+    }
+    match (conversation, coordination) {
+        (true, false) => Ok(TeammateAuditPayloadKind::Conversation),
+        (false, true) => Ok(TeammateAuditPayloadKind::Coordination),
+        _ => Err(CoordinationError::Corrupt(
+            "unrecognized teammate audit payload".into(),
+        )),
     }
 }
 
@@ -1564,6 +1636,7 @@ mod tests {
             source_event_id: event(30),
             source_profile_id: profile(1),
             destination_profile_id: profile(2),
+            purpose: ConversationDeliveryPurpose::Peer,
             participant_session_id: SessionId::from(EntityId::from_u128(40)),
             policy_snapshot_key: "policy:1".into(),
             state: DeliveryState::Pending,

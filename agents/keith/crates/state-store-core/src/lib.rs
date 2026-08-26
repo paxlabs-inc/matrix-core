@@ -213,6 +213,16 @@ pub trait StateRecordRepository: AtomicStateRepository {
     /// # Errors
     /// Returns the backend error when the collection cannot be read or decoded.
     fn list_records(&self, collection: Collection) -> Result<Vec<VersionedRecord>, Self::Error>;
+
+    /// Reads several collections from one repository snapshot.
+    ///
+    /// # Errors
+    /// Returns the backend error when the snapshot cannot be opened or any record cannot be
+    /// decoded.
+    fn list_records_snapshot(
+        &self,
+        collections: &[Collection],
+    ) -> Result<Vec<(Collection, Vec<VersionedRecord>)>, Self::Error>;
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]

@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
 use keith_agent_types::{
-    ActionId, ArtifactId, ClientId, CommandId, EntityId, EntryId, Generation, MessageId, ProfileId,
-    RootTreeId, SessionId, ToolCallId, TurnId, UtcTimestamp, WorkerId,
+    ActionId, ArtifactId, ClientId, CommandId, ConversationId, EntityId, EntryId, Generation,
+    MessageId, ProfileId, RootTreeId, SessionId, ToolCallId, TurnId, UtcTimestamp, WorkerId,
 };
 use keith_protocol::{
     ClientCommand, CommandResult, CreateSession, ModelSelection, ProfileSummary, SessionSnapshot,
@@ -19,6 +19,13 @@ pub struct RuntimeSession {
     pub title: Option<String>,
     pub archived: bool,
     pub created_at: UtcTimestamp,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConversationSessionAssignment {
+    pub profile_id: ProfileId,
+    pub root_tree_id: RootTreeId,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -109,6 +116,25 @@ pub enum RuntimeRequest {
         session_id: SessionId,
         root_tree_id: RootTreeId,
         request: CreateSession,
+    },
+    ProvisionConversationSession {
+        conversation_id: ConversationId,
+        profile_id: ProfileId,
+        generation: Generation,
+        now: UtcTimestamp,
+    },
+    ProvisionConversationSessions {
+        conversation_id: ConversationId,
+        assignments: Vec<ConversationSessionAssignment>,
+        generation: Generation,
+        now: UtcTimestamp,
+    },
+    DrainConversationActions {
+        conversation_id: ConversationId,
+        generation: Generation,
+    },
+    PendingConversationActionSessions {
+        conversation_id: ConversationId,
     },
     SelectModel(ModelSelection),
     RunPrompt {
@@ -255,6 +281,31 @@ impl RuntimeRequest {
             } => runtime
                 .create_session_assigned(session_id, root_tree_id, request)
                 .map(RuntimeResponse::Session),
+            Self::ProvisionConversationSession {
+                conversation_id,
+                profile_id,
+                generation,
+                now,
+            } => runtime
+                .provision_conversation_session(conversation_id, profile_id, *generation, *now)
+                .map(RuntimeResponse::Session),
+            Self::ProvisionConversationSessions {
+                conversation_id,
+                assignments,
+                generation,
+                now,
+            } => runtime
+                .provision_conversation_sessions(conversation_id, assignments, *generation, *now)
+                .map(RuntimeResponse::Sessions),
+            Self::DrainConversationActions {
+                conversation_id,
+                generation,
+            } => runtime
+                .drain_conversation_actions(conversation_id, *generation)
+                .map(|()| RuntimeResponse::Complete),
+            Self::PendingConversationActionSessions { conversation_id } => runtime
+                .pending_conversation_action_sessions(conversation_id)
+                .map(RuntimeResponse::Sessions),
             Self::SelectModel(selection) => runtime
                 .select_model(selection)
                 .map(|()| RuntimeResponse::Complete),
@@ -318,6 +369,31 @@ pub trait CommandRuntime: Send + Sync {
         root_tree_id: &RootTreeId,
         request: &CreateSession,
     ) -> Result<RuntimeSession, String>;
+    fn provision_conversation_session(
+        &self,
+        conversation_id: &ConversationId,
+        profile_id: &ProfileId,
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<RuntimeSession, String>;
+    fn provision_conversation_sessions(
+        &self,
+        conversation_id: &ConversationId,
+        assignments: &[ConversationSessionAssignment],
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<Vec<RuntimeSession>, String>;
+    fn drain_conversation_actions(
+        &self,
+        conversation_id: &ConversationId,
+        generation: Generation,
+    ) -> Result<(), String>;
+    fn pending_conversation_action_sessions(
+        &self,
+        _conversation_id: &ConversationId,
+    ) -> Result<Vec<RuntimeSession>, String> {
+        Err("pending conversation action routing is unavailable".into())
+    }
     fn select_model(&self, selection: &ModelSelection) -> Result<(), String>;
     fn run_prompt(
         &self,
@@ -442,5 +518,31 @@ mod authority_tests {
         };
         assert_eq!(requester_authority, RuntimeCommandAuthority::HumanOwner);
         assert!(scope_session_id.is_none());
+    }
+
+    #[test]
+    fn conversation_session_assignments_preserve_exact_profile_roots_on_the_wire() {
+        let conversation_id = ConversationId::new();
+        let assignments = vec![
+            ConversationSessionAssignment {
+                profile_id: ProfileId::new(),
+                root_tree_id: RootTreeId::new(),
+            },
+            ConversationSessionAssignment {
+                profile_id: ProfileId::new(),
+                root_tree_id: RootTreeId::new(),
+            },
+        ];
+        let request = RuntimeRequest::ProvisionConversationSessions {
+            conversation_id,
+            assignments,
+            generation: Generation::ZERO,
+            now: UtcTimestamp::UNIX_EPOCH,
+        };
+        let encoded = serde_json::to_vec(&request).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<RuntimeRequest>(&encoded).unwrap(),
+            request
+        );
     }
 }

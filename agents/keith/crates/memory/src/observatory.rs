@@ -5,6 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
+use fs2::FileExt;
 use keith_agent_types::{
     CURRENT_SCHEMA_VERSION, EntityId, EntryId, ProfileId, SchemaVersion, SessionId, UtcTimestamp,
     canonical_json_bytes,
@@ -20,6 +21,7 @@ use thiserror::Error;
 use crate::{MemoryRecord, MemoryRecordState};
 
 const VAULT_PATH: &str = ".keith/memory-vault.jsonl";
+const VAULT_LOCK_PATH: &str = ".keith/memory-vault.lock";
 const ATLAS_PATH: &str = ".keith/memory-atlas.json";
 const ATLAS_DERIVATION_VERSION: u32 = 1;
 
@@ -324,6 +326,8 @@ pub struct ObservatoryHealth {
     pub degraded: bool,
     pub atlas_rebuilt: bool,
     pub vault_tail_recovered: bool,
+    pub vault_chain_recovered: bool,
+    pub quarantined_vault: Option<PathBuf>,
     pub quarantined_atlas: Option<PathBuf>,
     pub detail: Option<String>,
 }
@@ -450,7 +454,8 @@ impl MemoryObservatory {
         validate_limits(limits)?;
         let root = root.as_ref().to_path_buf();
         fs::create_dir_all(root.join(".keith"))?;
-        let (events, vault_tail_recovered) = load_vault(&root, profile_id)?;
+        let _vault_lock = acquire_vault_lock(&root)?;
+        let (events, vault_tail_recovered, quarantined_vault) = load_vault(&root, profile_id, now)?;
         let (evidence, source_index) = project_events(profile_id, &events, limits)?;
         let head = events.last().map(|event| event.digest.clone());
         let revision =
@@ -470,6 +475,8 @@ impl MemoryObservatory {
                     degraded: false,
                     atlas_rebuilt,
                     vault_tail_recovered,
+                    vault_chain_recovered: quarantined_vault.is_some(),
+                    quarantined_vault,
                     quarantined_atlas,
                     detail,
                 },
@@ -487,8 +494,36 @@ impl MemoryObservatory {
             return self.revision();
         }
         let mut state = self.lock()?;
+        let _vault_lock = acquire_vault_lock(&self.root)?;
+        let (disk_events, tail_recovered, quarantined_vault) =
+            load_vault(&self.root, &self.profile_id, now)?;
+        if disk_events.len() != state.events.len()
+            || disk_events.last().map(|event| &event.digest)
+                != state.events.last().map(|event| &event.digest)
+        {
+            let (evidence, source_index) =
+                project_events(&self.profile_id, &disk_events, self.limits)?;
+            state.events = disk_events;
+            state.evidence = evidence;
+            state.source_index = source_index;
+            let revision =
+                u64::try_from(state.events.len()).map_err(|_| ObservatoryError::InvalidEvidence)?;
+            state.atlas = build_atlas(
+                &self.profile_id,
+                revision,
+                state.events.last().map(|event| event.digest.as_str()),
+                &state.evidence,
+                now,
+            );
+        }
+        state.health.vault_tail_recovered |= tail_recovered;
+        if quarantined_vault.is_some() {
+            state.health.vault_chain_recovered = true;
+            state.health.quarantined_vault = quarantined_vault;
+        }
         let prepared = prepare_events(&self.profile_id, &state, mutations, now, self.limits)?;
         if prepared.is_empty() {
+            persist_atlas(&self.root, &state.atlas)?;
             return u64::try_from(state.events.len())
                 .map_err(|_| ObservatoryError::InvalidEvidence);
         }
@@ -1159,10 +1194,11 @@ fn validate_evidence(
 fn load_vault(
     root: &Path,
     profile_id: &ProfileId,
-) -> Result<(Vec<VaultEvent>, bool), ObservatoryError> {
+    now: UtcTimestamp,
+) -> Result<(Vec<VaultEvent>, bool, Option<PathBuf>), ObservatoryError> {
     let path = root.join(VAULT_PATH);
     if !path.exists() {
-        return Ok((Vec::new(), false));
+        return Ok((Vec::new(), false, None));
     }
     let mut bytes = fs::read(&path)?;
     let mut recovered = false;
@@ -1181,7 +1217,6 @@ fn load_vault(
         }
     }
     let mut events = Vec::new();
-    let mut previous: Option<String> = None;
     for (index, line) in bytes.split(|byte| *byte == b'\n').enumerate() {
         if line.is_empty() {
             continue;
@@ -1192,13 +1227,9 @@ fn load_vault(
                 reason: error.to_string(),
             }
         })?;
-        let expected_sequence =
-            u64::try_from(events.len() + 1).map_err(|_| ObservatoryError::InvalidEvidence)?;
         if &event.profile_id != profile_id
             || event.version.major != CURRENT_SCHEMA_VERSION.major
             || event.version.minor > CURRENT_SCHEMA_VERSION.minor
-            || event.sequence != expected_sequence
-            || event.previous_digest != previous
             || event.digest != event_digest(&event)?
         {
             return Err(ObservatoryError::CorruptVault {
@@ -1206,10 +1237,136 @@ fn load_vault(
                 reason: "event identity, chain, version, or digest mismatch".into(),
             });
         }
-        previous = Some(event.digest.clone());
         events.push(event);
     }
-    Ok((events, recovered))
+    if vault_chain_is_linear(&events)? {
+        return Ok((events, recovered, None));
+    }
+    if !vault_is_recoverable_concurrent_fork(&events) {
+        let line = first_chain_mismatch(&events)?.unwrap_or(1);
+        return Err(ObservatoryError::CorruptVault {
+            line,
+            reason: "event identity, chain, version, or digest mismatch".into(),
+        });
+    }
+    let repaired = rechain_events(events)?;
+    project_events(profile_id, &repaired, ObservatoryLimits::default())?;
+    let quarantined = persist_repaired_vault(root, &bytes, &repaired, now)?;
+    Ok((repaired, recovered, Some(quarantined)))
+}
+
+fn acquire_vault_lock(root: &Path) -> Result<File, ObservatoryError> {
+    let path = root.join(VAULT_LOCK_PATH);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let file = OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(path)?;
+    file.lock_exclusive()?;
+    Ok(file)
+}
+
+fn vault_chain_is_linear(events: &[VaultEvent]) -> Result<bool, ObservatoryError> {
+    let mut previous = None;
+    for (index, event) in events.iter().enumerate() {
+        let expected_sequence =
+            u64::try_from(index + 1).map_err(|_| ObservatoryError::InvalidEvidence)?;
+        if event.sequence != expected_sequence || event.previous_digest != previous {
+            return Ok(false);
+        }
+        previous = Some(event.digest.clone());
+    }
+    Ok(true)
+}
+
+fn first_chain_mismatch(events: &[VaultEvent]) -> Result<Option<usize>, ObservatoryError> {
+    let mut previous = None;
+    for (index, event) in events.iter().enumerate() {
+        let expected_sequence =
+            u64::try_from(index + 1).map_err(|_| ObservatoryError::InvalidEvidence)?;
+        if event.sequence != expected_sequence || event.previous_digest != previous {
+            return Ok(Some(index + 1));
+        }
+        previous = Some(event.digest.clone());
+    }
+    Ok(None)
+}
+
+fn vault_is_recoverable_concurrent_fork(events: &[VaultEvent]) -> bool {
+    let mut prior = BTreeMap::<String, u64>::new();
+    let mut ids = BTreeSet::new();
+    let mut saw_fork = false;
+    for (index, event) in events.iter().enumerate() {
+        if !ids.insert(event.id.clone()) || prior.contains_key(&event.digest) {
+            return false;
+        }
+        if index == 0 {
+            if event.sequence != 1 || event.previous_digest.is_some() {
+                return false;
+            }
+        } else {
+            let Some(parent_digest) = event.previous_digest.as_ref() else {
+                return false;
+            };
+            let Some(parent_sequence) = prior.get(parent_digest) else {
+                return false;
+            };
+            if event.sequence != parent_sequence.saturating_add(1) {
+                return false;
+            }
+            saw_fork |= event.sequence != u64::try_from(index + 1).unwrap_or(u64::MAX);
+        }
+        prior.insert(event.digest.clone(), event.sequence);
+    }
+    saw_fork
+}
+
+fn rechain_events(mut events: Vec<VaultEvent>) -> Result<Vec<VaultEvent>, ObservatoryError> {
+    let mut previous = None;
+    for (index, event) in events.iter_mut().enumerate() {
+        event.sequence = u64::try_from(index + 1).map_err(|_| ObservatoryError::InvalidEvidence)?;
+        event.previous_digest = previous;
+        event.digest = event_digest(event)?;
+        previous = Some(event.digest.clone());
+    }
+    Ok(events)
+}
+
+fn persist_repaired_vault(
+    root: &Path,
+    original: &[u8],
+    repaired: &[VaultEvent],
+    now: UtcTimestamp,
+) -> Result<PathBuf, ObservatoryError> {
+    let directory = root.join(".keith");
+    let quarantined = directory.join(format!(
+        "memory-vault.concurrent-fork.{}.jsonl",
+        now.unix_millis()
+    ));
+    let mut backup = OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&quarantined)?;
+    backup.write_all(original)?;
+    backup.sync_all()?;
+
+    let temporary = directory.join(format!(".memory-vault.repair.{}.tmp", std::process::id()));
+    let mut output = OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&temporary)?;
+    for event in repaired {
+        output.write_all(&canonical_json_bytes(event)?)?;
+        output.write_all(b"\n")?;
+    }
+    output.sync_all()?;
+    fs::rename(&temporary, root.join(VAULT_PATH))?;
+    File::open(&directory)?.sync_all()?;
+    Ok(quarantined)
 }
 
 fn project_events(
@@ -2395,5 +2552,142 @@ mod tests {
         assert_eq!(record.authority, EvidenceAuthority::UserAsserted);
         assert_eq!(record.source_kind, EvidenceSourceKind::UserMessage);
         assert_eq!(record.validity, EvidenceValidity::Active);
+    }
+
+    #[test]
+    fn stale_observatory_instances_refresh_under_the_profile_vault_lock() {
+        let root = tempdir().unwrap();
+        let profile_id = ProfileId::new();
+        let session_id = SessionId::new();
+        let first = MemoryObservatory::open(
+            root.path(),
+            &profile_id,
+            ObservatoryLimits::default(),
+            UtcTimestamp::UNIX_EPOCH,
+        )
+        .unwrap();
+        let second = MemoryObservatory::open(
+            root.path(),
+            &profile_id,
+            ObservatoryLimits::default(),
+            UtcTimestamp::UNIX_EPOCH,
+        )
+        .unwrap();
+
+        first
+            .ingest_session_entries(
+                &session_id,
+                &[user_entry("first durable observation", 1)],
+                UtcTimestamp::from_unix_millis(1),
+            )
+            .unwrap();
+        second
+            .ingest_session_entries(
+                &session_id,
+                &[user_entry("second durable observation", 2)],
+                UtcTimestamp::from_unix_millis(2),
+            )
+            .unwrap();
+
+        let reopened = MemoryObservatory::open(
+            root.path(),
+            &profile_id,
+            ObservatoryLimits::default(),
+            UtcTimestamp::from_unix_millis(3),
+        )
+        .unwrap();
+        assert_eq!(reopened.catalog().unwrap().evidence_count, 2);
+        assert_eq!(reopened.revision().unwrap(), 2);
+    }
+
+    #[test]
+    fn valid_interleaved_concurrent_forks_are_rechained_without_losing_evidence() {
+        let root = tempdir().unwrap();
+        let profile_id = ProfileId::new();
+        let session_id = SessionId::new();
+        let observatory = MemoryObservatory::open(
+            root.path(),
+            &profile_id,
+            ObservatoryLimits::default(),
+            UtcTimestamp::UNIX_EPOCH,
+        )
+        .unwrap();
+        observatory
+            .ingest_session_entries(
+                &session_id,
+                &[user_entry("common ancestor", 1)],
+                UtcTimestamp::from_unix_millis(1),
+            )
+            .unwrap();
+        drop(observatory);
+
+        let path = root.path().join(VAULT_PATH);
+        let ancestor = serde_json::from_slice::<VaultEvent>(
+            fs::read(&path)
+                .unwrap()
+                .split(|byte| *byte == b'\n')
+                .next()
+                .unwrap(),
+        )
+        .unwrap();
+        let branch = |text: &str, at: i64| {
+            let evidence = EvidenceRecord::new(
+                profile_id.clone(),
+                session_id.clone(),
+                vec![EntryId::new()],
+                vec![format!("source-{at}")],
+                format!("fork-source-{at}"),
+                None,
+                EvidenceSourceKind::CurrentState,
+                EvidenceAuthority::RuntimeFact,
+                text.into(),
+                UtcTimestamp::from_unix_millis(at),
+                Sensitivity::Personal,
+                RetentionClass::Daily,
+                Vec::new(),
+            );
+            let mut event = VaultEvent {
+                version: CURRENT_SCHEMA_VERSION,
+                sequence: 2,
+                id: EntityId::new(),
+                profile_id: profile_id.clone(),
+                occurred_at: UtcTimestamp::from_unix_millis(at),
+                previous_digest: Some(ancestor.digest.clone()),
+                mutation: VaultMutation::Observed { evidence },
+                digest: String::new(),
+            };
+            event.digest = event_digest(&event).unwrap();
+            event
+        };
+        let fork_a = branch("first concurrent branch", 2);
+        let fork_b = branch("second concurrent branch", 3);
+        let mut bytes = Vec::new();
+        for event in [&ancestor, &fork_a, &fork_b] {
+            bytes.extend_from_slice(&canonical_json_bytes(event).unwrap());
+            bytes.push(b'\n');
+        }
+        fs::write(&path, bytes).unwrap();
+
+        let recovered = MemoryObservatory::open(
+            root.path(),
+            &profile_id,
+            ObservatoryLimits::default(),
+            UtcTimestamp::from_unix_millis(4),
+        )
+        .unwrap();
+        let health = recovered.health_snapshot().unwrap();
+        assert!(health.vault_chain_recovered);
+        assert!(health.quarantined_vault.unwrap().is_file());
+        assert_eq!(recovered.catalog().unwrap().evidence_count, 3);
+        drop(recovered);
+        assert!(
+            MemoryObservatory::open(
+                root.path(),
+                &profile_id,
+                ObservatoryLimits::default(),
+                UtcTimestamp::from_unix_millis(5),
+            )
+            .is_ok()
+        );
     }
 }

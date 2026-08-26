@@ -676,17 +676,28 @@ fn durable_mutations(
         ComputerRepositoryBatch::PutLease {
             expected_revision,
             lease,
-        } => Ok(vec![RecordMutation::Put {
-            collection: Collection::TakeoverLeases,
-            record: durable_record(
-                lease.takeover_lease_id.as_entity_id().clone(),
-                lease.revision,
-                lease.renewed_at,
-                &StoredTakeoverLease::Active(lease.clone()),
-            )?,
-            precondition: expected_revision
-                .map_or(StorePrecondition::Missing, StorePrecondition::Exact),
-        }]),
+        } => {
+            let mut mutations = Vec::with_capacity(2);
+            if let Some(tombstone) = before.lease_tombstones.get(&lease.owner_profile_id) {
+                mutations.push(RecordMutation::Delete {
+                    collection: Collection::TakeoverLeases,
+                    id: tombstone.takeover_lease_id.as_entity_id().clone(),
+                    precondition: StorePrecondition::Exact(tombstone.revision),
+                });
+            }
+            mutations.push(RecordMutation::Put {
+                collection: Collection::TakeoverLeases,
+                record: durable_record(
+                    lease.takeover_lease_id.as_entity_id().clone(),
+                    lease.revision,
+                    lease.renewed_at,
+                    &StoredTakeoverLease::Active(lease.clone()),
+                )?,
+                precondition: expected_revision
+                    .map_or(StorePrecondition::Missing, StorePrecondition::Exact),
+            });
+            Ok(mutations)
+        }
         ComputerRepositoryBatch::RemoveLease {
             owner_profile_id,
             expected_revision,
@@ -1560,5 +1571,45 @@ mod tests {
             }]),
             Err(ComputerError::DuplicateLease(_))
         ));
+    }
+
+    #[test]
+    fn domain_durable_repository_rotates_a_terminal_lease_to_a_fresh_identity() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("lease-rotation.sqlite3");
+        let owner = profile(11);
+        let repository = DurableComputerRepository::new(EmbeddedStore::open(&path, None).unwrap());
+        let original = lease(owner.clone(), 303, 'a');
+        let mut replacement = lease(owner.clone(), 304, 'b');
+        replacement.revision = Revision::new(2);
+        replacement.fencing_token = 2;
+        replacement.acquired_at = UtcTimestamp(30);
+        replacement.renewed_at = UtcTimestamp(30);
+        replacement.expires_at = UtcTimestamp(40);
+        repository
+            .transact(&[
+                ComputerRepositoryBatch::InsertComputer(computer(owner.clone(), 100)),
+                ComputerRepositoryBatch::PutLease {
+                    expected_revision: None,
+                    lease: original,
+                },
+            ])
+            .unwrap();
+        repository
+            .transact(&[
+                ComputerRepositoryBatch::RemoveLease {
+                    owner_profile_id: owner.clone(),
+                    expected_revision: Revision::ZERO,
+                },
+                ComputerRepositoryBatch::PutLease {
+                    expected_revision: None,
+                    lease: replacement.clone(),
+                },
+            ])
+            .unwrap();
+        drop(repository);
+
+        let reopened = DurableComputerRepository::new(EmbeddedStore::open(&path, None).unwrap());
+        assert_eq!(reopened.lease(&owner).unwrap(), Some(replacement));
     }
 }

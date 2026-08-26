@@ -226,15 +226,19 @@ impl ChildAuthorityCeiling {
 impl ChildSpec {
     pub fn validate_authority(&self, parent: &ParentAuthority) -> Result<(), ChildError> {
         self.requested_authority.validate()?;
+        if self.requested_tools != self.requested_authority.tools
+            || !self.requested_tools.is_subset(&parent.allowed_tools)
+            || !self.requested_tools.is_subset(&parent.ceiling.tools)
+        {
+            return Err(ChildError::ToolEscalation);
+        }
         let route = ChildModelRoute {
             provider: self.provider.clone(),
             model: self.model.clone(),
         };
         if self.parent_session_id != parent.session_id
-            || self.requested_tools != self.requested_authority.tools
             || !self.requested_authority.model_routes.contains(&route)
             || !self.requested_authority.is_within(&parent.ceiling)
-            || !self.requested_tools.is_subset(&parent.allowed_tools)
         {
             return Err(ChildError::AuthorityEscalation);
         }

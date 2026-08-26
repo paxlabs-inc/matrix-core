@@ -1,0 +1,51 @@
+[package]
+name = "keith-agentd"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+keith-build-info = { path = "../../crates/build-info" }
+keith-agent-types = { path = "../../crates/agent-types" }
+keith-computer = { path = "../../crates/computer" }
+keith-credentials = { path = "../../crates/credentials" }
+keith-daemon-core = { path = "../../crates/daemon-core" }
+keith-local-runtime = { path = "../../crates/local-runtime" }
+keith-platform = { path = "../../crates/platform" }
+keith-profile = { path = "../../crates/profile" }
+keith-protocol = { path = "../../crates/protocol" }
+keith-self-evolution = { path = "../../crates/self-evolution" }
+keith-state-store = { path = "../../crates/state-store" }
+keith-worker-runtime = { path = "../../crates/worker-runtime" }
+signal-hook.workspace = true
+serde_json.workspace = true
+base64 = "0.22"
+sha2.workspace = true
+nix.workspace = true
+
+[dev-dependencies]
+keith-agent-web = { path = "../agent-web" }
+keith-agent-types = { path = "../../crates/agent-types" }
+keith-connection = { path = "../../crates/connection" }
+keith-conversation = { path = "../../crates/conversation" }
+keith-credentials = { path = "../../crates/credentials" }
+keith-sandbox = { path = "../../crates/sandbox" }
+keith-state-store = { path = "../../crates/state-store" }
+nix.workspace = true
+ring.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
+
+[[bin]]
+name = "agentd"
+path = "src/main.rs"
+
+[[bin]]
+name = "keith-daemon-worker-host"
+path = "tests/support/worker_process_host.rs"
+
+[lints]
+workspace = true

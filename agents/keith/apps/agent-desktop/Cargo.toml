@@ -1,0 +1,45 @@
+[package]
+name = "keith-agent-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "agent-desktop"
+path = "src/main.rs"
+
+[[bin]]
+name = "keith-desktop-daemon-host"
+path = "tests/support/daemon_host.rs"
+
+[[bin]]
+name = "keith-release-report-host"
+path = "tests/support/release_report_host.rs"
+
+[dependencies]
+getrandom.workspace = true
+keith-agent-types = { path = "../../crates/agent-types" }
+keith-connection = { path = "../../crates/connection" }
+keith-daemon-core = { path = "../../crates/daemon-core" }
+keith-platform = { path = "../../crates/platform" }
+keith-protocol = { path = "../../crates/protocol" }
+keith-release = { path = "../../crates/release" }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+signal-hook.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+nix.workspace = true
+
+[dev-dependencies]
+ring.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

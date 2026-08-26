@@ -7,6 +7,7 @@ pub use image::{
     WorkerImageRegistry, worker_image_data_inventory,
 };
 
+use std::cell::RefCell;
 use std::collections::{BTreeMap, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -172,13 +173,14 @@ impl Default for SupervisorOptions {
             drain_timeout: Duration::from_secs(2),
             stale_heartbeat: Duration::from_secs(2),
             heartbeat_interval: Duration::from_millis(100),
-            lease_duration: Duration::from_secs(2),
+            lease_duration: Duration::from_secs(10),
         }
     }
 }
 
 struct ManagedWorker {
     registration: WorkerRegistration,
+    status_registration: RefCell<WorkerRegistration>,
     grant: LeaseGrant,
     control: Option<PrivateTransport<LocalStream>>,
     child: Option<Child>,
@@ -668,6 +670,15 @@ impl WorkerSupervisor {
             }
             let registration = read_registration(&path)?;
             if !process_is_alive(registration.pid) {
+                if let Some(grant) = self.leases.current(&registration.root_tree_id)?
+                    && grant.worker_id == registration.worker_id
+                    && grant.generation == registration.generation
+                {
+                    match self.leases.release(&grant) {
+                        Ok(()) | Err(LeaseError::OwnershipLost(_)) => {}
+                        Err(error) => return Err(error.into()),
+                    }
+                }
                 continue;
             }
             let image = self.resolve_image(&registration.image_id)?;
@@ -702,6 +713,7 @@ impl WorkerSupervisor {
             self.workers
                 .entry(registration.root_tree_id.clone())
                 .or_insert(ManagedWorker {
+                    status_registration: RefCell::new(registration.clone()),
                     registration,
                     grant,
                     control: Some(control),
@@ -798,6 +810,7 @@ impl WorkerSupervisor {
                 match connect_control(&registration, &grant, self.options.startup_timeout) {
                     Ok(control) => {
                         let worker = ManagedWorker {
+                            status_registration: RefCell::new(registration.clone()),
                             registration,
                             grant,
                             control: Some(control),
@@ -805,7 +818,8 @@ impl WorkerSupervisor {
                             last_activity: Instant::now(),
                             draining: false,
                         };
-                        let status = status_for(&worker, self.options.stale_heartbeat);
+                        let status =
+                            status_for(&worker, &self.state_dir, self.options.stale_heartbeat);
                         self.workers.insert(root_tree_id, worker);
                         return Ok(status);
                     }
@@ -886,7 +900,7 @@ impl WorkerSupervisor {
         let child = command
             .stdin(Stdio::null())
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stderr(Stdio::inherit())
             .spawn()
             .map_err(SupervisorError::from)?;
         Ok(child)
@@ -920,7 +934,7 @@ impl WorkerSupervisor {
     pub fn statuses(&self) -> Vec<WorkerStatus> {
         self.workers
             .values()
-            .map(|worker| status_for(worker, self.options.stale_heartbeat))
+            .map(|worker| status_for(worker, &self.state_dir, self.options.stale_heartbeat))
             .collect()
     }
 
@@ -932,7 +946,7 @@ impl WorkerSupervisor {
     pub fn status(&self, root_tree_id: &RootTreeId) -> Option<WorkerStatus> {
         self.workers
             .get(root_tree_id)
-            .map(|worker| status_for(worker, self.options.stale_heartbeat))
+            .map(|worker| status_for(worker, &self.state_dir, self.options.stale_heartbeat))
     }
 
     pub fn mark_activity(&mut self, root_tree_id: &RootTreeId) -> bool {
@@ -1008,14 +1022,36 @@ impl WorkerSupervisor {
             )?);
         }
         let request_id = EntityId::new();
+        let initial_send = worker
+            .control
+            .as_mut()
+            .ok_or_else(|| SupervisorError::NotActive(root_tree_id.clone()))?
+            .send(PrivateMessage::Execute {
+                request_id: request_id.clone(),
+                request: Box::new(request.clone()),
+            });
+        if let Err(error) = initial_send {
+            if !error.is_connection_loss() {
+                return Err(error.into());
+            }
+            worker.control = Some(connect_control(
+                &worker.registration,
+                &worker.grant,
+                self.options.startup_timeout,
+            )?);
+            worker
+                .control
+                .as_mut()
+                .ok_or_else(|| SupervisorError::NotActive(root_tree_id.clone()))?
+                .send(PrivateMessage::Execute {
+                    request_id: request_id.clone(),
+                    request: Box::new(request),
+                })?;
+        }
         let control = worker
             .control
             .as_mut()
             .ok_or_else(|| SupervisorError::NotActive(root_tree_id.clone()))?;
-        control.send(PrivateMessage::Execute {
-            request_id: request_id.clone(),
-            request: Box::new(request),
-        })?;
         loop {
             match control.receive() {
                 Ok(PrivateMessage::ExecutionResult {
@@ -1033,6 +1069,7 @@ impl WorkerSupervisor {
                 }
                 Ok(PrivateMessage::Heartbeat { at }) => {
                     worker.registration.heartbeat_at = at;
+                    worker.status_registration.borrow_mut().heartbeat_at = at;
                 }
                 Ok(PrivateMessage::Idle { .. } | PrivateMessage::Ready { .. }) => {}
                 Ok(PrivateMessage::Fatal { reason }) => {
@@ -1080,6 +1117,7 @@ impl WorkerSupervisor {
                         match control.receive() {
                             Ok(PrivateMessage::Heartbeat { at }) => {
                                 worker.registration.heartbeat_at = at;
+                                worker.status_registration.borrow_mut().heartbeat_at = at;
                             }
                             Ok(PrivateMessage::Fatal { reason }) => {
                                 events.push(WorkerEvent::Fatal {
@@ -1674,20 +1712,29 @@ fn process_is_zombie(_pid: u32) -> bool {
     false
 }
 
-fn status_for(worker: &ManagedWorker, stale_heartbeat: Duration) -> WorkerStatus {
+fn status_for(worker: &ManagedWorker, state_dir: &Path, stale_heartbeat: Duration) -> WorkerStatus {
+    let path = registration_path(state_dir, &worker.registration.root_tree_id);
+    if let Ok(durable) = read_registration(&path)
+        && registration_status_identity_matches(&worker.registration, &durable)
+    {
+        let mut cached = worker.status_registration.borrow_mut();
+        cached.heartbeat_at = durable.heartbeat_at;
+        cached.state = durable.state;
+    }
+    let cached = worker.status_registration.borrow();
     let heartbeat_age = UtcTimestamp::now()
         .ok()
         .and_then(|now| {
             now.unix_millis()
-                .checked_sub(worker.registration.heartbeat_at.unix_millis())
+                .checked_sub(cached.heartbeat_at.unix_millis())
         })
         .and_then(|millis| u64::try_from(millis).ok())
         .map_or(Duration::ZERO, Duration::from_millis);
     let health = if !process_is_alive(worker.registration.pid) {
         WorkerHealth::Exited
-    } else if worker.draining || worker.registration.state == WorkerRunState::Draining {
+    } else if worker.draining || cached.state == WorkerRunState::Draining {
         WorkerHealth::Draining
-    } else if worker.registration.state == WorkerRunState::Starting {
+    } else if cached.state == WorkerRunState::Starting {
         WorkerHealth::Starting
     } else if heartbeat_age > stale_heartbeat {
         WorkerHealth::Unresponsive
@@ -1703,10 +1750,23 @@ fn status_for(worker: &ManagedWorker, stale_heartbeat: Duration) -> WorkerStatus
         source_manifest_sha256: worker.registration.source_manifest_sha256.clone(),
         pid: worker.registration.pid,
         health,
-        heartbeat_at: worker.registration.heartbeat_at,
+        heartbeat_at: cached.heartbeat_at,
         idle_for: worker.last_activity.elapsed(),
         resources: read_resources(worker.registration.pid),
     }
+}
+
+fn registration_status_identity_matches(
+    owned: &WorkerRegistration,
+    durable: &WorkerRegistration,
+) -> bool {
+    durable.root_tree_id == owned.root_tree_id
+        && durable.worker_id == owned.worker_id
+        && durable.generation == owned.generation
+        && durable.pid == owned.pid
+        && durable.image_id == owned.image_id
+        && durable.image_manifest_sha256 == owned.image_manifest_sha256
+        && durable.source_manifest_sha256 == owned.source_manifest_sha256
 }
 
 #[cfg(target_os = "linux")]
@@ -1814,12 +1874,10 @@ mod tests {
     #[test]
     fn missing_registration_directory_is_an_empty_adoption_set() {
         let directory = tempfile::tempdir().unwrap();
-        let mut supervisor = WorkerSupervisor::open(
-            directory.path(),
-            "/not/started/by-this-test",
-            SupervisorOptions::default(),
-        )
-        .unwrap();
+        let executable = std::env::current_exe().unwrap();
+        let mut supervisor =
+            WorkerSupervisor::open(directory.path(), executable, SupervisorOptions::default())
+                .unwrap();
         assert!(supervisor.adopt_existing().unwrap().is_empty());
     }
 }

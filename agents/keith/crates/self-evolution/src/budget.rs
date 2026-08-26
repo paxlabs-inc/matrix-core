@@ -408,6 +408,12 @@ pub struct EvolutionBudget {
     _lock: File,
 }
 
+impl Drop for EvolutionBudget {
+    fn drop(&mut self) {
+        let _ = FileExt::unlock(&self._lock);
+    }
+}
+
 impl EvolutionBudget {
     /// Opens the budget, rejects ceiling changes, and reconciles interrupted work before returning.
     pub fn open(

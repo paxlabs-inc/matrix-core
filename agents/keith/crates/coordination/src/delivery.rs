@@ -12,9 +12,9 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 use crate::{
-    ConversationDelivery, CoordinationWrite, DeliveryClaim, DeliveryState,
-    DurableCoordinationRepository, MAX_SAFE_DETAIL_BYTES, MAX_STABLE_KEY_BYTES, SupersessionTarget,
-    TargetedSupersession, WritePrecondition,
+    ConversationDelivery, ConversationDeliveryPurpose, CoordinationWrite, DeliveryClaim,
+    DeliveryState, DurableCoordinationRepository, MAX_SAFE_DETAIL_BYTES, MAX_STABLE_KEY_BYTES,
+    SupersessionTarget, TargetedSupersession, WritePrecondition,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -68,6 +68,7 @@ pub struct ConversationDeliveryEnqueue {
     pub source_event_id: EventId,
     pub source_profile_id: ProfileId,
     pub destination_profile_id: ProfileId,
+    pub purpose: ConversationDeliveryPurpose,
     pub participant_session_id: SessionId,
     pub policy_snapshot_key: String,
 }
@@ -201,6 +202,13 @@ where
         ProcessingGuarantee::AtLeastOnce
     }
 
+    pub fn delivery(
+        &self,
+        id: &DeliveryId,
+    ) -> Result<ConversationDelivery, DeliveryCoordinatorError> {
+        self.required(id)
+    }
+
     pub fn enqueue(
         &self,
         request: ConversationDeliveryEnqueue,
@@ -234,6 +242,7 @@ where
             source_event_id: request.source_event_id,
             source_profile_id: request.source_profile_id,
             destination_profile_id: request.destination_profile_id,
+            purpose: request.purpose,
             participant_session_id: request.participant_session_id,
             policy_snapshot_key: request.policy_snapshot_key,
             state: DeliveryState::Pending,
@@ -347,6 +356,72 @@ where
             fence,
             lease_expires_at: expires_at,
         }))
+    }
+
+    /// Claims one exact delivery for its bound participant. This is used when a durable action
+    /// already names the delivery and must not accidentally claim unrelated queued work.
+    pub fn claim_exact(
+        &self,
+        id: &DeliveryId,
+        now: UtcTimestamp,
+    ) -> Result<ConversationDeliveryClaim, DeliveryCoordinatorError> {
+        let _guard = self.lock()?;
+        self.recover_expired_locked(now)?;
+        let mut value = self.required(id)?;
+        if !matches!(
+            value.state,
+            DeliveryState::Pending | DeliveryState::Retryable
+        ) {
+            return Err(DeliveryCoordinatorError::NotEligible);
+        }
+        let active = self
+            .list()?
+            .into_iter()
+            .filter(|delivery| active_claim(delivery, now))
+            .collect::<Vec<_>>();
+        if active.len() >= self.config.max_installation_claims
+            || active
+                .iter()
+                .filter(|delivery| delivery.destination_profile_id == value.destination_profile_id)
+                .count()
+                >= self.config.max_claims_per_profile
+        {
+            return Err(DeliveryCoordinatorError::NotEligible);
+        }
+        let previous_revision = value.revision;
+        value.revision = next_revision(previous_revision)?;
+        value.attempt_count = value
+            .attempt_count
+            .checked_add(1)
+            .ok_or(DeliveryCoordinatorError::RevisionOverflow)?;
+        value.last_claim_fence = value
+            .last_claim_fence
+            .checked_add(1)
+            .ok_or(DeliveryCoordinatorError::RevisionOverflow)?;
+        let token = EntityId::new();
+        let expires_at = add_millis(now, self.config.lease_millis);
+        value.state = DeliveryState::Claimed;
+        value.retry_at = None;
+        value.safe_error = None;
+        value.claim = Some(DeliveryClaim {
+            token: token.clone(),
+            fence: value.last_claim_fence,
+            owner_profile_id: value.destination_profile_id.clone(),
+            attempt: value.attempt_count,
+            revision: value.revision,
+            expires_at,
+        });
+        let fence = value.last_claim_fence;
+        self.write(
+            value.clone(),
+            WritePrecondition::Revision(previous_revision),
+        )?;
+        Ok(ConversationDeliveryClaim {
+            delivery: value,
+            token,
+            fence,
+            lease_expires_at: expires_at,
+        })
     }
 
     pub fn renew(
@@ -637,7 +712,8 @@ fn validate_enqueue(request: &ConversationDeliveryEnqueue) -> Result<(), Deliver
     };
     if !valid_key(&request.stable_source_key)
         || !valid_key(&request.policy_snapshot_key)
-        || request.source_profile_id == request.destination_profile_id
+        || (request.source_profile_id == request.destination_profile_id
+            && request.purpose != ConversationDeliveryPurpose::CoordinationRound)
     {
         return Err(DeliveryCoordinatorError::Invalid(
             "delivery identity or stable key is invalid",
@@ -651,6 +727,7 @@ fn same_enqueue(value: &ConversationDelivery, request: &ConversationDeliveryEnqu
         && value.source_event_id == request.source_event_id
         && value.source_profile_id == request.source_profile_id
         && value.destination_profile_id == request.destination_profile_id
+        && value.purpose == request.purpose
         && value.participant_session_id == request.participant_session_id
         && value.policy_snapshot_key == request.policy_snapshot_key
 }
@@ -718,9 +795,33 @@ mod tests {
             source_event_id: EventId::from(EntityId::from_u128(20 + destination)),
             source_profile_id: profile(1),
             destination_profile_id: profile(destination),
+            purpose: ConversationDeliveryPurpose::Peer,
             participant_session_id: SessionId::from(EntityId::from_u128(30 + destination)),
             policy_snapshot_key: "policy:exact:1".into(),
         }
+    }
+
+    #[test]
+    fn only_typed_coordination_round_deliveries_may_target_the_source_profile() {
+        let directory = tempfile::tempdir().unwrap();
+        let coordinator = ConversationDeliveryCoordinator::new(
+            EmbeddedStore::open(&directory.path().join("state.sqlite"), None).unwrap(),
+            DeliveryCoordinatorConfig::default(),
+        )
+        .unwrap();
+        let mut peer = request("self:peer", 1);
+        assert!(matches!(
+            coordinator.enqueue(peer.clone()),
+            Err(DeliveryCoordinatorError::Invalid(_))
+        ));
+        peer.stable_source_key = "self:round".into();
+        peer.purpose = ConversationDeliveryPurpose::CoordinationRound;
+        let accepted = coordinator.enqueue(peer).unwrap();
+        assert_eq!(accepted.source_profile_id, accepted.destination_profile_id);
+        assert_eq!(
+            accepted.purpose,
+            ConversationDeliveryPurpose::CoordinationRound
+        );
     }
 
     #[test]

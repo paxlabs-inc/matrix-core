@@ -145,6 +145,20 @@ impl CoordinationActionBinding {
             } => participant_session_id,
         }
     }
+
+    pub const fn conversation_id(&self) -> &ConversationId {
+        match self {
+            Self::GroupRoundDelivery {
+                conversation_id, ..
+            }
+            | Self::AssignmentWork {
+                conversation_id, ..
+            }
+            | Self::OwnershipTransferWake {
+                conversation_id, ..
+            } => conversation_id,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -1306,6 +1320,39 @@ where
         Ok(records)
     }
 
+    /// Returns queued or waiting peer and coordination actions for one canonical conversation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the repository cannot list or decode durable actions.
+    pub fn pending_conversation(
+        &self,
+        conversation_id: &ConversationId,
+    ) -> Result<Vec<ActionRecord>, ActionStoreError> {
+        let _guard = self.lock()?;
+        let mut records = self
+            .load_all()?
+            .into_iter()
+            .filter(|record| {
+                matches!(
+                    record.value.state,
+                    ActionState::Queued | ActionState::Waiting
+                ) && match &record.value.action.source {
+                    ActionSource::PeerMessage { binding } => {
+                        &binding.conversation_id == conversation_id
+                    }
+                    ActionSource::Coordination { binding } => {
+                        binding.conversation_id() == conversation_id
+                    }
+                    _ => false,
+                }
+            })
+            .map(|record| record.value)
+            .collect::<Vec<_>>();
+        records.sort_by(action_order);
+        Ok(records)
+    }
+
     /// # Errors
     ///
     /// Returns an error when expiry or admission cannot be persisted.
@@ -2326,5 +2373,62 @@ mod tests {
             selected,
             vec![channel.id, user.id, scheduled.id, evolution.id]
         );
+    }
+
+    #[test]
+    fn pending_conversation_selects_only_live_peer_work_for_exact_conversation() {
+        let inbox = PersistentActionInbox::new(
+            EmbeddedStore::open_in_memory().unwrap(),
+            ActionInboxConfig::default(),
+        )
+        .unwrap();
+        let conversation_id = ConversationId::new();
+        let other_conversation_id = ConversationId::new();
+        let enqueue = |conversation_id: ConversationId, session_id: SessionId| {
+            let source_event_id = EventId::new();
+            let destination_profile_id = ProfileId::new();
+            PeerMessageEnqueue {
+                action_id: ActionId::new(),
+                binding: RecipientActionBinding {
+                    publication_key: RecipientActionBinding::canonical_publication_key(
+                        &conversation_id,
+                        &source_event_id,
+                        &destination_profile_id,
+                    )
+                    .unwrap(),
+                    conversation_id,
+                    source_event_id,
+                    sender_profile_id: ProfileId::new(),
+                    destination_profile_id,
+                    participant_session_id: session_id,
+                    policy_snapshot: RecipientPolicySnapshot {
+                        conversation_revision: Revision::new(1),
+                        participant_revision: Revision::new(1),
+                        relevant_grant_revisions: BTreeMap::new(),
+                        policy_digest_sha256: "a".repeat(64),
+                    },
+                    context_cursor: CanonicalConversationContextCursor {
+                        applied_through_sequence: 1,
+                        source_event_sequence: 1,
+                    },
+                },
+                content: "wake this participant".into(),
+                attachments: Vec::new(),
+                deadline: None,
+                limits: ActionLimits::default(),
+            }
+        };
+        let expected = enqueue(conversation_id.clone(), SessionId::new());
+        let excluded = enqueue(other_conversation_id, SessionId::new());
+        inbox
+            .enqueue_peer_message(expected.clone(), UtcTimestamp::UNIX_EPOCH)
+            .unwrap();
+        inbox
+            .enqueue_peer_message(excluded, UtcTimestamp::UNIX_EPOCH)
+            .unwrap();
+
+        let pending = inbox.pending_conversation(&conversation_id).unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].action.id, expected.action_id);
     }
 }

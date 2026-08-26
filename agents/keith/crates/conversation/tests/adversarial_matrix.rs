@@ -85,6 +85,30 @@ fn message_event(
 }
 
 #[test]
+fn canonical_message_content_allows_normal_multiline_text_but_rejects_unsafe_controls() {
+    let conversation_id = ConversationId::new();
+    let multiline = message_event(
+        conversation_id.clone(),
+        1,
+        Principal::Human,
+        "content:multiline",
+        "First line\n\tIndented second line",
+        1,
+    );
+    multiline.validate().unwrap();
+
+    let unsafe_control = message_event(
+        conversation_id,
+        2,
+        Principal::Human,
+        "content:unsafe-control",
+        "visible\0hidden",
+        2,
+    );
+    assert!(unsafe_control.validate().is_err());
+}
+
+#[test]
 fn canonical_append_crash_replay_and_restart_preserve_one_visible_event() {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("canonical-faults.sqlite");

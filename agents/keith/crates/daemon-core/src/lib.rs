@@ -27,18 +27,19 @@ use keith_connection::{
     set_local_listener_nonblocking, set_local_read_timeout,
 };
 use keith_protocol::{
-    AgentActivityKind, AgentActivityOutcome, AgentActivityProjection, ClientCommand, CommandError,
-    CommandResult, CommandResultEnvelope, ComputerProtocolCommand, ComputerProtocolResponse,
-    ConversationCommand, ConversationProtocolEnvelope, DaemonEvent, EventEnvelope,
-    EvolutionAvailabilityProjection, EvolutionCommand, EvolutionDisclosureProjection,
-    EvolutionHypothesisProjection, EvolutionLedgerProjection, EvolutionProjection, Feature,
-    MessageProjection, ResponsePayload, ResumeConversationEventsCommand, SessionFilter,
-    SessionSnapshot, SessionState, SessionSummary, TeammatesCommand, ToolProjection, WireFormat,
-    WireMessage, negotiate,
+    AgentActivityKind, AgentActivityOutcome, AgentActivityProjection, AgentLifecycleCommand,
+    ClientCommand, CommandError, CommandResult, CommandResultEnvelope, ComputerProtocolCommand,
+    ComputerProtocolResponse, ConversationCommand, ConversationProtocolEnvelope, DaemonEvent,
+    EventEnvelope, EvolutionAvailabilityProjection, EvolutionCommand,
+    EvolutionDisclosureProjection, EvolutionHypothesisProjection, EvolutionLedgerProjection,
+    EvolutionProjection, Feature, MessageProjection, ResponsePayload,
+    ResumeConversationEventsCommand, SessionFilter, SessionSnapshot, SessionState, SessionSummary,
+    TeammatesCommand, ToolProjection, WireFormat, WireMessage, negotiate,
 };
 use keith_runtime_api::{
-    AcceptedPrompt, RuntimeAgentOutcome, RuntimeCommandAuthority, RuntimeEvent, RuntimeEventKind,
-    RuntimeRequest, RuntimeResponse, RuntimeSession, RuntimeWorkerBinding,
+    AcceptedPrompt, ConversationSessionAssignment, RuntimeAgentOutcome, RuntimeCommandAuthority,
+    RuntimeEvent, RuntimeEventKind, RuntimeRequest, RuntimeResponse, RuntimeSession,
+    RuntimeWorkerBinding,
 };
 use keith_self_evolution::CanaryRunner;
 use keith_self_evolution::{
@@ -51,8 +52,8 @@ use keith_state_store_core::{
     AtomicStateRepository, Collection, RecordMutation, VersionedRecord, WritePrecondition,
 };
 use keith_supervisor::{
-    SupervisorError, SupervisorOptions, WorkerEvent, WorkerImageRegistry, WorkerRollProof,
-    WorkerStatus, WorkerSupervisor, signal_active_cancellation,
+    SupervisorError, SupervisorOptions, WorkerEvent, WorkerHealth, WorkerImageRegistry,
+    WorkerRollProof, WorkerStatus, WorkerSupervisor, signal_active_cancellation,
 };
 use keith_telemetry::{CandidateObservation, CandidateSignal, MetricName, TelemetryError};
 use keith_worker_runtime::{LeaseError, LeaseManager};
@@ -194,6 +195,8 @@ pub struct RootManifest {
     pub version: SchemaVersion,
     pub root_tree_id: RootTreeId,
     pub root_session_id: SessionId,
+    #[serde(default)]
+    pub session_aliases: Vec<SessionSummary>,
     pub profile_id: ProfileId,
     pub title: Option<String>,
     pub state: SessionState,
@@ -210,6 +213,10 @@ impl RootManifest {
             state: self.state,
             updated_at: self.updated_at,
         }
+    }
+
+    fn summaries(&self) -> impl Iterator<Item = SessionSummary> + '_ {
+        std::iter::once(self.summary()).chain(self.session_aliases.iter().cloned())
     }
 }
 
@@ -242,6 +249,20 @@ pub enum CatalogError {
     },
     #[error("duplicate root session ID {0}")]
     DuplicateSession(SessionId),
+    #[error("session {session} is assigned to root {actual} instead of {expected}")]
+    SessionRootMismatch {
+        session: SessionId,
+        actual: RootTreeId,
+        expected: RootTreeId,
+    },
+    #[error("session {session} profile {actual} does not match root profile {expected}")]
+    SessionProfileMismatch {
+        session: SessionId,
+        actual: ProfileId,
+        expected: ProfileId,
+    },
+    #[error("session alias references unknown root {0}")]
+    UnknownRoot(RootTreeId),
 }
 
 impl RootCatalog {
@@ -296,19 +317,7 @@ impl RootCatalog {
                     directory: directory_root,
                 });
             }
-            if catalog
-                .sessions
-                .insert(
-                    manifest.root_session_id.clone(),
-                    manifest.root_tree_id.clone(),
-                )
-                .is_some()
-            {
-                return Err(CatalogError::DuplicateSession(manifest.root_session_id));
-            }
-            catalog
-                .roots
-                .insert(manifest.root_tree_id.clone(), manifest);
+            catalog.insert(manifest)?;
         }
         Ok(catalog)
     }
@@ -338,21 +347,79 @@ impl RootCatalog {
                     .as_ref()
                     .is_none_or(|profile| profile == &manifest.profile_id)
             })
-            .filter(|manifest| filter.include_archived || manifest.state != SessionState::Archived)
-            .map(RootManifest::summary)
+            .flat_map(RootManifest::summaries)
+            .filter(|summary| filter.include_archived || summary.state != SessionState::Archived)
             .collect()
     }
 
     fn insert(&mut self, manifest: RootManifest) -> Result<(), CatalogError> {
-        if self.sessions.contains_key(&manifest.root_session_id) {
-            return Err(CatalogError::DuplicateSession(manifest.root_session_id));
+        let mut session_ids = BTreeSet::new();
+        for summary in manifest.summaries() {
+            if summary.root_tree_id != manifest.root_tree_id {
+                return Err(CatalogError::SessionRootMismatch {
+                    session: summary.session_id,
+                    actual: summary.root_tree_id,
+                    expected: manifest.root_tree_id.clone(),
+                });
+            }
+            if summary.profile_id != manifest.profile_id {
+                return Err(CatalogError::SessionProfileMismatch {
+                    session: summary.session_id,
+                    actual: summary.profile_id,
+                    expected: manifest.profile_id.clone(),
+                });
+            }
+            if !session_ids.insert(summary.session_id.clone())
+                || self.sessions.contains_key(&summary.session_id)
+            {
+                return Err(CatalogError::DuplicateSession(summary.session_id));
+            }
         }
-        self.sessions.insert(
-            manifest.root_session_id.clone(),
-            manifest.root_tree_id.clone(),
-        );
+        for session_id in session_ids {
+            self.sessions
+                .insert(session_id, manifest.root_tree_id.clone());
+        }
         self.roots.insert(manifest.root_tree_id.clone(), manifest);
         Ok(())
+    }
+
+    fn upsert_alias(&mut self, summary: SessionSummary) -> Result<RootManifest, CatalogError> {
+        let expected_root = summary.root_tree_id.clone();
+        let manifest = self
+            .roots
+            .get_mut(&expected_root)
+            .ok_or_else(|| CatalogError::UnknownRoot(expected_root.clone()))?;
+        if summary.profile_id != manifest.profile_id {
+            return Err(CatalogError::SessionProfileMismatch {
+                session: summary.session_id,
+                actual: summary.profile_id,
+                expected: manifest.profile_id.clone(),
+            });
+        }
+        if summary.session_id == manifest.root_session_id {
+            manifest.profile_id = summary.profile_id;
+            manifest.title = summary.title;
+            manifest.state = summary.state;
+            manifest.updated_at = summary.updated_at;
+            return Ok(manifest.clone());
+        }
+        if let Some(existing_root) = self.sessions.get(&summary.session_id)
+            && existing_root != &expected_root
+        {
+            return Err(CatalogError::DuplicateSession(summary.session_id));
+        }
+        self.sessions
+            .insert(summary.session_id.clone(), expected_root);
+        if let Some(existing) = manifest
+            .session_aliases
+            .iter_mut()
+            .find(|existing| existing.session_id == summary.session_id)
+        {
+            *existing = summary;
+        } else {
+            manifest.session_aliases.push(summary);
+        }
+        Ok(manifest.clone())
     }
 }
 
@@ -374,7 +441,7 @@ impl Default for DaemonOptions {
             supervisor: SupervisorOptions::default(),
             idle_evict_after: Duration::from_secs(15 * 60),
             maintenance_interval: Duration::from_millis(100),
-            runtime_maintenance_interval: Duration::from_secs(1),
+            runtime_maintenance_interval: Duration::from_secs(10),
             replay_capacity: 4_096,
             client_queue_capacity: 256,
             command_dedup_capacity: 4_096,
@@ -774,7 +841,7 @@ impl DaemonCore {
             shutting_down: false,
             startup_recovery,
             worker_runtime_enabled,
-            last_runtime_maintenance: None,
+            last_runtime_maintenance: Some(Instant::now()),
             pending_daemon_restoration,
             candidate_observations: Vec::new(),
             evolution,
@@ -944,10 +1011,16 @@ impl DaemonCore {
             .root_for_session(session_id)
             .cloned()
             .ok_or_else(|| DaemonError::UnknownSession(session_id.clone()))?;
-        let status = if self.supervisor.mark_activity(&root) {
-            self.supervisor
-                .status(&root)
-                .ok_or_else(|| DaemonError::UnknownSession(session_id.clone()))?
+        let status = self.supervisor.status(&root);
+        let status = if let Some(status) = status
+            && status.health != WorkerHealth::Exited
+            && self
+                .supervisor
+                .validate_route(&root, status.generation)
+                .is_ok()
+            && self.supervisor.mark_activity(&root)
+        {
+            status
         } else {
             self.supervisor.restart(&root)?
         };
@@ -960,6 +1033,13 @@ impl DaemonCore {
         root_tree_id: &RootTreeId,
         generation: keith_agent_types::Generation,
     ) -> Result<(), DaemonError> {
+        if self
+            .event_hubs
+            .get(root_tree_id)
+            .is_some_and(|hub| hub.generation() == generation)
+        {
+            return Ok(());
+        }
         let manifest = self
             .catalog
             .root(root_tree_id)
@@ -1114,20 +1194,16 @@ impl DaemonCore {
             let workers = self.supervisor.statuses();
             for worker in workers {
                 // A maintenance-domain failure is not evidence that the authenticated worker
-                // process or its control channel died. Only transport/supervision failure may
-                // evict the worker; otherwise a recoverable maintenance error was incorrectly
-                // converted into a graceful shutdown on the next daemon tick.
-                let healthy = self
-                    .supervisor
-                    .execute(
-                        &worker.root_tree_id,
-                        worker.generation,
-                        RuntimeRequest::Maintain,
-                    )
-                    .is_ok();
-                if !healthy {
-                    let _ = self.supervisor.drain(&worker.root_tree_id);
-                }
+                // process died. Runtime failures arrive as `RuntimeResponse::Failed`, while a
+                // supervisor error can also be a transient control-channel condition. Monitoring
+                // above is the authoritative process-health boundary and drains confirmed fatal
+                // workers; maintenance must never turn its own probe failure into cancellation of
+                // an otherwise live provider/tool turn.
+                let _ = self.supervisor.execute(
+                    &worker.root_tree_id,
+                    worker.generation,
+                    RuntimeRequest::Maintain,
+                );
             }
             self.last_runtime_maintenance = Some(Instant::now());
         }
@@ -1334,7 +1410,6 @@ impl DaemonCore {
                 Err(error) if error.is_timed_out() => {
                     let events = {
                         let mut daemon = shared.lock().map_err(|_| DaemonError::LockPoisoned)?;
-                        daemon.maintain()?;
                         daemon.drain_client_events(&connected_client_id)?
                     };
                     for event in events {
@@ -1622,6 +1697,7 @@ impl DaemonCore {
                             workspace_id: keith_agent_types::WorkspaceId::new(),
                             display_name: manifest.profile_id.to_string(),
                             enabled: true,
+                            background: None,
                         })
                         .collect())
                 };
@@ -1745,6 +1821,43 @@ impl DaemonCore {
                         Ok(authority) => authority,
                         Err(error) => return rejected_daemon(error),
                     };
+                if let ClientCommand::Conversation(ConversationCommand::Teammates(
+                    TeammatesCommand::PeerMessage(request),
+                )) = &feature
+                    && peer_message_provisioning_authorized(
+                        &self.catalog,
+                        &requester_authority,
+                        scope_session_id,
+                        request,
+                    )
+                    && let Err(error) = self.provision_conversation_participant_session(
+                        &request.conversation_id,
+                        &request.recipient_profile_id,
+                    )
+                {
+                    return rejected_daemon(error);
+                }
+                let group_provisioning = match &feature {
+                    ClientCommand::Conversation(ConversationCommand::Teammates(
+                        TeammatesCommand::CreateGroup(request),
+                    )) => Some(request.initial_profile_ids.clone()),
+                    _ => None,
+                };
+                let enabled_profile = match &feature {
+                    ClientCommand::AgentLifecycle(AgentLifecycleCommand::Enable(request)) => {
+                        Some(request.profile_id.clone())
+                    }
+                    _ => None,
+                };
+                let conversation_wake = match &feature {
+                    ClientCommand::Conversation(ConversationCommand::Teammates(
+                        TeammatesCommand::PeerMessage(request),
+                    )) => Some(request.conversation_id.clone()),
+                    ClientCommand::Conversation(ConversationCommand::Teammates(
+                        TeammatesCommand::StartRound(request),
+                    )) => Some(request.conversation_id.clone()),
+                    _ => None,
+                };
                 let effective_session_id = command_route_session_id(
                     scope_session_id,
                     embedded_session_id.as_ref(),
@@ -1766,7 +1879,57 @@ impl DaemonCore {
                 );
                 match result {
                     Ok(mut result) => {
+                        let branched_session = match (&feature, &result) {
+                            (
+                                ClientCommand::BranchSession(request),
+                                CommandResult::Data(payload),
+                            ) => match payload.as_ref() {
+                                ResponsePayload::Snapshot(snapshot)
+                                    if snapshot.session.session_id != request.session_id =>
+                                {
+                                    Some(snapshot.session.clone())
+                                }
+                                _ => None,
+                            },
+                            _ => None,
+                        };
+                        if let Some(summary) = &branched_session
+                            && let Err(error) = self.register_runtime_session_alias(summary)
+                        {
+                            return rejected_daemon(error);
+                        }
                         if !matches!(result, CommandResult::Rejected(_))
+                            && let Some(profile_id) = enabled_profile
+                            && let Err(error) = self.profile_runtime_root(&profile_id)
+                        {
+                            return rejected_daemon(error);
+                        }
+                        if !matches!(result, CommandResult::Rejected(_))
+                            && let Some(profile_ids) = group_provisioning
+                        {
+                            let Some(conversation_id) = command_result_conversation_id(&result)
+                            else {
+                                return rejected_daemon(DaemonError::Runtime(
+                                    "group creation returned no canonical conversation identity"
+                                        .into(),
+                                ));
+                            };
+                            if let Err(error) = self.provision_group_participant_sessions(
+                                effective_session_id,
+                                &conversation_id,
+                                &profile_ids,
+                            ) {
+                                return rejected_daemon(error);
+                            }
+                        }
+                        if !matches!(result, CommandResult::Rejected(_))
+                            && let Some(conversation_id) = conversation_wake
+                            && let Err(error) = self.wake_conversation_actions(&conversation_id)
+                        {
+                            return rejected_daemon(error);
+                        }
+                        if branched_session.is_none()
+                            && !matches!(result, CommandResult::Rejected(_))
                             && let Some(session_id) = effective_session_id
                         {
                             let authoritative =
@@ -1799,8 +1962,17 @@ impl DaemonCore {
             .root_for_session(&attach.session_id)
             .cloned()
             .ok_or_else(|| DaemonError::UnknownSession(attach.session_id.clone()))?;
+        let is_alias = self
+            .catalog
+            .root(&root)
+            .is_some_and(|manifest| manifest.root_session_id != attach.session_id);
+        let alias_snapshot = if is_alias {
+            Some(self.runtime_snapshot(&attach.session_id)?)
+        } else {
+            None
+        };
         let pending = self.pending_daemon_restoration.clone();
-        let recovery = {
+        let mut recovery = {
             let hub = self
                 .event_hubs
                 .get_mut(&root)
@@ -1818,6 +1990,11 @@ impl DaemonCore {
             }
             recovery
         };
+        if let Some(snapshot) = alias_snapshot {
+            recovery.mode = keith_protocol::ResumeMode::SnapshotThenDelta;
+            recovery.snapshot = Some(snapshot);
+            recovery.events.clear();
+        }
         if let Some(notice) = pending {
             acknowledge_restoration_notice(
                 self.data_root.join("self-evolution").join("daemon-images"),
@@ -1929,6 +2106,7 @@ impl DaemonCore {
             }
         };
         self.insert_runtime_session(session, &session_id, &root_tree_id)?;
+        self.ensure_event_hub(&root_tree_id, status.generation)?;
         Ok(())
     }
 
@@ -1987,6 +2165,7 @@ impl DaemonCore {
             version: CURRENT_SCHEMA_VERSION,
             root_tree_id: session.root_tree_id,
             root_session_id: session.session_id,
+            session_aliases: Vec::new(),
             profile_id: session.profile_id,
             title: session.title,
             state: if session.archived {
@@ -1999,6 +2178,14 @@ impl DaemonCore {
         self.persist_root_manifest(&manifest)?;
         self.catalog.insert(manifest)?;
         Ok(())
+    }
+
+    fn register_runtime_session_alias(
+        &mut self,
+        summary: &SessionSummary,
+    ) -> Result<(), DaemonError> {
+        let manifest = self.catalog.upsert_alias(summary.clone())?;
+        self.persist_root_manifest(&manifest)
     }
 
     fn execute_worker(
@@ -2014,6 +2201,51 @@ impl DaemonCore {
             RuntimeResponse::Failed(error) => Err(DaemonError::Runtime(error)),
             response => Ok(response),
         }
+    }
+
+    fn wake_conversation_actions(
+        &mut self,
+        conversation_id: &ConversationId,
+    ) -> Result<(), DaemonError> {
+        let (query_root, query_status) = self.runtime_route(None)?;
+        let response = self.execute_worker(
+            &query_root,
+            query_status.generation,
+            RuntimeRequest::PendingConversationActionSessions {
+                conversation_id: conversation_id.clone(),
+            },
+        )?;
+        let RuntimeResponse::Sessions(sessions) = response else {
+            return Err(DaemonError::Runtime(format!(
+                "worker returned {} for pending conversation action routing",
+                runtime_response_kind(&response)
+            )));
+        };
+        let mut active_roots = BTreeMap::new();
+        for session in sessions {
+            let catalog_root = self
+                .catalog
+                .root_for_session(&session.session_id)
+                .ok_or_else(|| DaemonError::UnknownSession(session.session_id.clone()))?;
+            if catalog_root != &session.root_tree_id || session.archived {
+                return Err(DaemonError::Runtime(
+                    "pending conversation action resolved outside its cataloged active root".into(),
+                ));
+            }
+            let status = self.activate_session(&session.session_id)?;
+            active_roots.insert(session.root_tree_id, status.generation);
+        }
+        for (root_tree_id, generation) in active_roots {
+            self.execute_worker(
+                &root_tree_id,
+                generation,
+                RuntimeRequest::DrainConversationActions {
+                    conversation_id: conversation_id.clone(),
+                    generation,
+                },
+            )?;
+        }
+        Ok(())
     }
 
     fn runtime_route(
@@ -2051,6 +2283,176 @@ impl DaemonCore {
                 runtime_response_kind(&response)
             )),
         }
+    }
+
+    fn profile_runtime_root(
+        &mut self,
+        profile_id: &ProfileId,
+    ) -> Result<(RootTreeId, WorkerStatus), DaemonError> {
+        let existing = self
+            .catalog
+            .roots
+            .values()
+            .filter(|manifest| {
+                manifest.profile_id == *profile_id && manifest.state != SessionState::Archived
+            })
+            .max_by_key(|manifest| manifest.updated_at)
+            .cloned();
+        if let Some(manifest) = existing {
+            let status = self.activate_session(&manifest.root_session_id)?;
+            return Ok((manifest.root_tree_id, status));
+        }
+        let profile = self
+            .runtime_profiles()
+            .map_err(DaemonError::Runtime)?
+            .into_iter()
+            .find(|profile| &profile.id == profile_id && profile.enabled)
+            .ok_or_else(|| {
+                DaemonError::Runtime(format!(
+                    "conversation participant profile {profile_id} has no enabled runtime"
+                ))
+            })?;
+        let snapshot = self.create_runtime_session(&keith_protocol::CreateSession {
+            profile_id: profile.id,
+            workspace_id: profile.workspace_id,
+            title: Some("New conversation".into()),
+        })?;
+        let root_tree_id = snapshot.session.root_tree_id.clone();
+        let status = self.activate_session(&snapshot.session.session_id)?;
+        Ok((root_tree_id, status))
+    }
+
+    fn provision_conversation_participant_session(
+        &mut self,
+        conversation_id: &ConversationId,
+        profile_id: &ProfileId,
+    ) -> Result<SessionId, DaemonError> {
+        let (root_tree_id, status) = self.profile_runtime_root(profile_id)?;
+        let response = self.execute_worker(
+            &root_tree_id,
+            status.generation,
+            RuntimeRequest::ProvisionConversationSession {
+                conversation_id: conversation_id.clone(),
+                profile_id: profile_id.clone(),
+                generation: status.generation,
+                now: UtcTimestamp::now().map_err(|error| {
+                    DaemonError::Runtime(format!(
+                        "conversation provisioning clock is unavailable: {error}"
+                    ))
+                })?,
+            },
+        )?;
+        let RuntimeResponse::Session(session) = response else {
+            return Err(DaemonError::Runtime(format!(
+                "participant worker returned {} for conversation provisioning",
+                runtime_response_kind(&response)
+            )));
+        };
+        if session.root_tree_id != root_tree_id
+            || session.profile_id != *profile_id
+            || session.archived
+        {
+            return Err(DaemonError::Runtime(
+                "participant worker provisioned a conversation session outside its assigned profile root"
+                    .into(),
+            ));
+        }
+        Ok(session.session_id)
+    }
+
+    fn provision_group_participant_sessions(
+        &mut self,
+        route_session_id: Option<&SessionId>,
+        conversation_id: &ConversationId,
+        profile_ids: &[ProfileId],
+    ) -> Result<Vec<SessionId>, DaemonError> {
+        let mut expected = BTreeMap::new();
+        for profile_id in profile_ids {
+            if expected.contains_key(profile_id) {
+                continue;
+            }
+            let root_tree_id = if let Some(manifest) = self
+                .catalog
+                .roots
+                .values()
+                .filter(|manifest| {
+                    manifest.profile_id == *profile_id && manifest.state != SessionState::Archived
+                })
+                .max_by_key(|manifest| manifest.updated_at)
+            {
+                manifest.root_tree_id.clone()
+            } else {
+                self.profile_runtime_root(profile_id)?.0
+            };
+            expected.insert(profile_id.clone(), root_tree_id);
+        }
+        if expected.is_empty() {
+            return Err(DaemonError::Runtime(
+                "group creation returned no participant profiles to provision".into(),
+            ));
+        }
+        let assignments = expected
+            .iter()
+            .map(|(profile_id, root_tree_id)| ConversationSessionAssignment {
+                profile_id: profile_id.clone(),
+                root_tree_id: root_tree_id.clone(),
+            })
+            .collect::<Vec<_>>();
+        let (route_root, status) = self.runtime_route(route_session_id)?;
+        let response = self.execute_worker(
+            &route_root,
+            status.generation,
+            RuntimeRequest::ProvisionConversationSessions {
+                conversation_id: conversation_id.clone(),
+                assignments,
+                generation: status.generation,
+                now: UtcTimestamp::now().map_err(|error| {
+                    DaemonError::Runtime(format!(
+                        "group participant provisioning clock is unavailable: {error}"
+                    ))
+                })?,
+            },
+        )?;
+        let RuntimeResponse::Sessions(sessions) = response else {
+            return Err(DaemonError::Runtime(format!(
+                "group coordinator worker returned {} for participant provisioning",
+                runtime_response_kind(&response)
+            )));
+        };
+        if sessions.len() != expected.len() {
+            return Err(DaemonError::Runtime(
+                "group coordinator worker returned an incomplete participant session batch".into(),
+            ));
+        }
+        let mut session_ids = Vec::with_capacity(sessions.len());
+        let mut returned_profiles = BTreeSet::new();
+        for session in sessions {
+            if session.archived
+                || !returned_profiles.insert(session.profile_id.clone())
+                || expected.get(&session.profile_id) != Some(&session.root_tree_id)
+            {
+                return Err(DaemonError::Runtime(
+                    "group coordinator worker provisioned a participant session outside its assigned profile root"
+                        .into(),
+                ));
+            }
+            let summary = SessionSummary {
+                session_id: session.session_id.clone(),
+                root_tree_id: session.root_tree_id,
+                profile_id: session.profile_id,
+                title: session.title,
+                state: SessionState::Dormant,
+                updated_at: session.created_at,
+            };
+            self.register_runtime_session_alias(&summary)?;
+            session_ids.push(summary.session_id);
+        }
+        if returned_profiles.len() != expected.len() {
+            return Err(DaemonError::Runtime(
+                "group coordinator worker omitted an assigned participant profile".into(),
+            ));
+        }
+        Ok(session_ids)
     }
 
     fn select_runtime_model(
@@ -2535,6 +2937,41 @@ const fn runtime_response_kind(response: &RuntimeResponse) -> &'static str {
         RuntimeResponse::Complete => "complete",
         RuntimeResponse::Failed(_) => "failed",
     }
+}
+
+fn command_result_conversation_id(result: &CommandResult) -> Option<ConversationId> {
+    let CommandResult::Data(payload) = result else {
+        return None;
+    };
+    let ResponsePayload::TeammatesReceipt(receipt) = payload.as_ref() else {
+        return None;
+    };
+    receipt.conversation_id.clone()
+}
+
+fn peer_message_provisioning_authorized(
+    catalog: &RootCatalog,
+    authority: &RuntimeCommandAuthority,
+    scope_session_id: Option<&SessionId>,
+    request: &keith_protocol::PeerMessageCommand,
+) -> bool {
+    let RuntimeCommandAuthority::Agent {
+        profile_id,
+        session_id,
+    } = authority
+    else {
+        return false;
+    };
+    if profile_id != &request.sender_profile_id || Some(session_id) != scope_session_id {
+        return false;
+    }
+    catalog
+        .root_for_session(&request.participant_session_id)
+        .and_then(|root_tree_id| catalog.root(root_tree_id))
+        .is_some_and(|manifest| {
+            manifest.profile_id == request.recipient_profile_id
+                && manifest.state != SessionState::Archived
+        })
 }
 
 fn command_session_id(command: &ClientCommand) -> Option<&SessionId> {
@@ -3504,11 +3941,67 @@ mod tests {
             version: CURRENT_SCHEMA_VERSION,
             root_tree_id: root,
             root_session_id: session,
+            session_aliases: Vec::new(),
             profile_id: ProfileId::new(),
             title: Some("catalog entry".into()),
             state: SessionState::Dormant,
             updated_at: UtcTimestamp::UNIX_EPOCH,
         }
+    }
+
+    #[test]
+    fn peer_provisioning_requires_exact_agent_origin_and_recipient_root_anchor() {
+        let sender_profile = ProfileId::new();
+        let sender_session = SessionId::new();
+        let recipient_profile = ProfileId::new();
+        let recipient_session = SessionId::new();
+        let mut recipient = manifest(RootTreeId::new(), recipient_session.clone());
+        recipient.profile_id = recipient_profile.clone();
+        let mut catalog = RootCatalog::default();
+        catalog.insert(recipient).unwrap();
+        let request = keith_protocol::PeerMessageCommand {
+            request_id: EntityId::new(),
+            operation_key: StableKey::parse("peer-broker-authority").unwrap(),
+            conversation_id: ConversationId::new(),
+            sender_profile_id: sender_profile.clone(),
+            recipient_profile_id: recipient_profile,
+            participant_session_id: recipient_session,
+            expected_conversation_revision: Revision::ZERO,
+            expected_policy_revision: Revision::ZERO,
+            content: "hello".into(),
+            deadline: UtcTimestamp::from_unix_millis(i64::MAX),
+        };
+        let authority = RuntimeCommandAuthority::Agent {
+            profile_id: sender_profile,
+            session_id: sender_session.clone(),
+        };
+        assert!(peer_message_provisioning_authorized(
+            &catalog,
+            &authority,
+            Some(&sender_session),
+            &request,
+        ));
+        assert!(!peer_message_provisioning_authorized(
+            &catalog,
+            &RuntimeCommandAuthority::HumanOwner,
+            None,
+            &request,
+        ));
+        let wrong_scope = SessionId::new();
+        assert!(!peer_message_provisioning_authorized(
+            &catalog,
+            &authority,
+            Some(&wrong_scope),
+            &request,
+        ));
+        let mut wrong_sender = request.clone();
+        wrong_sender.sender_profile_id = ProfileId::new();
+        assert!(!peer_message_provisioning_authorized(
+            &catalog,
+            &authority,
+            Some(&sender_session),
+            &wrong_sender,
+        ));
     }
 
     #[test]
@@ -3536,6 +4029,42 @@ mod tests {
         assert_eq!(
             catalog.list(&SessionFilter::default())[0].session_id,
             session
+        );
+    }
+
+    #[test]
+    fn discovery_restores_durable_branch_aliases_from_the_root_manifest() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = RootTreeId::new();
+        let root_session = SessionId::new();
+        let branch_session = SessionId::new();
+        let root_directory = directory.path().join("sessions").join(root.to_string());
+        fs::create_dir_all(&root_directory).unwrap();
+        let mut stored = manifest(root.clone(), root_session.clone());
+        stored.session_aliases.push(SessionSummary {
+            session_id: branch_session.clone(),
+            root_tree_id: root.clone(),
+            profile_id: stored.profile_id.clone(),
+            title: Some("Conversation branch".into()),
+            state: SessionState::Ready,
+            updated_at: UtcTimestamp::from_unix_millis(42),
+        });
+        fs::write(
+            root_directory.join("manifest.json"),
+            keith_agent_types::canonical_json_bytes(&stored).unwrap(),
+        )
+        .unwrap();
+
+        let catalog = RootCatalog::discover(directory.path()).unwrap();
+        assert_eq!(catalog.root_for_session(&root_session), Some(&root));
+        assert_eq!(catalog.root_for_session(&branch_session), Some(&root));
+        assert_eq!(
+            catalog
+                .list(&SessionFilter::default())
+                .into_iter()
+                .map(|summary| summary.session_id)
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from([root_session, branch_session])
         );
     }
 

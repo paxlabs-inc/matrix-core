@@ -538,7 +538,7 @@ where
         Ok(round)
     }
 
-    fn round(&self, id: &RoundId) -> Result<Option<CollaborationRound>, RoundCoordinatorError> {
+    pub fn round(&self, id: &RoundId) -> Result<Option<CollaborationRound>, RoundCoordinatorError> {
         self.repository
             .get_record(Collection::CollaborationRounds, id.as_entity_id())
             .map_err(repository_error)?

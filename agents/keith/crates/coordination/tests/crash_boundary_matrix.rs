@@ -4,7 +4,10 @@ use keith_agent_types::{
     ActionId, AssignmentId, CURRENT_SCHEMA_VERSION, ConversationId, DeliveryId, EntityId, EntryId,
     EventId, Generation, ProfileId, Revision, SessionId, StableKey, TurnId, UtcTimestamp, WorkerId,
 };
-use keith_conversation::ConversationEventKind;
+use keith_conversation::{
+    CanonicalConversationStore, ConversationContextCursor, ConversationEventKind,
+    CreateGroupRequest, GroupMentionPolicy, GroupService, Principal,
+};
 use keith_coordination::round::{
     RoundCoordinator, RoundCoordinatorConfig, RoundCoordinatorError, RoundMutationStatus,
     RoundTrigger,
@@ -46,6 +49,7 @@ fn delivery_request(key: &str, destination: u128) -> ConversationDeliveryEnqueue
         source_event_id: event(20 + destination),
         source_profile_id: profile(1),
         destination_profile_id: profile(destination),
+        purpose: keith_coordination::ConversationDeliveryPurpose::Peer,
         participant_session_id: session(100 + destination),
         policy_snapshot_key: format!("policy:{destination}"),
     }
@@ -370,6 +374,57 @@ fn six_participant_round_trigger_survives_restart_replays_exactly_and_rejects_fo
     ));
 }
 
+#[test]
+fn group_round_audit_does_not_corrupt_conversation_reads_after_reopen() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("group-round-conversation.sqlite");
+    let store = EmbeddedStore::open(&path, None).unwrap();
+    let members = BTreeSet::from([profile(1), profile(2)]);
+    let group = GroupService::open(&store)
+        .unwrap()
+        .create_group(&CreateGroupRequest {
+            operation_key: StableKey::parse("group:round-reopen").unwrap(),
+            title: "Round durability".into(),
+            creator: Principal::Human,
+            initial_profile_ids: members.clone(),
+            mention_policy: GroupMentionPolicy::default(),
+            now: UtcTimestamp::from_unix_millis(1),
+        })
+        .unwrap();
+    RoundCoordinator::new(store, RoundCoordinatorConfig::default())
+        .unwrap()
+        .trigger(&RoundTrigger {
+            stable_key: StableKey::parse("round:conversation-reopen").unwrap(),
+            conversation_id: group.conversation_id.clone(),
+            trigger_event_id: group.event_id,
+            coordinator_profile_id: profile(1),
+            eligible_participants: members,
+            mention_policy: MentionPolicy::AllParticipants,
+            max_depth: 2,
+            max_turns: 4,
+            triggered_at: UtcTimestamp::from_unix_millis(2),
+        })
+        .unwrap();
+
+    let reopened = EmbeddedStore::open(&path, None).unwrap();
+    let conversations = CanonicalConversationStore::open(&reopened).unwrap();
+    let projection = conversations
+        .projection(&group.conversation_id, &Principal::Human, 0, 100)
+        .unwrap();
+    assert_eq!(projection.conversation.id, group.conversation_id);
+    let context = conversations
+        .reconstruct_context(
+            &Principal::Human,
+            ConversationContextCursor {
+                conversation_id: projection.conversation.id,
+                applied_through_sequence: 0,
+            },
+            100,
+        )
+        .unwrap();
+    assert_eq!(context.visible_events.len(), 1);
+}
+
 fn assignment_record(owner: ProfileId) -> AssignmentRecord {
     AssignmentRecord {
         version: CURRENT_SCHEMA_VERSION,
@@ -441,6 +496,7 @@ fn assignment_claim_and_atomic_handoff_survive_restart_and_reject_stale_authorit
         source_event_id: event(44),
         source_profile_id: old_owner.clone(),
         destination_profile_id: new_owner.clone(),
+        purpose: keith_coordination::ConversationDeliveryPurpose::Assignment,
         participant_session_id: session(103),
         policy_snapshot_key: "policy:new-owner".into(),
         state: DeliveryState::Pending,

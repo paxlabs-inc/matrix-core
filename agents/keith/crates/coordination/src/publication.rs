@@ -917,6 +917,7 @@ mod tests {
             source_event_id,
             source_profile_id: profile(1),
             destination_profile_id: profile_id,
+            purpose: crate::ConversationDeliveryPurpose::Peer,
             participant_session_id: session_id,
             policy_snapshot_key: "policy:1".into(),
             state: DeliveryState::Finalized,

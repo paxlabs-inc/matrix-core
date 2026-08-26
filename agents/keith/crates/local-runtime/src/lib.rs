@@ -11,19 +11,20 @@ use std::time::{Duration, Instant};
 
 use keith_action_store::{
     ActionInboxConfig, ActionLimits, ActionPayload, ActionPriority, ActionSource, ActionState,
-    CanonicalConversationContextCursor, DeliveryPolicy as ActionDeliveryPolicy,
-    InternalDeliveryClaim, PeerMessageEnqueue, PersistentActionInbox, PumpContext,
-    RecipientActionBinding, RecipientPolicySnapshot, ReplyRoute as ActionReplyRoute, SessionAction,
+    CanonicalConversationContextCursor, CoordinationActionBinding, CoordinationActionEnqueue,
+    DeliveryPolicy as ActionDeliveryPolicy, InternalDeliveryClaim, PeerMessageEnqueue,
+    PersistentActionInbox, PumpContext, RecipientActionBinding, RecipientPolicySnapshot,
+    ReplyRoute as ActionReplyRoute, SessionAction,
 };
 use keith_agent_loop::{
     AgentEvent, AgentEventKind, AgentLoop, AgentLoopConfig, AgentLoopError, AgentOutcome,
     CompactionProgress, ContextCompactor, NoSteering,
 };
 use keith_agent_types::{
-    ActionId, AssignmentId, CURRENT_SCHEMA_VERSION, ClientId, ConversationId, EntityId, EntryId,
-    Generation, GrantId, JobId, KernelId, MessageId, ProfileId, Revision, RootTreeId, SessionId,
-    StableKey, TimeZoneName, ToolEffectState, ToolFailure, TurnId, UtcTimestamp, WorkerId,
-    WorkspaceId,
+    ActionId, AssignmentId, CURRENT_SCHEMA_VERSION, ClientId, ConversationId, DeliveryId, EntityId,
+    EntryId, Generation, GrantId, JobId, KernelId, MessageId, ProfileId, Revision, RootTreeId,
+    SessionId, StableKey, TimeZoneName, ToolEffectState, ToolFailure, TurnId, UtcTimestamp,
+    WorkerId, WorkspaceId,
 };
 use keith_artifacts::{
     ArtifactAccessResolver, ArtifactActor, ArtifactAuthorization, ArtifactError, ArtifactLimits,
@@ -78,11 +79,13 @@ use keith_conversation::{
     SharedKnowledgeGrant, SharedResourceKind, UpdateGroupMentionPolicyRequest,
 };
 use keith_coordination::{
-    AssignmentRecord, AssignmentRepository, AssignmentService, AssignmentState,
-    ConversationDeliveryCoordinator, ConversationDeliveryEnqueue, ConversationPublicationOutbox,
-    DeliveryCoordinatorConfig, DeliveryCoordinatorError, DueMetadata,
-    DurableCoordinationRepository, MentionPolicy, RoundBranchCancellation, RoundCoordinator,
-    RoundCoordinatorConfig, RoundMutationReceipt, RoundTransition, RoundTrigger,
+    AssignmentHandoff, AssignmentLease, AssignmentRecord, AssignmentRepository, AssignmentService,
+    AssignmentState, CanonicalHandoffEventIntent, ConversationDelivery,
+    ConversationDeliveryCoordinator, ConversationDeliveryEnqueue, ConversationDeliveryPurpose,
+    ConversationPublicationOutbox, DeliveryCoordinatorConfig, DeliveryCoordinatorError,
+    DeliveryState, DueMetadata, DurableCoordinationRepository, MentionPolicy, OwnershipTransfer,
+    OwnershipTransferId, RoundBranchCancellation, RoundCoordinator, RoundCoordinatorConfig,
+    RoundMutationReceipt, RoundTransition, RoundTrigger,
 };
 use keith_credentials::{
     CredentialError, CredentialOwner, CredentialRef, EncryptedCredentialStore, MasterKey,
@@ -206,14 +209,15 @@ use keith_routing::{
 };
 use keith_runtime_api::{
     AcceptedPrompt, CandidateCanaryMeasurement, CandidateCanaryOutcome, CandidateCanaryReport,
-    CandidateCanaryRequest, CandidateCanaryVerdict, CommandRuntime, NoRuntimeEvents,
-    RuntimeAgentOutcome, RuntimeCommandAuthority, RuntimeEvent, RuntimeEventKind, RuntimeEventSink,
-    RuntimeSession, RuntimeWorkerBinding,
+    CandidateCanaryRequest, CandidateCanaryVerdict, CommandRuntime, ConversationSessionAssignment,
+    NoRuntimeEvents, RuntimeAgentOutcome, RuntimeCommandAuthority, RuntimeEvent, RuntimeEventKind,
+    RuntimeEventSink, RuntimeSession, RuntimeWorkerBinding,
 };
 use keith_scheduler::{
-    JobState, JobUpdate, MissedRunPolicy, NewScheduledJob, ProfileScheduleTransferRequest,
-    RoutineApprovalSnapshot, RoutineInvocation, RoutineState, RoutineTrigger, RoutineUpdate,
-    ScheduleSpec, ScheduledJob, Scheduler, SchedulerConfig,
+    JobState, JobUpdate, MissedRunPolicy, NewOwnedRoutine, NewScheduledJob,
+    ProfileScheduleTransferRequest, RoutineApprovalBoundary, RoutineApprovalSnapshot,
+    RoutineInvocation, RoutineState, RoutineTrigger, RoutineUpdate, ScheduleSpec, ScheduledJob,
+    Scheduler, SchedulerConfig, SchedulerError,
 };
 use keith_self_evolution::{
     CandidateOutcome, CorpusError, ReplayOutcome, ReplayTape, ReplayVerdict, TraceReplay, TraceStep,
@@ -1775,6 +1779,7 @@ struct TurnAdmissionGuard<'a> {
     session_id: SessionId,
     durable_permit: Option<Arc<Mutex<ProfileExecutionPermit>>>,
     durable_monitor_stop: Option<Arc<AtomicBool>>,
+    durable_monitor: Option<std::thread::JoinHandle<()>>,
     completed: bool,
 }
 
@@ -1785,6 +1790,11 @@ impl TurnAdmissionGuard<'_> {
         }
         if let Some(stop) = &self.durable_monitor_stop {
             stop.store(true, Ordering::Release);
+        }
+        if let Some(monitor) = self.durable_monitor.take() {
+            monitor.join().map_err(|_| {
+                LocalRuntimeError::Module("profile execution monitor panicked".into())
+            })?;
         }
         if let Some(permit) = &self.durable_permit {
             let permit = permit.lock().map_err(|_| LocalRuntimeError::LockPoisoned)?;
@@ -3297,7 +3307,10 @@ impl LocalRuntime {
         let scheduler = Scheduler::new(
             schedule_repository,
             schedule_sink,
-            SchedulerConfig::default(),
+            SchedulerConfig {
+                max_claims_per_tick: 1,
+                ..SchedulerConfig::default()
+            },
         )?;
         let retrieval = Arc::new(RetrievalService::open(
             config.data_root.join("retrieval"),
@@ -3369,6 +3382,7 @@ impl LocalRuntime {
         runtime.bootstrap_default_profile(&config.workspace_root)?;
         runtime.migrate_legacy_permanent_human_dms()?;
         runtime.reconcile_agent_lifecycle_resources()?;
+        runtime.reconcile_permanent_conversation_sessions()?;
         runtime.reconcile_profile_execution_admission()?;
         for profile in runtime.enabled_profiles()? {
             runtime.profile_modules(&profile)?;
@@ -3387,7 +3401,17 @@ impl LocalRuntime {
                 .conversation_state
                 .profile_execution_snapshot(profile.id())
             {
-                Ok(snapshot) if snapshot.fence.state == ProfileExecutionFenceState::Open => {}
+                Ok(snapshot) if snapshot.fence.state == ProfileExecutionFenceState::Open => {
+                    let reclaimed = self
+                        .conversation_state
+                        .reclaim_profile_executions(profile.id(), now)?;
+                    if reclaimed.fence.state != ProfileExecutionFenceState::Open {
+                        return Err(LocalRuntimeError::Invalid(format!(
+                            "profile {} changed execution fence while reclaiming stale admissions",
+                            profile.id()
+                        )));
+                    }
+                }
                 Ok(snapshot) if snapshot.fence.state == ProfileExecutionFenceState::Closed => {
                     self.conversation_state.reopen_profile_execution_fence(
                         &ProfileExecutionReopenRequest {
@@ -3440,6 +3464,14 @@ impl LocalRuntime {
         Ok(())
     }
 
+    fn catalog_session_manifests(&self) -> Result<Vec<SessionManifest>, LocalRuntimeError> {
+        self.conversation_state
+            .list_records(Collection::SessionCatalog)?
+            .into_iter()
+            .map(|record| serde_json::from_value(record.payload).map_err(Into::into))
+            .collect()
+    }
+
     fn sync_session_catalog_manifest(
         &self,
         manifest: &SessionManifest,
@@ -3479,17 +3511,47 @@ impl LocalRuntime {
     }
 
     pub fn profiles(&self) -> Result<Vec<ProfileSummary>, LocalRuntimeError> {
-        Ok(self
-            .profiles
+        self.profiles
             .list()?
             .into_iter()
-            .map(|profile| ProfileSummary {
-                id: profile.profile.id,
-                workspace_id: profile.profile.workspace_id,
-                display_name: profile.profile.display_name,
-                enabled: profile.enabled,
+            .map(|profile| {
+                let background = self.background_projection(&profile.profile.id)?;
+                Ok(ProfileSummary {
+                    id: profile.profile.id,
+                    workspace_id: profile.profile.workspace_id,
+                    display_name: profile.profile.display_name,
+                    enabled: profile.enabled,
+                    background,
+                })
             })
-            .collect())
+            .collect()
+    }
+
+    fn background_projection(
+        &self,
+        profile_id: &ProfileId,
+    ) -> Result<Option<BackgroundProjection>, LocalRuntimeError> {
+        let Some(record) = self
+            .background
+            .get_record(Collection::ActiveOperations, profile_id.as_entity_id())?
+        else {
+            return Ok(None);
+        };
+        if record
+            .payload
+            .get("kind")
+            .and_then(serde_json::Value::as_str)
+            != Some("background_control")
+        {
+            return Ok(None);
+        }
+        record
+            .payload
+            .get("projection")
+            .cloned()
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(Into::into)
     }
 
     pub fn registered_profiles(&self) -> Result<Vec<RegisteredProfile>, LocalRuntimeError> {
@@ -3720,12 +3782,27 @@ impl LocalRuntime {
                 now,
             )?;
             fs::create_dir_all(workspace.layout().root.join("schedules"))?;
-            write_if_missing(
-                &workspace.layout().root.join("AGENT.md"),
+            seed_pristine_workspace_file(
+                &workspace,
+                "AGENT.md",
+                "# AGENT\n",
                 KEITH_AGENT_DEFAULT,
+                now,
             )?;
-            write_if_missing(&workspace.layout().root.join("USER.md"), KEITH_USER_DEFAULT)?;
-            write_if_missing(&workspace.layout().root.join("RULE.md"), KEITH_RULE_DEFAULT)?;
+            seed_pristine_workspace_file(
+                &workspace,
+                "USER.md",
+                "# USER\n",
+                KEITH_USER_DEFAULT,
+                now,
+            )?;
+            seed_pristine_workspace_file(
+                &workspace,
+                "RULE.md",
+                "# RULE\n",
+                KEITH_RULE_DEFAULT,
+                now,
+            )?;
             operation = self.transition_agent_provision(
                 operation.clone(),
                 AgentProvisionState::Precommit,
@@ -4011,6 +4088,43 @@ impl LocalRuntime {
         Ok(())
     }
 
+    fn reconcile_permanent_conversation_sessions(&self) -> Result<(), LocalRuntimeError> {
+        if self.root_scope.is_some() {
+            return Ok(());
+        }
+        let profiles = self.enabled_profiles()?;
+        let store = CanonicalConversationStore::open(&self.conversation_state)?;
+        let direct = PermanentDirectMessageService::new(&self.conversation_state);
+        let now = UtcTimestamp::now()?;
+        for profile in &profiles {
+            let human_dm = store.provision_permanent_human_dm(profile.id(), now)?;
+            self.provision_conversation_participant_session(
+                &human_dm.id,
+                profile.id(),
+                Generation::ZERO,
+                now,
+            )?;
+        }
+        for (index, left) in profiles.iter().enumerate() {
+            for right in profiles.iter().skip(index + 1) {
+                let conversation = direct.get_or_create_agent_dm(left.id(), right.id(), now)?;
+                self.provision_conversation_participant_session(
+                    &conversation.id,
+                    left.id(),
+                    Generation::ZERO,
+                    now,
+                )?;
+                self.provision_conversation_participant_session(
+                    &conversation.id,
+                    right.id(),
+                    Generation::ZERO,
+                    now,
+                )?;
+            }
+        }
+        Ok(())
+    }
+
     fn create_agent(
         &self,
         request: &CreateAgent,
@@ -4064,6 +4178,13 @@ impl LocalRuntime {
             computer_policy: profile_computer_policy(request.computer_policy),
         };
         let durable_create = (|| {
+            write_teammate_persona(
+                workspace,
+                &request.display_name,
+                &request.role,
+                &request.description,
+                now,
+            )?;
             let profile_plan =
                 self.agent_lifecycle
                     .plan_create(target, presentation, actor, now)?;
@@ -4219,6 +4340,13 @@ impl LocalRuntime {
             computer_policy: ComputerPolicy::default(),
         };
         let durable_duplicate = (|| {
+            write_teammate_persona(
+                workspace,
+                &request.display_name,
+                &presentation.role,
+                &presentation.description,
+                now,
+            )?;
             let plan = self
                 .agent_lifecycle
                 .plan_create(target, presentation, actor, now)?;
@@ -4254,11 +4382,14 @@ impl LocalRuntime {
     ) -> Result<AgentLifecycleProjection, LocalRuntimeError> {
         let record = match action {
             AgentTransition::Enable => {
-                let admission = self.close_profile_admission(&command.profile_id)?;
                 let current = self.agent_record(&command.profile_id)?;
                 if current.profile.revision != command.expected_revision {
                     return Err(ProfileError::Stale.into());
                 }
+                let admission = self.close_profile_admission_for_enablement(
+                    &command.profile_id,
+                    current.presentation.lifecycle == keith_profile::ProfileLifecycleState::Draft,
+                )?;
                 let workspace = open_registered_profile_workspace(&current.profile, now)?;
                 provision_profile_memory(&workspace, &command.profile_id).map_err(module_error)?;
                 self.scheduler
@@ -4297,10 +4428,35 @@ impl LocalRuntime {
                             })?;
                     mutations.extend(computer.mutations);
                 }
-                CanonicalConversationStore::open(&self.conversation_state)?
-                    .provision_permanent_human_dm(&command.profile_id, now)?;
                 self.conversation_state.transact(&mutations)?;
                 self.open_profile_admission(&command.profile_id)?;
+                let human_dm = CanonicalConversationStore::open(&self.conversation_state)?
+                    .provision_permanent_human_dm(&command.profile_id, now)?;
+                self.provision_conversation_participant_session(
+                    &human_dm.id,
+                    &command.profile_id,
+                    Generation::ZERO,
+                    now,
+                )?;
+                let direct = PermanentDirectMessageService::new(&self.conversation_state);
+                for peer in self.enabled_profiles()? {
+                    if peer.id() != &command.profile_id {
+                        let conversation =
+                            direct.get_or_create_agent_dm(&command.profile_id, peer.id(), now)?;
+                        self.provision_conversation_participant_session(
+                            &conversation.id,
+                            &command.profile_id,
+                            Generation::ZERO,
+                            now,
+                        )?;
+                        self.provision_conversation_participant_session(
+                            &conversation.id,
+                            peer.id(),
+                            Generation::ZERO,
+                            now,
+                        )?;
+                    }
+                }
                 admission.retain_closed();
                 plan.record
             }
@@ -4632,8 +4788,16 @@ impl LocalRuntime {
                 "peer request policy snapshot is not the current canonical digest".into(),
             ));
         }
-        let receipt = direct.send_peer_message(request)?;
-        let observation = store.authorization_observation(&conversation.id, &recipient)?;
+        let mut receipt = direct.send_peer_message(request)?;
+        let (participant_session_id, observation) = self.authorize_group_participant_session(
+            &conversation.id,
+            &request.recipient_profile_id,
+            &receipt.source_event_id,
+            receipt.context_cursor.applied_through_sequence,
+            generation,
+            request.timestamp,
+        )?;
+        receipt.participant_session_id = participant_session_id;
         let action_receipt = self.enqueue_canonical_peer_action(
             &receipt,
             &observation,
@@ -4730,7 +4894,24 @@ impl LocalRuntime {
                 &principal,
                 Some(&target),
             )?;
-            let projection = store.projection(&intent.conversation_id, &principal, 0, 1)?;
+            let mut after_sequence = 0;
+            let projection = loop {
+                let page =
+                    store.projection(&intent.conversation_id, &principal, after_sequence, 1_000)?;
+                if page.events.iter().any(|event| event.id == intent.event_id) {
+                    break None;
+                }
+                let Some(last) = page.events.last() else {
+                    break Some(page);
+                };
+                if page.events.len() < 1_000 {
+                    break Some(page);
+                }
+                after_sequence = last.sequence;
+            };
+            let Some(projection) = projection else {
+                continue;
+            };
             let mut event = self.conversation_command_event(
                 &store,
                 &principal,
@@ -4848,6 +5029,14 @@ impl LocalRuntime {
                         "peer sender does not match authenticated agent".into(),
                     ));
                 }
+                let recipient_anchor = self.sessions.manifest(&request.participant_session_id)?;
+                if recipient_anchor.archived
+                    || recipient_anchor.profile_id != request.recipient_profile_id
+                {
+                    return Err(LocalRuntimeError::Invalid(
+                        "peer recipient session is archived or bound to another profile".into(),
+                    ));
+                }
                 let source_event_id = event_id_from_operation_key(&request.operation_key);
                 let publication_key = RecipientActionBinding::canonical_publication_key(
                     &request.conversation_id,
@@ -4874,7 +5063,6 @@ impl LocalRuntime {
                         || binding.source_event_id != source_event_id
                         || binding.sender_profile_id != request.sender_profile_id
                         || binding.destination_profile_id != request.recipient_profile_id
-                        || binding.participant_session_id != request.participant_session_id
                         || binding.policy_snapshot.conversation_revision
                             != request.expected_conversation_revision
                         || binding.policy_snapshot.participant_revision
@@ -4973,6 +5161,30 @@ impl LocalRuntime {
                         now: request.now,
                     },
                 )?;
+                if self.root_scope.is_none() {
+                    let store = CanonicalConversationStore::open(&self.conversation_state)?;
+                    let projection = store.projection(&result.conversation_id, principal, 0, 32)?;
+                    let created_event = projection
+                        .events
+                        .iter()
+                        .find(|event| event.id == result.event_id)
+                        .ok_or_else(|| {
+                            LocalRuntimeError::Invalid(
+                                "created group event is missing from its canonical transcript"
+                                    .into(),
+                            )
+                        })?;
+                    for profile_id in &request.initial_profile_ids {
+                        self.authorize_group_participant_session(
+                            &result.conversation_id,
+                            profile_id,
+                            &created_event.id,
+                            created_event.sequence,
+                            generation,
+                            request.now,
+                        )?;
+                    }
+                }
                 let mut receipt = Self::teammates_receipt(
                     request.request_id.clone(),
                     Some(request.operation_key.clone()),
@@ -5085,7 +5297,30 @@ impl LocalRuntime {
                 let max_depth = u16::try_from(request.max_depth).map_err(|_| {
                     LocalRuntimeError::Invalid("round depth exceeds the runtime bound".into())
                 })?;
-                let result = self
+                let mut prepared_participants = Vec::with_capacity(eligible_participants.len());
+                for destination_profile_id in &eligible_participants {
+                    let now = UtcTimestamp::now()?;
+                    let (participant_session_id, observation) = self
+                        .authorize_group_participant_session(
+                            &request.conversation_id,
+                            destination_profile_id,
+                            &request.trigger_event_id,
+                            projection
+                                .events
+                                .iter()
+                                .find(|event| event.id == request.trigger_event_id)
+                                .expect("visible trigger checked above")
+                                .sequence,
+                            generation,
+                            now,
+                        )?;
+                    prepared_participants.push((
+                        destination_profile_id.clone(),
+                        participant_session_id,
+                        observation,
+                    ));
+                }
+                let mut result = self
                     .round_coordinator()?
                     .trigger(&RoundTrigger {
                         stable_key: request.operation_key.clone(),
@@ -5105,6 +5340,113 @@ impl LocalRuntime {
                         triggered_at: UtcTimestamp::now()?,
                     })
                     .map_err(module_error)?;
+                let trigger = projection
+                    .events
+                    .iter()
+                    .find(|event| event.id == request.trigger_event_id)
+                    .expect("visible trigger checked above");
+                let instruction = trigger.content.clone().ok_or_else(|| {
+                    LocalRuntimeError::Invalid(
+                        "round trigger message has no textual content".into(),
+                    )
+                })?;
+                for (destination_profile_id, participant_session_id, observation) in
+                    prepared_participants
+                {
+                    let now = UtcTimestamp::now()?;
+                    let delivery_key = format!(
+                        "round:{}/participant:{}",
+                        result.round.id, destination_profile_id
+                    );
+                    let delivery =
+                        self.delivery_coordinator()?
+                            .enqueue(ConversationDeliveryEnqueue {
+                                stable_source_key: delivery_key.clone(),
+                                conversation_id: request.conversation_id.clone(),
+                                source_event_id: request.trigger_event_id.clone(),
+                                source_profile_id: coordinator_profile_id.clone(),
+                                destination_profile_id: destination_profile_id.clone(),
+                                purpose: ConversationDeliveryPurpose::CoordinationRound,
+                                participant_session_id: participant_session_id.clone(),
+                                policy_snapshot_key: observation.policy_digest_sha256.clone(),
+                            })?;
+                    if !result.round.active_deliveries.contains(&delivery.id)
+                        && !matches!(
+                            delivery.state,
+                            DeliveryState::Finalized
+                                | DeliveryState::Published
+                                | DeliveryState::Cancelled
+                                | DeliveryState::DeadLetter
+                                | DeliveryState::Superseded
+                        )
+                    {
+                        result = self
+                            .round_coordinator()?
+                            .activate_delivery(
+                                &RoundTransition {
+                                    stable_key: StableKey::parse(format!(
+                                        "round:{}/activate:{}",
+                                        result.round.id, destination_profile_id
+                                    ))
+                                    .map_err(|error| {
+                                        LocalRuntimeError::Invalid(format!(
+                                            "round activation key is invalid: {error}"
+                                        ))
+                                    })?,
+                                    round_id: result.round.id.clone(),
+                                    actor_profile_id: coordinator_profile_id.clone(),
+                                    expected_revision: result.round.revision,
+                                    occurred_at: now,
+                                },
+                                &delivery.id,
+                            )
+                            .map_err(module_error)?;
+                    }
+                    let action_key = StableKey::parse(delivery_key).map_err(|error| {
+                        LocalRuntimeError::Invalid(format!(
+                            "round participant key is invalid: {error}"
+                        ))
+                    })?;
+                    let action_id = ActionId::from(delivery.id.as_entity_id().clone());
+                    if self.actions.get(&action_id)?.is_none() {
+                        self.actions.enqueue_coordination_action(
+                        CoordinationActionEnqueue {
+                            action_id,
+                            binding: CoordinationActionBinding::GroupRoundDelivery {
+                                stable_key: action_key,
+                                delivery_id: delivery.id,
+                                round_id: result.round.id.clone(),
+                                round_revision: result.round.revision,
+                                mention_policy: match result.round.mention_policy {
+                                    MentionPolicy::ExplicitOnly => keith_action_store::GroupMentionPolicy::ExplicitOnly,
+                                    MentionPolicy::AllParticipants => keith_action_store::GroupMentionPolicy::AllParticipants,
+                                    MentionPolicy::CoordinatorSelected => keith_action_store::GroupMentionPolicy::CoordinatorSelected,
+                                },
+                                conversation_id: request.conversation_id.clone(),
+                                source_event_id: request.trigger_event_id.clone(),
+                                destination_profile_id: destination_profile_id.clone(),
+                                participant_session_id,
+                                policy_snapshot: RecipientPolicySnapshot {
+                                    conversation_revision: observation.conversation_revision,
+                                    participant_revision: observation.participant_revision,
+                                    relevant_grant_revisions: observation.relevant_grant_revisions,
+                                    policy_digest_sha256: observation.policy_digest_sha256,
+                                },
+                                context_cursor: CanonicalConversationContextCursor {
+                                    applied_through_sequence: trigger.sequence,
+                                    source_event_sequence: trigger.sequence,
+                                },
+                            },
+                            instruction: format!(
+                                "You are participating in a bounded group collaboration round. Respond naturally to the canonical group message below. Your final response will be attributed to you in the shared group transcript.\n\n{instruction}"
+                            ),
+                            deadline: None,
+                            limits: ActionLimits::default(),
+                        },
+                        UtcTimestamp::now()?,
+                        )?;
+                    }
+                }
                 let mut receipt = Self::teammates_receipt(
                     request.request_id.clone(),
                     Some(request.operation_key.clone()),
@@ -5133,13 +5475,14 @@ impl LocalRuntime {
                 };
                 self.enabled_profile(creator_profile_id)?;
                 self.enabled_profile(&request.owner_profile_id)?;
-                GroupService::open(&self.conversation_state)?.authority_observation(
-                    &request.conversation_id,
-                    principal,
-                    Some(&ParticipantPrincipal::Agent(
-                        request.owner_profile_id.clone(),
-                    )),
-                )?;
+                let owner_authority = GroupService::open(&self.conversation_state)?
+                    .authority_observation(
+                        &request.conversation_id,
+                        principal,
+                        Some(&ParticipantPrincipal::Agent(
+                            request.owner_profile_id.clone(),
+                        )),
+                    )?;
                 let store = CanonicalConversationStore::open(&self.conversation_state)?;
                 if !store
                     .projection(&request.conversation_id, principal, 0, 1_000)?
@@ -5209,6 +5552,25 @@ impl LocalRuntime {
                         TeammatesReceiptStatus::Applied,
                     )
                 };
+                let owner_session_id = self.resolve_group_participant_session(
+                    &assignment.conversation_id,
+                    &assignment.owner_profile_id,
+                )?;
+                let owner_delivery =
+                    self.delivery_coordinator()?
+                        .enqueue(ConversationDeliveryEnqueue {
+                            stable_source_key: format!(
+                                "assignment-owner:{}",
+                                assignment.stable_key
+                            ),
+                            conversation_id: assignment.conversation_id.clone(),
+                            source_event_id: assignment.source_event_id.clone(),
+                            source_profile_id: assignment.creator_profile_id.clone(),
+                            destination_profile_id: assignment.owner_profile_id.clone(),
+                            purpose: ConversationDeliveryPurpose::Assignment,
+                            participant_session_id: owner_session_id,
+                            policy_snapshot_key: owner_authority.mention_policy.digest_sha256,
+                        })?;
                 let mut receipt = Self::teammates_receipt(
                     request.request_id.clone(),
                     Some(request.operation_key.clone()),
@@ -5218,8 +5580,15 @@ impl LocalRuntime {
                 receipt.conversation_id = Some(assignment.conversation_id);
                 receipt.assignment_id = Some(assignment.id.as_entity_id().clone());
                 receipt.profile_id = Some(assignment.owner_profile_id);
+                receipt.delivery_id = Some(owner_delivery.id.as_entity_id().clone());
                 receipt.resulting_revision = Some(assignment.revision);
                 receipt
+            }
+            TeammatesCommand::HandoffWork(request) => {
+                self.execute_assignment_handoff(scope_session_id, principal, request)?
+            }
+            TeammatesCommand::ReportAssignment(request) => {
+                self.execute_assignment_report(scope_session_id, principal, request)?
             }
             TeammatesCommand::ResolveChannelBinding(request) => {
                 let participant_session_id =
@@ -5428,9 +5797,7 @@ impl LocalRuntime {
                 receipt.resulting_revision = Some(updated.revision);
                 receipt
             }
-            TeammatesCommand::HandoffWork(_)
-            | TeammatesCommand::ReportAssignment(_)
-            | TeammatesCommand::DeliveryAdmin(_)
+            TeammatesCommand::DeliveryAdmin(_)
             | TeammatesCommand::Computer(_)
             | TeammatesCommand::Audit(_)
             | TeammatesCommand::Resume(_) => {
@@ -5438,6 +5805,376 @@ impl LocalRuntime {
             }
         };
         Ok(ResponsePayload::TeammatesReceipt(Box::new(receipt)))
+    }
+
+    fn execute_assignment_handoff(
+        &self,
+        scope_session_id: Option<&SessionId>,
+        principal: &Principal,
+        request: &keith_protocol::HandoffWorkCommand,
+    ) -> Result<TeammatesCommandReceipt, LocalRuntimeError> {
+        let participant_session_id =
+            self.teammate_requester_session(scope_session_id, principal)?;
+        let Principal::Agent(actor_profile_id) = principal else {
+            return Err(LocalRuntimeError::Invalid(
+                "assignment handoff requires authenticated agent authority".into(),
+            ));
+        };
+        self.enabled_profile(actor_profile_id)?;
+        self.enabled_profile(&request.new_owner_profile_id)?;
+        let repository = DurableCoordinationRepository::new(EmbeddedStore::open(
+            &self.data_root.join("state.sqlite"),
+            Some(&FileBackupHook),
+        )?);
+        let assignment_id = AssignmentId::from(request.assignment_id.clone());
+        if let Some(intent) = repository
+            .audits()
+            .map_err(module_error)?
+            .into_iter()
+            .filter_map(|audit| audit.handoff_event_intent)
+            .find(|intent| intent.stable_key == request.operation_key.as_str())
+        {
+            if intent.assignment_id != assignment_id
+                || intent.from_profile_id != *actor_profile_id
+                || intent.to_profile_id != request.new_owner_profile_id
+            {
+                return Err(LocalRuntimeError::Invalid(
+                    "handoff operation replay conflicts with durable intent".into(),
+                ));
+            }
+            let assignment = repository
+                .assignment(&assignment_id)
+                .map_err(module_error)?
+                .ok_or_else(|| LocalRuntimeError::Invalid("assignment was not found".into()))?;
+            let delivery = repository
+                .deliveries()
+                .map_err(module_error)?
+                .into_iter()
+                .find(|delivery| delivery.source_event_id == intent.event_id)
+                .ok_or_else(|| {
+                    LocalRuntimeError::Invalid("handoff delivery was not found".into())
+                })?;
+            self.recover_assignment_handoffs()?;
+            let mut receipt = Self::teammates_receipt(
+                request.request_id.clone(),
+                Some(request.operation_key.clone()),
+                TeammatesReceiptStatus::Replayed,
+                Some(participant_session_id),
+            );
+            receipt.conversation_id = Some(assignment.conversation_id);
+            receipt.event_id = Some(intent.event_id);
+            receipt.profile_id = Some(assignment.owner_profile_id);
+            receipt.assignment_id = Some(assignment.id.as_entity_id().clone());
+            receipt.delivery_id = Some(delivery.id.as_entity_id().clone());
+            receipt.resulting_revision = Some(assignment.revision);
+            return Ok(receipt);
+        }
+        let assignment = repository
+            .assignment(&assignment_id)
+            .map_err(module_error)?
+            .ok_or_else(|| LocalRuntimeError::Invalid("assignment was not found".into()))?;
+        if assignment.owner_profile_id != *actor_profile_id {
+            return Err(LocalRuntimeError::Invalid(
+                "only the current assignment owner may hand off work".into(),
+            ));
+        }
+        if assignment.revision != request.expected_assignment_revision {
+            return Err(LocalRuntimeError::Invalid(
+                "assignment revision is stale".into(),
+            ));
+        }
+        let target_authority = GroupService::open(&self.conversation_state)?
+            .authority_observation(
+                &assignment.conversation_id,
+                principal,
+                Some(&ParticipantPrincipal::Agent(
+                    request.new_owner_profile_id.clone(),
+                )),
+            )?;
+        let obsolete_delivery = repository
+            .deliveries()
+            .map_err(module_error)?
+            .into_iter()
+            .find(|delivery| {
+                delivery.conversation_id == assignment.conversation_id
+                    && delivery.source_event_id == assignment.source_event_id
+                    && delivery.destination_profile_id == assignment.owner_profile_id
+                    && delivery.state != DeliveryState::Superseded
+            })
+            .ok_or_else(|| {
+                LocalRuntimeError::Invalid(
+                    "assignment owner delivery was not found for handoff".into(),
+                )
+            })?;
+        let now = UtcTimestamp::now()?;
+        let event_id = event_id_from_operation_key(&request.operation_key);
+        let new_owner_session_id = self.resolve_group_participant_session(
+            &assignment.conversation_id,
+            &request.new_owner_profile_id,
+        )?;
+        let handoff = AssignmentHandoff {
+            transfer: OwnershipTransfer {
+                id: OwnershipTransferId(operation_entity_id(
+                    &request.operation_key,
+                    "ownership-transfer",
+                )),
+                stable_key: format!("ownership-transfer:{}", request.operation_key),
+                from_profile_id: actor_profile_id.clone(),
+                to_profile_id: request.new_owner_profile_id.clone(),
+                actor_profile_id: actor_profile_id.clone(),
+                expected_revision: request.expected_assignment_revision,
+                source_event_id: assignment.source_event_id.clone(),
+                occurred_at: now,
+            },
+            obsolete_delivery_id: obsolete_delivery.id,
+            new_owner_delivery: ConversationDelivery {
+                version: CURRENT_SCHEMA_VERSION,
+                id: DeliveryId::from(operation_entity_id(
+                    &request.operation_key,
+                    "new-owner-delivery",
+                )),
+                stable_source_key: format!("handoff-owner:{}", request.operation_key),
+                conversation_id: assignment.conversation_id.clone(),
+                source_event_id: event_id.clone(),
+                source_profile_id: actor_profile_id.clone(),
+                destination_profile_id: request.new_owner_profile_id.clone(),
+                purpose: ConversationDeliveryPurpose::Assignment,
+                participant_session_id: new_owner_session_id,
+                policy_snapshot_key: target_authority.mention_policy.digest_sha256,
+                state: DeliveryState::Pending,
+                attempt_count: 0,
+                last_claim_fence: 0,
+                claim: None,
+                retry_at: None,
+                safe_error: None,
+                supersession: None,
+                revision: Revision::ZERO,
+            },
+            event_intent: CanonicalHandoffEventIntent {
+                stable_key: request.operation_key.to_string(),
+                event_id: event_id.clone(),
+                assignment_id: assignment.id.clone(),
+                conversation_id: assignment.conversation_id.clone(),
+                from_profile_id: actor_profile_id.clone(),
+                to_profile_id: request.new_owner_profile_id.clone(),
+                source_event_id: assignment.source_event_id,
+                ownership_revision: request
+                    .expected_assignment_revision
+                    .checked_next()
+                    .ok_or_else(|| {
+                        LocalRuntimeError::Invalid("assignment revision overflow".into())
+                    })?,
+                occurred_at: now,
+            },
+        };
+        let handoff_receipt = self
+            .assignment_service()?
+            .handoff(&assignment_id, handoff)
+            .map_err(module_error)?;
+        self.recover_assignment_handoffs()?;
+        let mut receipt = Self::teammates_receipt(
+            request.request_id.clone(),
+            Some(request.operation_key.clone()),
+            TeammatesReceiptStatus::Applied,
+            Some(participant_session_id),
+        );
+        receipt.conversation_id = Some(handoff_receipt.assignment.conversation_id);
+        receipt.event_id = Some(handoff_receipt.event_intent.event_id);
+        receipt.profile_id = Some(handoff_receipt.assignment.owner_profile_id);
+        receipt.assignment_id = Some(handoff_receipt.assignment.id.as_entity_id().clone());
+        receipt.delivery_id = Some(handoff_receipt.new_owner_delivery.id.as_entity_id().clone());
+        receipt.resulting_revision = Some(handoff_receipt.assignment.revision);
+        Ok(receipt)
+    }
+
+    fn execute_assignment_report(
+        &self,
+        scope_session_id: Option<&SessionId>,
+        principal: &Principal,
+        request: &keith_protocol::ReportAssignmentCommand,
+    ) -> Result<TeammatesCommandReceipt, LocalRuntimeError> {
+        let participant_session_id =
+            self.teammate_requester_session(scope_session_id, principal)?;
+        let Principal::Agent(actor_profile_id) = principal else {
+            return Err(LocalRuntimeError::Invalid(
+                "assignment reporting requires authenticated agent authority".into(),
+            ));
+        };
+        self.enabled_profile(actor_profile_id)?;
+        let repository = DurableCoordinationRepository::new(EmbeddedStore::open(
+            &self.data_root.join("state.sqlite"),
+            Some(&FileBackupHook),
+        )?);
+        let assignment_id = AssignmentId::from(request.assignment_id.clone());
+        let assignment = repository
+            .assignment(&assignment_id)
+            .map_err(module_error)?
+            .ok_or_else(|| LocalRuntimeError::Invalid("assignment was not found".into()))?;
+        if assignment.owner_profile_id != *actor_profile_id {
+            return Err(LocalRuntimeError::Invalid(
+                "only the current assignment owner may report work".into(),
+            ));
+        }
+        let canonical_event_id = event_id_from_operation_key(&request.operation_key);
+        let store = CanonicalConversationStore::open(&self.conversation_state)?;
+        let existing_report = store
+            .projection(&assignment.conversation_id, principal, 0, 1_000)?
+            .events
+            .into_iter()
+            .find(|event| event.id == canonical_event_id);
+        if let Some(event) = existing_report {
+            if event.author != *principal
+                || event.content.as_deref() != Some(request.summary.as_str())
+            {
+                return Err(LocalRuntimeError::Invalid(
+                    "assignment report replay conflicts with canonical event".into(),
+                ));
+            }
+            let mut receipt = Self::teammates_receipt(
+                request.request_id.clone(),
+                Some(request.operation_key.clone()),
+                TeammatesReceiptStatus::Replayed,
+                Some(participant_session_id),
+            );
+            receipt.conversation_id = Some(assignment.conversation_id);
+            receipt.event_id = Some(event.id);
+            receipt.profile_id = Some(assignment.owner_profile_id);
+            receipt.assignment_id = Some(assignment.id.as_entity_id().clone());
+            receipt.resulting_revision = Some(assignment.revision);
+            return Ok(receipt);
+        }
+        if request.state == keith_protocol::AssignmentStateProjection::Completed
+            && assignment.result_event_id.as_ref() == Some(&canonical_event_id)
+            && assignment.revision > request.expected_assignment_revision
+        {
+            let projection = store.projection(&assignment.conversation_id, principal, 0, 1)?;
+            let mut event = self.conversation_command_event(
+                &store,
+                principal,
+                &assignment.conversation_id,
+                projection.conversation.revision,
+                request.operation_key.as_str(),
+                Some(request.summary.clone()),
+                Vec::new(),
+                None,
+                UtcTimestamp::now()?,
+            )?;
+            event.kind = ConversationEventKind::AssignmentChange;
+            store.append(projection.conversation.revision, &event)?;
+            let mut receipt = Self::teammates_receipt(
+                request.request_id.clone(),
+                Some(request.operation_key.clone()),
+                TeammatesReceiptStatus::Replayed,
+                Some(participant_session_id),
+            );
+            receipt.conversation_id = Some(assignment.conversation_id);
+            receipt.event_id = Some(event.id);
+            receipt.profile_id = Some(assignment.owner_profile_id);
+            receipt.assignment_id = Some(assignment.id.as_entity_id().clone());
+            receipt.resulting_revision = Some(assignment.revision);
+            return Ok(receipt);
+        }
+        if assignment.revision != request.expected_assignment_revision {
+            return Err(LocalRuntimeError::Invalid(
+                "assignment revision is stale".into(),
+            ));
+        }
+        CanonicalConversationStore::open(&self.conversation_state)?
+            .authorization_observation(&assignment.conversation_id, principal)?;
+        if request.summary.trim().is_empty() {
+            return Err(LocalRuntimeError::Invalid(
+                "assignment report summary must not be empty".into(),
+            ));
+        }
+        let now = UtcTimestamp::now()?;
+        let mut service = self.assignment_service()?;
+        let mut lease = match assignment.state {
+            AssignmentState::Ready | AssignmentState::Transferred => service
+                .claim(
+                    &assignment_id,
+                    assignment.revision,
+                    actor_profile_id.clone(),
+                    UtcTimestamp::from_unix_millis(now.unix_millis().saturating_add(60_000)),
+                    now,
+                )
+                .map_err(module_error)?,
+            AssignmentState::Claimed | AssignmentState::Active => {
+                let claim = assignment.claim.clone().ok_or_else(|| {
+                    LocalRuntimeError::Invalid("assignment claim is missing".into())
+                })?;
+                AssignmentLease {
+                    assignment_id: assignment.id.clone(),
+                    token: claim.token,
+                    claimant: claim.claimant,
+                    fence: assignment.revision,
+                    expires_at: claim.expires_at,
+                }
+            }
+            _ => {
+                return Err(LocalRuntimeError::Invalid(
+                    "assignment cannot accept this report in its current state".into(),
+                ));
+            }
+        };
+        let updated = match request.state {
+            keith_protocol::AssignmentStateProjection::Active => {
+                service.activate(&lease, now).map_err(module_error)?
+            }
+            keith_protocol::AssignmentStateProjection::Blocked => service
+                .block(&lease, request.summary.clone(), now)
+                .map_err(module_error)?,
+            keith_protocol::AssignmentStateProjection::Completed => {
+                if assignment.state != AssignmentState::Active {
+                    let active = service.activate(&lease, now).map_err(module_error)?;
+                    lease.fence = active.revision;
+                }
+                service
+                    .complete(
+                        &lease,
+                        request
+                            .result_event_id
+                            .clone()
+                            .unwrap_or_else(|| canonical_event_id.clone()),
+                        now,
+                    )
+                    .map_err(module_error)?
+            }
+            _ => {
+                return Err(LocalRuntimeError::Invalid(
+                    "report_assignment accepts only active, blocked, or completed".into(),
+                ));
+            }
+        };
+        let store = CanonicalConversationStore::open(&self.conversation_state)?;
+        let projection = store.projection(&updated.conversation_id, principal, 0, 1)?;
+        let mut event = self.conversation_command_event(
+            &store,
+            principal,
+            &updated.conversation_id,
+            projection.conversation.revision,
+            request.operation_key.as_str(),
+            Some(request.summary.clone()),
+            Vec::new(),
+            None,
+            now,
+        )?;
+        event.kind = ConversationEventKind::AssignmentChange;
+        let append = store.append(projection.conversation.revision, &event)?;
+        let mut receipt = Self::teammates_receipt(
+            request.request_id.clone(),
+            Some(request.operation_key.clone()),
+            match append {
+                CanonicalAppendOutcome::Appended => TeammatesReceiptStatus::Applied,
+                CanonicalAppendOutcome::Replayed => TeammatesReceiptStatus::Replayed,
+            },
+            Some(participant_session_id),
+        );
+        receipt.conversation_id = Some(updated.conversation_id);
+        receipt.event_id = Some(event.id);
+        receipt.profile_id = Some(updated.owner_profile_id);
+        receipt.assignment_id = Some(updated.id.as_entity_id().clone());
+        receipt.resulting_revision = Some(updated.revision);
+        Ok(receipt)
     }
 
     fn execute_routine_command(
@@ -5666,6 +6403,7 @@ impl LocalRuntime {
         &self,
         principal: &Principal,
         profile_id: Option<ProfileId>,
+        generation: Generation,
         include_archived: bool,
         after_conversation_id: Option<&ConversationId>,
         limit: usize,
@@ -5676,6 +6414,168 @@ impl LocalRuntime {
             ));
         }
         let store = CanonicalConversationStore::open(&self.conversation_state)?;
+        let records = self.canonical_conversation_records()?;
+        let roster_revision = self.current_roster_revision()?;
+        let mut profile_sessions = profile_id
+            .as_ref()
+            .map(|profile_id| self.catalog_sessions_for_profile(profile_id))
+            .transpose()?;
+        self.list_canonical_conversations_prepared(
+            &store,
+            &records,
+            principal,
+            profile_id,
+            generation,
+            include_archived,
+            after_conversation_id,
+            limit,
+            profile_sessions.as_mut(),
+            roster_revision,
+        )
+    }
+
+    fn list_canonical_conversations_for_profiles(
+        &self,
+        principal: &Principal,
+        request: &keith_protocol::ProfileConversationListsRequest,
+        generation: Generation,
+    ) -> Result<Vec<keith_protocol::ConversationListResponse>, LocalRuntimeError> {
+        if request.profiles.is_empty() || request.profiles.len() > 256 {
+            return Err(LocalRuntimeError::Invalid(
+                "profile conversation catalog must contain between 1 and 256 profiles".into(),
+            ));
+        }
+        let roster = self.agent_roster()?;
+        let roster_revision = roster
+            .iter()
+            .map(|entry| entry.revision)
+            .max()
+            .unwrap_or(Revision::ZERO);
+        let mut requested = BTreeSet::new();
+        for profile in &request.profiles {
+            if !requested.insert(profile.profile_id.clone())
+                || profile.limit == 0
+                || profile.limit > 1_000
+                || roster.iter().all(|entry| {
+                    entry.profile_id != profile.profile_id
+                        || entry.revision != profile.expected_profile_revision
+                        || entry.lifecycle == keith_protocol::AgentLifecycleState::Deleted
+                })
+                || matches!(principal, Principal::Agent(agent) if agent != &profile.profile_id)
+            {
+                return Err(LocalRuntimeError::Invalid(
+                    "profile conversation catalog scope is duplicate, stale, or unauthorized"
+                        .into(),
+                ));
+            }
+        }
+        let store = CanonicalConversationStore::open(&self.conversation_state)?;
+        let records = self.canonical_conversation_records()?;
+        let manifests = self.catalog_session_manifests()?;
+        let mut sessions_by_profile = BTreeMap::<ProfileId, Vec<SessionManifest>>::new();
+        for manifest in manifests {
+            if !manifest.archived
+                && self
+                    .root_scope
+                    .as_ref()
+                    .is_none_or(|root_scope| &manifest.root_tree_id == root_scope)
+                && requested.contains(&manifest.profile_id)
+            {
+                sessions_by_profile
+                    .entry(manifest.profile_id.clone())
+                    .or_default()
+                    .push(manifest);
+            }
+        }
+        let mut projection_requests = Vec::new();
+        let mut projection_owners = Vec::new();
+        for (profile_index, profile) in request.profiles.iter().enumerate() {
+            for record in &records {
+                if profile
+                    .after_conversation_id
+                    .as_ref()
+                    .is_some_and(|after| record.id <= *after)
+                    || !profile.include_archived
+                        && record.lifecycle == ConversationLifecycle::Archived
+                    || !record.participant_profiles.contains(&profile.profile_id)
+                {
+                    continue;
+                }
+                projection_requests.push((
+                    record.id.clone(),
+                    Principal::Agent(profile.profile_id.clone()),
+                ));
+                projection_owners.push(profile_index);
+            }
+        }
+        let projections = store.projections(&projection_requests, 0, 1)?;
+        let mut conversations = request
+            .profiles
+            .iter()
+            .map(|_| Vec::new())
+            .collect::<Vec<Vec<keith_protocol::ConversationSummaryProjection>>>();
+        let mut next_after_conversation_ids = vec![None; request.profiles.len()];
+        for (((conversation_id, principal), profile_index), projection) in projection_requests
+            .into_iter()
+            .zip(projection_owners)
+            .zip(projections)
+        {
+            let Some(projection) = projection else {
+                continue;
+            };
+            let profile = &request.profiles[profile_index];
+            let summaries = &mut conversations[profile_index];
+            if summaries.len() == profile.limit {
+                next_after_conversation_ids[profile_index] = summaries
+                    .last()
+                    .map(|summary| summary.conversation_id.clone());
+                continue;
+            }
+            let sessions = sessions_by_profile
+                .entry(profile.profile_id.clone())
+                .or_default();
+            let preferred_label = conversation_session_label(&conversation_id);
+            let participant_session_id = if let Some(session_id) = sessions
+                .iter()
+                .filter(|manifest| manifest.label.as_deref() == Some(preferred_label.as_str()))
+                .max_by_key(|manifest| manifest.created_at)
+                .map(|manifest| manifest.session_id.clone())
+            {
+                session_id
+            } else {
+                self.provision_conversation_participant_session(
+                    &conversation_id,
+                    &profile.profile_id,
+                    generation,
+                    UtcTimestamp::now()?,
+                )?
+            };
+            if !sessions
+                .iter()
+                .any(|manifest| manifest.session_id == participant_session_id)
+            {
+                sessions.push(self.sessions.manifest(&participant_session_id)?);
+            }
+            let mut summary = teammate_conversation_summary(&principal, &projection);
+            summary.participant_session_id = Some(participant_session_id);
+            summaries.push(summary);
+        }
+        Ok(request
+            .profiles
+            .iter()
+            .enumerate()
+            .map(
+                |(index, profile)| keith_protocol::ConversationListResponse {
+                    profile_id: Some(profile.profile_id.clone()),
+                    roster_revision,
+                    conversations: std::mem::take(&mut conversations[index]),
+                    next_after_conversation_id: next_after_conversation_ids[index].take(),
+                },
+            )
+            .collect())
+    }
+
+    fn canonical_conversation_records(&self) -> Result<Vec<ConversationRecord>, LocalRuntimeError> {
         let mut records = self
             .conversation_state
             .list_records(Collection::Conversations)?
@@ -5683,11 +6583,56 @@ impl LocalRuntime {
             .map(|record| serde_json::from_value::<ConversationRecord>(record.payload))
             .collect::<Result<Vec<_>, _>>()?;
         records.sort_by(|left, right| left.id.cmp(&right.id));
+        Ok(records)
+    }
+
+    fn current_roster_revision(&self) -> Result<Revision, LocalRuntimeError> {
+        Ok(self
+            .agent_roster()?
+            .into_iter()
+            .map(|entry| entry.revision)
+            .max()
+            .unwrap_or(Revision::ZERO))
+    }
+
+    fn catalog_sessions_for_profile(
+        &self,
+        profile_id: &ProfileId,
+    ) -> Result<Vec<SessionManifest>, LocalRuntimeError> {
+        Ok(self
+            .catalog_session_manifests()?
+            .into_iter()
+            .filter(|manifest| !manifest.archived && &manifest.profile_id == profile_id)
+            .filter(|manifest| {
+                self.root_scope
+                    .as_ref()
+                    .is_none_or(|root_scope| &manifest.root_tree_id == root_scope)
+            })
+            .collect())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn list_canonical_conversations_prepared(
+        &self,
+        store: &CanonicalConversationStore<EmbeddedStore>,
+        records: &[ConversationRecord],
+        principal: &Principal,
+        profile_id: Option<ProfileId>,
+        generation: Generation,
+        include_archived: bool,
+        after_conversation_id: Option<&ConversationId>,
+        limit: usize,
+        mut profile_sessions: Option<&mut Vec<SessionManifest>>,
+        roster_revision: Revision,
+    ) -> Result<keith_protocol::ConversationListResponse, LocalRuntimeError> {
         let mut conversations = Vec::with_capacity(limit);
         let mut next_after_conversation_id = None;
         for record in records {
             if after_conversation_id.is_some_and(|after| record.id <= *after)
                 || !include_archived && record.lifecycle == ConversationLifecycle::Archived
+                || profile_id
+                    .as_ref()
+                    .is_some_and(|profile_id| !record.participant_profiles.contains(profile_id))
             {
                 continue;
             }
@@ -5702,14 +6647,31 @@ impl LocalRuntime {
                 );
                 break;
             }
-            conversations.push(teammate_conversation_summary(principal, &projection));
+            let mut summary = teammate_conversation_summary(principal, &projection);
+            if let Some(profile_id) = profile_id.as_ref() {
+                let sessions = profile_sessions.as_deref_mut().ok_or_else(|| {
+                    LocalRuntimeError::Invalid("profile session catalog is unavailable".into())
+                })?;
+                let participant_session_id = self
+                    .resolve_conversation_participant_session_from_manifests(&record.id, sessions)
+                    .or_else(|_| {
+                        self.provision_conversation_participant_session(
+                            &record.id,
+                            profile_id,
+                            generation,
+                            UtcTimestamp::now()?,
+                        )
+                    })?;
+                if !sessions
+                    .iter()
+                    .any(|manifest| manifest.session_id == participant_session_id)
+                {
+                    sessions.push(self.sessions.manifest(&participant_session_id)?);
+                }
+                summary.participant_session_id = Some(participant_session_id);
+            }
+            conversations.push(summary);
         }
-        let roster_revision = self
-            .agent_roster()?
-            .into_iter()
-            .map(|entry| entry.revision)
-            .max()
-            .unwrap_or(Revision::ZERO);
         Ok(keith_protocol::ConversationListResponse {
             profile_id,
             roster_revision,
@@ -5723,10 +6685,262 @@ impl LocalRuntime {
         conversation_id: &ConversationId,
         profile_id: &ProfileId,
     ) -> Result<SessionId, LocalRuntimeError> {
+        let candidates = self
+            .catalog_session_manifests()?
+            .into_iter()
+            .filter(|manifest| !manifest.archived && &manifest.profile_id == profile_id)
+            .filter(|manifest| {
+                self.root_scope
+                    .as_ref()
+                    .is_none_or(|root_scope| &manifest.root_tree_id == root_scope)
+            })
+            .collect::<Vec<_>>();
+        self.resolve_conversation_participant_session_from_manifests(conversation_id, &candidates)
+    }
+
+    fn resolve_conversation_participant_session_from_manifests(
+        &self,
+        conversation_id: &ConversationId,
+        manifests: &[SessionManifest],
+    ) -> Result<SessionId, LocalRuntimeError> {
+        let preferred_label = conversation_session_label(conversation_id);
+        let mut candidates = manifests.iter().collect::<Vec<_>>();
+        candidates.sort_by_key(|manifest| {
+            (
+                manifest.label.as_deref() == Some(preferred_label.as_str()),
+                manifest.created_at,
+            )
+        });
+        candidates
+            .into_iter()
+            .rev()
+            .find(|manifest| {
+                self.sessions
+                    .conversation_context_revalidation(&manifest.session_id, conversation_id)
+                    .ok()
+                    .flatten()
+                    .is_some_and(|observation| {
+                        observation.authorization_state
+                            == ConversationAuthorizationState::Authorized
+                    })
+            })
+            .map(|manifest| manifest.session_id.clone())
+            .ok_or_else(|| {
+                LocalRuntimeError::Invalid(
+                    "target group participant has no authorized durable session".into(),
+                )
+            })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn provision_conversation_participant_session(
+        &self,
+        conversation_id: &ConversationId,
+        profile_id: &ProfileId,
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<SessionId, LocalRuntimeError> {
+        self.provision_conversation_participant_session_assigned(
+            conversation_id,
+            profile_id,
+            None,
+            None,
+            generation,
+            now,
+        )
+    }
+
+    fn provision_conversation_participant_session_assigned(
+        &self,
+        conversation_id: &ConversationId,
+        profile_id: &ProfileId,
+        assigned_root: Option<&RootTreeId>,
+        discovered_sessions: Option<&[SessionManifest]>,
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<SessionId, LocalRuntimeError> {
+        self.enabled_profile(profile_id)?;
+        let observation = CanonicalConversationStore::open(&self.conversation_state)?
+            .authorization_observation(conversation_id, &Principal::Agent(profile_id.clone()))?;
+        let session_label = conversation_session_label(conversation_id);
+        let owned_discovery;
+        let discovered = if let Some(discovered) = discovered_sessions {
+            discovered
+        } else {
+            owned_discovery = self.sessions.discover()?;
+            &owned_discovery
+        };
+        if let Some(root_tree_id) = assigned_root {
+            let root_sessions = discovered
+                .iter()
+                .filter(|manifest| !manifest.archived && &manifest.root_tree_id == root_tree_id)
+                .collect::<Vec<_>>();
+            if root_sessions.is_empty()
+                || root_sessions
+                    .iter()
+                    .any(|manifest| &manifest.profile_id != profile_id)
+            {
+                return Err(LocalRuntimeError::Invalid(
+                    "conversation session assignment does not match an existing profile root"
+                        .into(),
+                ));
+            }
+        }
+        let profile_sessions = discovered
+            .iter()
+            .filter(|manifest| !manifest.archived && &manifest.profile_id == profile_id)
+            .filter(|manifest| match assigned_root {
+                Some(root_tree_id) => &manifest.root_tree_id == root_tree_id,
+                None => self
+                    .root_scope
+                    .as_ref()
+                    .is_none_or(|root_scope| &manifest.root_tree_id == root_scope),
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        if let Some(manifest) = profile_sessions.iter().find(|manifest| {
+            manifest.label.as_deref() == Some(session_label.as_str())
+                && self
+                    .sessions
+                    .conversation_context_revalidation(&manifest.session_id, conversation_id)
+                    .ok()
+                    .flatten()
+                    .is_some_and(|observation| {
+                        observation.authorization_state
+                            == ConversationAuthorizationState::Authorized
+                    })
+        }) {
+            return Ok(manifest.session_id.clone());
+        }
+        let manifest = if let Some(source) = profile_sessions
+            .iter()
+            .max_by_key(|manifest| manifest.created_at)
+        {
+            self.create_session_assigned_internal(
+                profile_id,
+                &source.workspace_id,
+                SessionId::new(),
+                source.root_tree_id.clone(),
+                Some(session_label),
+                assigned_root.is_none(),
+            )?
+        } else if self.root_scope.is_none() {
+            let profile = self.profile(profile_id)?;
+            self.create_session(
+                profile_id,
+                &profile.profile.workspace_id,
+                Some(session_label),
+            )?
+        } else {
+            let profile = self.profile(profile_id)?;
+            self.create_session_assigned(
+                profile_id,
+                &profile.profile.workspace_id,
+                SessionId::new(),
+                self.root_scope
+                    .clone()
+                    .ok_or_else(|| LocalRuntimeError::Invalid("worker root disappeared".into()))?,
+                Some(session_label),
+            )?
+        };
+        let identity = self.writer_identity(generation, now);
         self.sessions
+            .acquire_writer(&manifest.session_id, identity.clone())?
+            .append_conversation_context(
+                now,
+                ParticipantConversationContextReference {
+                    cursor: StoredConversationCursor {
+                        conversation_id: conversation_id.clone(),
+                        applied_through_sequence: 0,
+                    },
+                    referenced_events: Vec::new(),
+                    authorization: ConversationAuthorizationObservation {
+                        observation_epoch: 1,
+                        participant_profile_id: profile_id.clone(),
+                        participant_revision: observation.participant_revision,
+                        conversation_revision: observation.conversation_revision,
+                        relevant_grant_revisions: observation.relevant_grant_revisions,
+                        policy_digest: observation.policy_digest_sha256,
+                        observed_at: now,
+                        state: ConversationAuthorizationState::Authorized,
+                    },
+                    private_context: None,
+                    recorded_by: identity,
+                },
+            )?;
+        Ok(manifest.session_id)
+    }
+
+    fn provision_conversation_participant_sessions_assigned(
+        &self,
+        conversation_id: &ConversationId,
+        assignments: &[ConversationSessionAssignment],
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<Vec<RuntimeSession>, LocalRuntimeError> {
+        if assignments.is_empty() || assignments.len() > 256 {
+            return Err(LocalRuntimeError::Invalid(
+                "conversation session assignment batch is empty or exceeds its bound".into(),
+            ));
+        }
+        let mut profiles = BTreeSet::new();
+        let mut provisioned = Vec::with_capacity(assignments.len());
+        let discovered = self.sessions.discover()?;
+        for assignment in assignments {
+            if !profiles.insert(assignment.profile_id.clone()) {
+                return Err(LocalRuntimeError::Invalid(
+                    "conversation session assignment batch contains a duplicate profile".into(),
+                ));
+            }
+            let session_id = self.provision_conversation_participant_session_assigned(
+                conversation_id,
+                &assignment.profile_id,
+                Some(&assignment.root_tree_id),
+                Some(&discovered),
+                generation,
+                now,
+            )?;
+            let session = self.sessions.manifest(&session_id)?;
+            if session.profile_id != assignment.profile_id
+                || session.root_tree_id != assignment.root_tree_id
+                || session.archived
+            {
+                return Err(LocalRuntimeError::Invalid(
+                    "conversation session assignment escaped its profile root".into(),
+                ));
+            }
+            provisioned.push(runtime_session(&session));
+        }
+        Ok(provisioned)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn authorize_group_participant_session(
+        &self,
+        conversation_id: &ConversationId,
+        profile_id: &ProfileId,
+        trigger_event_id: &keith_agent_types::EventId,
+        trigger_sequence: u64,
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<
+        (
+            SessionId,
+            keith_conversation::ConversationAuthorizationObservation,
+        ),
+        LocalRuntimeError,
+    > {
+        self.enabled_profile(profile_id)?;
+        let profile_sessions = self
+            .sessions
             .discover()?
             .into_iter()
             .filter(|manifest| !manifest.archived && &manifest.profile_id == profile_id)
+            .collect::<Vec<_>>();
+        let session_label = conversation_session_label(conversation_id);
+        let manifest = profile_sessions
+            .iter()
+            .filter(|manifest| manifest.label.as_deref() == Some(session_label.as_str()))
             .filter(|manifest| {
                 self.sessions
                     .conversation_context_revalidation(&manifest.session_id, conversation_id)
@@ -5735,12 +6949,118 @@ impl LocalRuntime {
                     .is_some()
             })
             .max_by_key(|manifest| manifest.created_at)
-            .map(|manifest| manifest.session_id)
-            .ok_or_else(|| {
-                LocalRuntimeError::Invalid(
-                    "target group participant has no authorized durable session".into(),
-                )
-            })
+            .cloned()
+            .map_or_else(
+                || {
+                    let session_id = self.provision_conversation_participant_session(
+                        conversation_id,
+                        profile_id,
+                        generation,
+                        now,
+                    )?;
+                    self.sessions
+                        .manifest(&session_id)
+                        .map_err(LocalRuntimeError::from)
+                },
+                Ok,
+            )?;
+        let principal = Principal::Agent(profile_id.clone());
+        let store = CanonicalConversationStore::open(&self.conversation_state)?;
+        let observation = store.authorization_observation(conversation_id, &principal)?;
+        let previous = self
+            .sessions
+            .load_index(&manifest.session_id)?
+            .latest_conversation_context(conversation_id)
+            .cloned();
+        let exact = previous.as_ref().is_some_and(|reference| {
+            reference.cursor.applied_through_sequence >= trigger_sequence
+                && reference.referenced_events.iter().any(|event| {
+                    &event.event_id == trigger_event_id && event.sequence == trigger_sequence
+                })
+                && reference.authorization.state == ConversationAuthorizationState::Authorized
+                && reference.authorization.participant_revision == observation.participant_revision
+                && reference.authorization.conversation_revision
+                    == observation.conversation_revision
+                && reference.authorization.relevant_grant_revisions
+                    == observation.relevant_grant_revisions
+                && reference.authorization.policy_digest == observation.policy_digest_sha256
+        });
+        if !exact {
+            let observation_epoch = previous.as_ref().map_or(Ok(1), |reference| {
+                reference
+                    .authorization
+                    .observation_epoch
+                    .checked_add(1)
+                    .ok_or_else(|| {
+                        LocalRuntimeError::Invalid(
+                            "group authorization observation epoch overflowed".into(),
+                        )
+                    })
+            })?;
+            let identity = self.writer_identity(generation, now);
+            let applied_through_sequence =
+                previous.as_ref().map_or(trigger_sequence, |reference| {
+                    reference
+                        .cursor
+                        .applied_through_sequence
+                        .max(trigger_sequence)
+                });
+            let mut referenced_events = previous
+                .as_ref()
+                .map_or_else(Vec::new, |reference| reference.referenced_events.clone());
+            if !referenced_events
+                .iter()
+                .any(|event| &event.event_id == trigger_event_id)
+            {
+                referenced_events.push(CanonicalEventCursorReference {
+                    event_id: trigger_event_id.clone(),
+                    sequence: trigger_sequence,
+                });
+            }
+            self.acquire_session_writer_with_retry(&manifest.session_id, identity.clone())?
+                .append_conversation_context(
+                    now,
+                    ParticipantConversationContextReference {
+                        cursor: StoredConversationCursor {
+                            conversation_id: conversation_id.clone(),
+                            applied_through_sequence,
+                        },
+                        referenced_events,
+                        authorization: ConversationAuthorizationObservation {
+                            observation_epoch,
+                            participant_profile_id: profile_id.clone(),
+                            participant_revision: observation.participant_revision,
+                            conversation_revision: observation.conversation_revision,
+                            relevant_grant_revisions: observation.relevant_grant_revisions.clone(),
+                            policy_digest: observation.policy_digest_sha256.clone(),
+                            observed_at: now,
+                            state: ConversationAuthorizationState::Authorized,
+                        },
+                        private_context: None,
+                        recorded_by: identity,
+                    },
+                )?;
+        }
+        Ok((manifest.session_id, observation))
+    }
+
+    fn acquire_session_writer_with_retry(
+        &self,
+        session_id: &SessionId,
+        identity: WriterIdentity,
+    ) -> Result<keith_session_store::SessionWriter, LocalRuntimeError> {
+        let delays = [0, 25, 75, 200, 500, 1_000];
+        for (attempt, delay_ms) in delays.into_iter().enumerate() {
+            if delay_ms > 0 {
+                std::thread::sleep(Duration::from_millis(delay_ms));
+            }
+            match self.sessions.acquire_writer(session_id, identity.clone()) {
+                Ok(writer) => return Ok(writer),
+                Err(SessionStoreError::WriterLocked(_)) if attempt + 1 < delays.len() => {}
+                Err(error) => return Err(error.into()),
+            }
+        }
+        unreachable!("bounded writer acquisition always returns on its final attempt")
     }
 
     /// Appends an attributed group message and durably queues the target participant without
@@ -5778,8 +7098,6 @@ impl LocalRuntime {
                 "group conversation revision is stale".into(),
             ));
         }
-        let participant_session_id =
-            self.resolve_group_participant_session(conversation_id, target_profile_id)?;
         let store = CanonicalConversationStore::open(&self.conversation_state)?;
         let event = self.conversation_command_event(
             &store,
@@ -5793,6 +7111,14 @@ impl LocalRuntime {
             now,
         )?;
         let outcome = store.append(expected_conversation_revision, &event)?;
+        let (participant_session_id, _) = self.authorize_group_participant_session(
+            conversation_id,
+            target_profile_id,
+            &event.id,
+            event.sequence,
+            generation,
+            now,
+        )?;
         let post_authority =
             group.authority_observation(conversation_id, principal, Some(&target))?;
         let delivery = self
@@ -5803,6 +7129,7 @@ impl LocalRuntime {
                 source_event_id: event.id.clone(),
                 source_profile_id: sender_profile_id.clone(),
                 destination_profile_id: target_profile_id.clone(),
+                purpose: ConversationDeliveryPurpose::Peer,
                 participant_session_id: participant_session_id.clone(),
                 policy_snapshot_key: post_authority.mention_policy.digest_sha256.clone(),
             })?;
@@ -6165,6 +7492,7 @@ impl LocalRuntime {
                 ResponsePayload::ConversationList(Box::new(self.list_canonical_conversations(
                     principal,
                     None,
+                    generation,
                     request.include_archived,
                     request.after_conversation_id.as_ref(),
                     request.limit,
@@ -6190,11 +7518,15 @@ impl LocalRuntime {
                 ResponsePayload::ConversationList(Box::new(self.list_canonical_conversations(
                     &Principal::Agent(request.profile_id.clone()),
                     Some(request.profile_id.clone()),
+                    generation,
                     request.include_archived,
                     request.after_conversation_id.as_ref(),
                     request.limit,
                 )?))
             }
+            ConversationCommand::ForProfiles(request) => ResponsePayload::ProfileConversationLists(
+                self.list_canonical_conversations_for_profiles(principal, request, generation)?,
+            ),
             ConversationCommand::Teammates(request) => {
                 self.execute_teammates_command(scope_session_id, principal, request, generation)?
             }
@@ -6503,36 +7835,52 @@ impl LocalRuntime {
                 )
             }
             ConversationCommand::AdvanceRead(request) => {
-                let revision =
-                    request
+                let current = store.read_receipt(&request.conversation_id, &principal)?;
+                if request.expected_revision.is_none()
+                    && current.as_ref().is_some_and(|receipt| {
+                        receipt.read_through_sequence >= request.read_through_sequence
+                    })
+                {
+                    let revision = current.expect("checked above").revision;
+                    conversation_mutation_payload(
+                        Some(request.conversation_id.clone()),
+                        None,
+                        None,
+                        Some(revision),
+                        ConversationMutationStatus::Applied,
+                    )
+                } else {
+                    let expected_revision = request
                         .expected_revision
-                        .map_or(Ok(Revision::ZERO), |revision| {
-                            revision.checked_next().ok_or_else(|| {
-                                LocalRuntimeError::Invalid(
-                                    "conversation read revision overflowed".into(),
-                                )
-                            })
-                        })?;
-                let now = UtcTimestamp::now()?;
-                store.advance_read_cursor(
-                    &principal,
-                    request.expected_revision,
-                    ReadReceipt {
-                        schema_version: CURRENT_SCHEMA_VERSION,
-                        conversation_id: request.conversation_id.clone(),
-                        reader: principal.clone(),
-                        read_through_sequence: request.read_through_sequence,
-                        updated_at: now,
-                        revision,
-                    },
-                )?;
-                conversation_mutation_payload(
-                    Some(request.conversation_id.clone()),
-                    None,
-                    None,
-                    Some(revision),
-                    ConversationMutationStatus::Applied,
-                )
+                        .or_else(|| current.as_ref().map(|receipt| receipt.revision));
+                    let revision = expected_revision.map_or(Ok(Revision::ZERO), |revision| {
+                        revision.checked_next().ok_or_else(|| {
+                            LocalRuntimeError::Invalid(
+                                "conversation read revision overflowed".into(),
+                            )
+                        })
+                    })?;
+                    let now = UtcTimestamp::now()?;
+                    store.advance_read_cursor(
+                        &principal,
+                        expected_revision,
+                        ReadReceipt {
+                            schema_version: CURRENT_SCHEMA_VERSION,
+                            conversation_id: request.conversation_id.clone(),
+                            reader: principal.clone(),
+                            read_through_sequence: request.read_through_sequence,
+                            updated_at: now,
+                            revision,
+                        },
+                    )?;
+                    conversation_mutation_payload(
+                        Some(request.conversation_id.clone()),
+                        None,
+                        None,
+                        Some(revision),
+                        ConversationMutationStatus::Applied,
+                    )
+                }
             }
             ConversationCommand::UpdateParticipant(request) => {
                 let target = participant_principal(&request.target);
@@ -8473,21 +9821,38 @@ impl LocalRuntime {
         &self,
         profile_id: &ProfileId,
     ) -> Result<ProfileAdmissionClosure<'_>, LocalRuntimeError> {
+        self.close_profile_admission_for_enablement(profile_id, false)
+    }
+
+    fn close_profile_admission_for_enablement(
+        &self,
+        profile_id: &ProfileId,
+        allow_missing_durable_fence: bool,
+    ) -> Result<ProfileAdmissionClosure<'_>, LocalRuntimeError> {
         let durable_closed = if self.root_scope.is_some() {
-            let snapshot = self
+            match self
                 .conversation_state
-                .profile_execution_snapshot(profile_id)?;
-            if snapshot.fence.state == ProfileExecutionFenceState::Open {
-                self.conversation_state.close_profile_execution_fence(
-                    &ProfileExecutionCloseRequest {
-                        profile_id: profile_id.clone(),
-                        expected_epoch: snapshot.fence.epoch,
-                        expected_revision: snapshot.fence.revision,
-                    },
-                    UtcTimestamp::now()?,
-                )?;
+                .profile_execution_snapshot(profile_id)
+            {
+                Ok(snapshot) => {
+                    if snapshot.fence.state == ProfileExecutionFenceState::Open {
+                        self.conversation_state.close_profile_execution_fence(
+                            &ProfileExecutionCloseRequest {
+                                profile_id: profile_id.clone(),
+                                expected_epoch: snapshot.fence.epoch,
+                                expected_revision: snapshot.fence.revision,
+                            },
+                            UtcTimestamp::now()?,
+                        )?;
+                    }
+                    true
+                }
+                Err(StoreError::ProfileExecutionRejected {
+                    profile_id: rejected_profile,
+                    reason: "fence is missing",
+                }) if allow_missing_durable_fence && rejected_profile == *profile_id => false,
+                Err(error) => return Err(error.into()),
             }
-            true
         } else {
             false
         };
@@ -8639,6 +10004,7 @@ impl LocalRuntime {
         }
         let cancellation = CancellationToken::default();
         let mut durable_monitor_stop = None;
+        let mut durable_monitor = None;
         let durable_permit = if let Some(root_tree_id) = &self.root_scope {
             let lease_database = self.worker_lease_database.as_ref().ok_or_else(|| {
                 LocalRuntimeError::Invalid("worker lease database is unavailable".into())
@@ -8667,10 +10033,6 @@ impl LocalRuntime {
                 ));
             }
             let now = UtcTimestamp::now()?;
-            let lease_expires_at =
-                UtcTimestamp::from_unix_millis(now.unix_millis().checked_add(250).ok_or_else(
-                    || LocalRuntimeError::Invalid("execution lease timestamp overflow".into()),
-                )?);
             let registration_id = EntityId::new();
             let outcome = self.conversation_state.admit_profile_execution(
                 &ProfileExecutionAdmissionRequest {
@@ -8691,7 +10053,7 @@ impl LocalRuntime {
                     worker_lease_expires_at: worker_lease.expires_at,
                     owner_instance: self.owner_instance.clone(),
                     token: stable_key(format!("profile-execution:{registration_id}"))?,
-                    lease_expires_at,
+                    lease_expires_at: worker_lease.expires_at,
                 },
                 now,
             )?;
@@ -8705,7 +10067,7 @@ impl LocalRuntime {
             let monitored_root = root_tree_id.clone();
             let monitored_worker = self.worker_id.clone();
             let monitored_authentication = self.owner_instance.clone();
-            std::thread::spawn(move || {
+            let monitor = std::thread::spawn(move || {
                 let Ok(store) = EmbeddedStore::open(&state_path, Some(&FileBackupHook)) else {
                     monitor_cancellation.cancel();
                     return;
@@ -8719,34 +10081,66 @@ impl LocalRuntime {
                         monitor_cancellation.cancel();
                         return;
                     };
-                    let current_worker_lease =
-                        keith_worker_runtime::LeaseManager::open(&worker_lease_database)
-                            .ok()
-                            .and_then(|manager| manager.current(&monitored_root).ok().flatten());
-                    let Some(current_worker_lease) = current_worker_lease else {
+                    let Ok(current_permit) = monitor_permit.lock().map(|permit| permit.clone())
+                    else {
                         monitor_cancellation.cancel();
                         return;
                     };
+                    let current_worker_lease =
+                        match keith_worker_runtime::LeaseManager::open(&worker_lease_database)
+                            .and_then(|manager| manager.current(&monitored_root))
+                        {
+                            Ok(Some(lease)) => lease,
+                            Ok(None) => {
+                                monitor_cancellation.cancel();
+                                return;
+                            }
+                            Err(_) if current_permit.lease_expires_at > now => continue,
+                            Err(_) => {
+                                monitor_cancellation.cancel();
+                                return;
+                            }
+                        };
                     if current_worker_lease.worker_id != monitored_worker
                         || current_worker_lease.authentication != monitored_authentication
                     {
                         monitor_cancellation.cancel();
                         return;
                     }
-                    let lease_expires_at = UtcTimestamp::from_unix_millis(
-                        now.unix_millis()
-                            .saturating_add(250)
-                            .min(current_worker_lease.expires_at.unix_millis()),
-                    );
-                    let renewed = monitor_permit.lock().ok().and_then(|permit| {
-                        store
-                            .renew_profile_execution(&permit, lease_expires_at, now)
-                            .ok()
-                    });
-                    let Some(renewed) = renewed else {
+                    if current_worker_lease.expires_at <= now {
                         monitor_cancellation.cancel();
                         return;
-                    };
+                    }
+                    let execution_is_authorized =
+                        match store.profile_execution_snapshot(&current_permit.profile_id) {
+                            Ok(snapshot) => {
+                                snapshot.fence.state == ProfileExecutionFenceState::Open
+                                    && snapshot.active.iter().any(|registration| {
+                                        registration.id == current_permit.registration_id
+                                            && registration.cancellation_requested_at.is_none()
+                                    })
+                            }
+                            Err(_) if current_permit.lease_expires_at > now => continue,
+                            Err(_) => false,
+                        };
+                    if !execution_is_authorized {
+                        monitor_cancellation.cancel();
+                        return;
+                    }
+                    let lease_expires_at = current_worker_lease.expires_at;
+                    if lease_expires_at <= current_permit.lease_expires_at {
+                        continue;
+                    }
+                    let renewed =
+                        match store.renew_profile_execution(&current_permit, lease_expires_at, now)
+                        {
+                            Ok(renewed) => renewed,
+                            Err(_) if current_permit.lease_expires_at > now => continue,
+                            Err(_) => {
+                                monitor_cancellation.cancel();
+                                return;
+                            }
+                        };
                     let Ok(mut permit) = monitor_permit.lock() else {
                         monitor_cancellation.cancel();
                         return;
@@ -8755,6 +10149,7 @@ impl LocalRuntime {
                 }
             });
             durable_monitor_stop = Some(stop);
+            durable_monitor = Some(monitor);
             Some(permit)
         } else {
             None
@@ -8775,6 +10170,7 @@ impl LocalRuntime {
                 session_id: session_id.clone(),
                 durable_permit,
                 durable_monitor_stop,
+                durable_monitor,
                 completed: false,
             },
         ))
@@ -8803,10 +10199,30 @@ impl LocalRuntime {
         root_tree_id: RootTreeId,
         title: Option<String>,
     ) -> Result<SessionManifest, LocalRuntimeError> {
-        if self
-            .root_scope
-            .as_ref()
-            .is_some_and(|root_scope| root_scope != &root_tree_id)
+        self.create_session_assigned_internal(
+            profile_id,
+            workspace_id,
+            session_id,
+            root_tree_id,
+            title,
+            true,
+        )
+    }
+
+    fn create_session_assigned_internal(
+        &self,
+        profile_id: &ProfileId,
+        workspace_id: &WorkspaceId,
+        session_id: SessionId,
+        root_tree_id: RootTreeId,
+        title: Option<String>,
+        enforce_worker_root: bool,
+    ) -> Result<SessionManifest, LocalRuntimeError> {
+        if enforce_worker_root
+            && self
+                .root_scope
+                .as_ref()
+                .is_some_and(|root_scope| root_scope != &root_tree_id)
         {
             return Err(LocalRuntimeError::Invalid(
                 "assigned session root does not match the worker lease".into(),
@@ -9079,10 +10495,7 @@ impl LocalRuntime {
             &writer.active_ancestry()?,
             definitions,
             text,
-            match ingress {
-                TurnIngress::User { .. } => Some(&ingress_entry.id),
-                TurnIngress::Controller { .. } => None,
-            },
+            Some(&ingress_entry.id),
             matches!(ingress, TurnIngress::User { .. }).then_some(ingress_source_id.as_str()),
         ) {
             Ok(request) => request,
@@ -9971,7 +11384,7 @@ impl LocalRuntime {
             .collect::<Vec<_>>();
         let schedules = self
             .scheduler
-            .projections_for_session(session_id)?
+            .projections_for_profile(&manifest.profile_id)?
             .iter()
             .map(schedule_projection)
             .collect::<Vec<_>>();
@@ -10192,17 +11605,174 @@ impl LocalRuntime {
         request: &BranchRequest,
         generation: Generation,
     ) -> Result<SessionSnapshot, LocalRuntimeError> {
-        let leaf = EntryId::from(request.parent_entry_id.clone());
-        let mut writer = self.sessions.acquire_writer(
-            &request.session_id,
-            self.writer_identity(generation, UtcTimestamp::now()?),
+        let source = self.sessions.export(&request.session_id)?;
+        let canonical_anchor = match (
+            request.conversation_id.as_ref(),
+            request.conversation_event_id.as_ref(),
+        ) {
+            (Some(conversation_id), Some(event_id)) => Some((conversation_id, event_id)),
+            (None, None) => None,
+            _ => {
+                return Err(LocalRuntimeError::Invalid(
+                    "canonical branch anchors require both conversation and event IDs".into(),
+                ));
+            }
+        };
+        if request.parent_entry_id.is_some() == canonical_anchor.is_some() {
+            return Err(LocalRuntimeError::Invalid(
+                "branch requests require exactly one session or canonical conversation anchor"
+                    .into(),
+            ));
+        }
+        let mut ancestry = Vec::new();
+        let source_leaf = request
+            .parent_entry_id
+            .as_ref()
+            .map(|entry_id| {
+                let leaf = EntryId::from(entry_id.clone());
+                let entries = source
+                    .entries
+                    .iter()
+                    .cloned()
+                    .map(|entry| (entry.id.clone(), entry))
+                    .collect::<BTreeMap<_, _>>();
+                let mut cursor = Some(leaf.clone());
+                while let Some(entry_id) = cursor.take() {
+                    let entry = entries
+                        .get(&entry_id)
+                        .ok_or_else(|| SessionStoreError::MissingEntry(entry_id.clone()))?;
+                    ancestry.push(entry.clone());
+                    cursor = entry.parent_id.clone();
+                }
+                ancestry.reverse();
+                Ok::<_, LocalRuntimeError>(leaf)
+            })
+            .transpose()?;
+        let canonical_events = if let Some((conversation_id, target_event_id)) = canonical_anchor {
+            let store = CanonicalConversationStore::open(&self.conversation_state)?;
+            let mut after_sequence = 0;
+            let mut events = Vec::new();
+            let mut found_target = false;
+            loop {
+                let projection =
+                    store.projection(conversation_id, &Principal::Human, after_sequence, 1_000)?;
+                if !projection.participants.iter().any(|participant| {
+                    participant.left_at.is_none()
+                        && participant.principal
+                            == ParticipantPrincipal::Agent(source.manifest.profile_id.clone())
+                }) {
+                    return Err(LocalRuntimeError::Invalid(
+                        "branch source profile is not an active conversation participant".into(),
+                    ));
+                }
+                if projection.events.is_empty() {
+                    break;
+                }
+                for event in projection.events {
+                    after_sequence = event.sequence;
+                    found_target = event.id == *target_event_id;
+                    events.push(event);
+                    if found_target {
+                        break;
+                    }
+                }
+                if found_target {
+                    break;
+                }
+            }
+            if !found_target {
+                return Err(LocalRuntimeError::Invalid(
+                    "canonical branch event is not visible in the conversation".into(),
+                ));
+            }
+            events
+        } else {
+            Vec::new()
+        };
+        let label = request.label.clone().or_else(|| {
+            source
+                .manifest
+                .label
+                .as_ref()
+                .map(|value| format!("{value} branch"))
+                .or_else(|| Some("Conversation branch".into()))
+        });
+        let root_tree_id = self.root_scope.clone().unwrap_or_else(RootTreeId::new);
+        let branch = self.create_session_assigned(
+            &source.manifest.profile_id,
+            &source.manifest.workspace_id,
+            SessionId::new(),
+            root_tree_id,
+            label,
         )?;
-        writer.select_leaf(&leaf)?;
-        if let Some(label) = &request.label {
-            writer.label_branch(label.clone(), &leaf)?;
+        let now = UtcTimestamp::now()?;
+        let mut writer = self
+            .sessions
+            .acquire_writer(&branch.session_id, self.writer_identity(generation, now))?;
+        let mut parent = None;
+        for entry in ancestry {
+            let copied = writer.append(parent, entry.timestamp, entry.payload)?;
+            parent = Some(copied.id);
+        }
+        for event in canonical_events {
+            let Some(text) = event
+                .content
+                .filter(|content| !content.trim().is_empty())
+                .or_else(|| {
+                    (!event.artifacts.is_empty()).then(|| {
+                        format!(
+                            "Shared artifacts: {}",
+                            event
+                                .artifacts
+                                .iter()
+                                .map(|artifact| artifact.artifact_id.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    })
+                })
+            else {
+                continue;
+            };
+            let mut provider_metadata = BTreeMap::new();
+            provider_metadata.insert(
+                "keith.conversation_id".into(),
+                event.conversation_id.to_string(),
+            );
+            provider_metadata.insert("keith.conversation_event_id".into(), event.id.to_string());
+            provider_metadata.insert(
+                "keith.conversation_sequence".into(),
+                event.sequence.to_string(),
+            );
+            let author = event.author;
+            let message = StoredMessage {
+                role: match &author {
+                    Principal::Human => StoredMessageRole::User,
+                    Principal::Agent(_) | Principal::System => StoredMessageRole::Assistant,
+                },
+                content: vec![StoredContentBlock::Text { text }],
+                provider_metadata,
+            };
+            let payload = match author {
+                Principal::Human => SessionEntryPayload::UserMessage { message },
+                Principal::Agent(_) => SessionEntryPayload::AssistantFinal {
+                    turn_id: TurnId::new(),
+                    message,
+                },
+                Principal::System => SessionEntryPayload::AssistantMessage { message },
+            };
+            let copied = writer.append(parent, event.timestamp, payload)?;
+            parent = Some(copied.id);
         }
         drop(writer);
-        self.snapshot(&request.session_id, generation, SessionState::Ready)
+        if let (Some(label), Some(source_leaf)) = (&request.label, source_leaf) {
+            let mut source_writer = self.sessions.acquire_writer(
+                &request.session_id,
+                self.writer_identity(generation, UtcTimestamp::now()?),
+            )?;
+            source_writer.label_branch(label.clone(), &source_leaf)?;
+        }
+        self.snapshot(&branch.session_id, generation, SessionState::Ready)
     }
 
     fn select_branch(
@@ -10510,11 +12080,62 @@ impl LocalRuntime {
                 })?,
         };
         let now = UtcTimestamp::now()?;
+        let schedule = schedule_spec(&request.expression, &request.time_zone, now)?;
+        if request.reply_route.is_none() {
+            let store = CanonicalConversationStore::open(&self.conversation_state)?;
+            let destination = store.provision_permanent_human_dm(&request.profile_id, now)?;
+            let participant_session_id = self.provision_conversation_participant_session(
+                &destination.id,
+                &request.profile_id,
+                Generation::ZERO,
+                now,
+            )?;
+            let observation = store.authorization_observation(
+                &destination.id,
+                &Principal::Agent(request.profile_id.clone()),
+            )?;
+            let routine = self.scheduler.create_routine(
+                NewOwnedRoutine {
+                    owner_profile_id: request.profile_id.clone(),
+                    participant_session_id,
+                    destination_conversation_id: destination.id,
+                    trigger: RoutineTrigger::Schedule {
+                        schedule,
+                        time_zone: request.time_zone.clone(),
+                    },
+                    invocation: RoutineInvocation::Prompt {
+                        prompt: request.prompt.clone(),
+                    },
+                    approval_boundary: RoutineApprovalBoundary {
+                        policy_revision: observation.participant_revision,
+                        allow_unattended: true,
+                        required_approval_keys: BTreeSet::new(),
+                    },
+                    approval_snapshot: RoutineApprovalSnapshot {
+                        policy_revision: observation.participant_revision,
+                        approval_keys: BTreeSet::new(),
+                        captured_at: now,
+                    },
+                    limits: ActionLimits::default(),
+                    missed_run: MissedRunPolicy::RunOnce,
+                    enabled: true,
+                },
+                now,
+            )?;
+            return self
+                .scheduler
+                .projections()?
+                .into_iter()
+                .find(|projection| projection.job_id == routine.id)
+                .as_ref()
+                .map(schedule_projection)
+                .ok_or_else(|| LocalRuntimeError::Invalid("created routine disappeared".into()));
+        }
         let job = self.scheduler.create(
             NewScheduledJob {
                 profile_id: request.profile_id.clone(),
                 session_id,
-                schedule: schedule_spec(&request.expression, &request.time_zone, now)?,
+                schedule,
                 action: ActionPayload::Scheduled {
                     instruction: request.prompt.clone(),
                 },
@@ -10917,17 +12538,57 @@ impl LocalRuntime {
         generation: Generation,
         operator_initiated: bool,
     ) -> Result<Option<SessionSnapshot>, LocalRuntimeError> {
-        let (manifest, cancellation, _admission_guard) = self.admit_turn(session_id)?;
+        self.drain_session_actions_bounded(session_id, generation, operator_initiated, 64)
+    }
+
+    fn drain_session_actions_bounded(
+        &self,
+        session_id: &SessionId,
+        generation: Generation,
+        operator_initiated: bool,
+        max_actions: usize,
+    ) -> Result<Option<SessionSnapshot>, LocalRuntimeError> {
         let child = self.children.find_session(session_id)?;
+        let now = UtcTimestamp::now()?;
+        let action_records = self.actions.list_session(session_id)?;
+        let has_drain_work = action_records.iter().any(|record| match record.state {
+            ActionState::Admitted | ActionState::Running | ActionState::Waiting => true,
+            ActionState::Queued => {
+                record
+                    .action
+                    .not_before
+                    .is_none_or(|not_before| now >= not_before)
+                    || record
+                        .action
+                        .deadline
+                        .is_some_and(|deadline| now >= deadline)
+            }
+            ActionState::Completed
+            | ActionState::Failed
+            | ActionState::Cancelled
+            | ActionState::Expired => false,
+        });
+        if !has_drain_work {
+            return Ok(None);
+        }
+        let has_conversation_delivery = action_records.iter().any(|record| {
+            matches!(record.state, ActionState::Queued | ActionState::Waiting)
+                && matches!(
+                    record.action.source,
+                    ActionSource::PeerMessage { .. } | ActionSource::Coordination { .. }
+                )
+        });
         if !operator_initiated
             && child.is_none()
-            && !self.background_allowed(session_id, UtcTimestamp::now()?)?
+            && !has_conversation_delivery
+            && !self.background_allowed(session_id, now)?
         {
             return Ok(None);
         }
+        let (manifest, cancellation, _admission_guard) = self.admit_turn(session_id)?;
         let mut last_snapshot =
             self.reconcile_action_finalizations(session_id, child.as_ref(), generation)?;
-        for _ in 0..64 {
+        for _ in 0..max_actions {
             let Some(selected) = self.actions.select_next(
                 session_id,
                 UtcTimestamp::now()?,
@@ -10941,10 +12602,14 @@ impl LocalRuntime {
                 break;
             };
             let action_id = selected.record.action.id.clone();
-            self.revalidate_peer_action_authority(&selected.record.action)?;
+            self.revalidate_conversation_action_authority(&selected.record.action)?;
             self.actions
                 .mark_running(&action_id, UtcTimestamp::now()?)?;
-            let text = match self.action_text(session_id, &selected.record.action.payload) {
+            let text = match self
+                .action_text(session_id, &selected.record.action.payload)
+                .and_then(|text| {
+                    self.action_text_with_coordination_context(&selected.record.action, text)
+                }) {
                 Ok(text) => text,
                 Err(error) => {
                     self.actions
@@ -10962,13 +12627,13 @@ impl LocalRuntime {
                     }
                 }
                 ActionSource::PeerMessage { binding } => TurnIngress::Controller {
-                    source_id: binding.publication_key.to_string(),
+                    source_id: format!("conversation:{}", binding.publication_key),
                     action_id: Some(action_id.clone()),
                     turn_id: None,
                     accepted_at: None,
                 },
                 ActionSource::Coordination { binding } => TurnIngress::Controller {
-                    source_id: binding.stable_key().to_string(),
+                    source_id: format!("conversation:{}", binding.stable_key()),
                     action_id: Some(action_id.clone()),
                     turn_id: None,
                     accepted_at: None,
@@ -11014,7 +12679,7 @@ impl LocalRuntime {
                             })
                         })
                         .and_then(|()| {
-                            self.finalize_peer_action_publication(
+                            self.finalize_conversation_action_publication(
                                 &selected.record,
                                 &finalized,
                                 generation,
@@ -11031,6 +12696,7 @@ impl LocalRuntime {
                         Some(self.snapshot(session_id, generation, SessionState::Ready)?);
                 }
                 Err(error) => {
+                    self.fail_group_round_delivery(&selected.record.action, &error.to_string())?;
                     self.actions
                         .fail(&action_id, UtcTimestamp::now()?, error.to_string())?;
                     return Err(error);
@@ -11040,55 +12706,194 @@ impl LocalRuntime {
         Ok(last_snapshot)
     }
 
-    fn revalidate_peer_action_authority(
+    fn revalidate_conversation_action_authority(
         &self,
         action: &SessionAction,
     ) -> Result<(), LocalRuntimeError> {
-        let ActionSource::PeerMessage { binding } = &action.source else {
-            return Ok(());
-        };
-        self.enabled_profile(&binding.sender_profile_id)?;
-        self.enabled_profile(&binding.destination_profile_id)?;
-        let manifest = self.sessions.manifest(&binding.participant_session_id)?;
+        let (conversation_id, destination_profile_id, participant_session_id, snapshot) =
+            match &action.source {
+                ActionSource::PeerMessage { binding } => {
+                    self.enabled_profile(&binding.sender_profile_id)?;
+                    (
+                        &binding.conversation_id,
+                        &binding.destination_profile_id,
+                        &binding.participant_session_id,
+                        &binding.policy_snapshot,
+                    )
+                }
+                ActionSource::Coordination {
+                    binding:
+                        CoordinationActionBinding::GroupRoundDelivery {
+                            conversation_id,
+                            destination_profile_id,
+                            participant_session_id,
+                            policy_snapshot,
+                            ..
+                        },
+                } => (
+                    conversation_id,
+                    destination_profile_id,
+                    participant_session_id,
+                    policy_snapshot,
+                ),
+                _ => return Ok(()),
+            };
+        self.enabled_profile(destination_profile_id)?;
+        let manifest = self.sessions.manifest(participant_session_id)?;
         if manifest.archived
-            || manifest.profile_id != binding.destination_profile_id
+            || manifest.profile_id != *destination_profile_id
             || manifest.session_id != action.session_id
         {
             return Err(LocalRuntimeError::Invalid(
-                "peer action participant session binding is no longer valid".into(),
+                "conversation action participant session binding is no longer valid".into(),
             ));
         }
         let store = CanonicalConversationStore::open(&self.conversation_state)?;
-        let sender = Principal::Agent(binding.sender_profile_id.clone());
-        let destination = Principal::Agent(binding.destination_profile_id.clone());
-        if !store.is_active_participant(&binding.conversation_id, &sender)? {
-            return Err(LocalRuntimeError::Invalid(
-                "peer action sender is no longer an active participant".into(),
-            ));
+        if let ActionSource::PeerMessage { binding } = &action.source {
+            let sender = Principal::Agent(binding.sender_profile_id.clone());
+            if !store.is_active_participant(conversation_id, &sender)? {
+                return Err(LocalRuntimeError::Invalid(
+                    "peer action sender is no longer an active participant".into(),
+                ));
+            }
         }
-        let observation =
-            store.authorization_observation(&binding.conversation_id, &destination)?;
-        if observation.conversation_revision != binding.policy_snapshot.conversation_revision
-            || observation.participant_revision != binding.policy_snapshot.participant_revision
-            || observation.relevant_grant_revisions
-                != binding.policy_snapshot.relevant_grant_revisions
-            || observation.policy_digest_sha256 != binding.policy_snapshot.policy_digest_sha256
+        let destination = Principal::Agent(destination_profile_id.clone());
+        let observation = store.authorization_observation(conversation_id, &destination)?;
+        let exact = matches!(action.source, ActionSource::PeerMessage { .. });
+        if observation.participant_revision != snapshot.participant_revision
+            || observation.relevant_grant_revisions != snapshot.relevant_grant_revisions
+            || (exact
+                && (observation.conversation_revision != snapshot.conversation_revision
+                    || observation.policy_digest_sha256 != snapshot.policy_digest_sha256))
         {
             return Err(LocalRuntimeError::Invalid(
-                "peer action authority changed after enqueue".into(),
+                "conversation action authority changed after enqueue".into(),
             ));
+        };
+        Ok(())
+    }
+
+    fn fail_group_round_delivery(
+        &self,
+        action: &SessionAction,
+        safe_reason: &str,
+    ) -> Result<(), LocalRuntimeError> {
+        let ActionSource::Coordination {
+            binding:
+                CoordinationActionBinding::GroupRoundDelivery {
+                    delivery_id,
+                    round_id,
+                    destination_profile_id,
+                    ..
+                },
+        } = &action.source
+        else {
+            return Ok(());
+        };
+        let delivery_coordinator = self.delivery_coordinator()?;
+        let delivery = delivery_coordinator.delivery(delivery_id)?;
+        if matches!(
+            delivery.state,
+            DeliveryState::Pending | DeliveryState::Claimed | DeliveryState::Retryable
+        ) {
+            delivery_coordinator.cancel(
+                delivery_id,
+                delivery.revision,
+                safe_reason.chars().take(1_024).collect::<String>(),
+            )?;
+        }
+        let round_coordinator = self.round_coordinator()?;
+        let round = round_coordinator
+            .round(round_id)
+            .map_err(module_error)?
+            .ok_or_else(|| LocalRuntimeError::Invalid("round disappeared".into()))?;
+        if round.active_deliveries.contains(delivery_id) {
+            let settled = round_coordinator
+                .settle_delivery(
+                    &RoundTransition {
+                        stable_key: StableKey::parse(format!(
+                            "round:{round_id}/failed:{destination_profile_id}"
+                        ))
+                        .map_err(|error| {
+                            LocalRuntimeError::Invalid(format!(
+                                "round failure key is invalid: {error}"
+                            ))
+                        })?,
+                        round_id: round_id.clone(),
+                        actor_profile_id: destination_profile_id.clone(),
+                        expected_revision: round.revision,
+                        occurred_at: UtcTimestamp::now()?,
+                    },
+                    delivery_id,
+                    false,
+                )
+                .map_err(module_error)?;
+            if settled.round.active_deliveries.is_empty() {
+                round_coordinator
+                    .converge(
+                        &RoundTransition {
+                            stable_key: StableKey::parse(format!("round:{round_id}/converged"))
+                                .map_err(|error| {
+                                    LocalRuntimeError::Invalid(format!(
+                                        "round convergence key is invalid: {error}"
+                                    ))
+                                })?,
+                            round_id: round_id.clone(),
+                            actor_profile_id: destination_profile_id.clone(),
+                            expected_revision: settled.round.revision,
+                            occurred_at: UtcTimestamp::now()?,
+                        },
+                        "all participant deliveries settled".into(),
+                    )
+                    .map_err(module_error)?;
+            }
         }
         Ok(())
     }
 
-    fn finalize_peer_action_publication(
+    fn finalize_conversation_action_publication(
         &self,
         record: &keith_action_store::ActionRecord,
         finalized: &FinalizedTurnOutbox,
         generation: Generation,
     ) -> Result<(), LocalRuntimeError> {
-        let ActionSource::PeerMessage { binding } = &record.action.source else {
-            return Ok(());
+        let (
+            publication_key,
+            conversation_id,
+            source_event_id,
+            participant_session_id,
+            author,
+            round_delivery,
+        ) = match &record.action.source {
+            ActionSource::PeerMessage { binding } => (
+                binding.publication_key.clone(),
+                binding.conversation_id.clone(),
+                binding.source_event_id.clone(),
+                binding.participant_session_id.clone(),
+                binding.destination_profile_id.clone(),
+                None,
+            ),
+            ActionSource::Coordination {
+                binding:
+                    CoordinationActionBinding::GroupRoundDelivery {
+                        stable_key,
+                        conversation_id,
+                        source_event_id,
+                        participant_session_id,
+                        destination_profile_id,
+                        delivery_id,
+                        round_id,
+                        ..
+                    },
+            } => (
+                stable_key.clone(),
+                conversation_id.clone(),
+                source_event_id.clone(),
+                participant_session_id.clone(),
+                destination_profile_id.clone(),
+                Some((delivery_id.clone(), round_id.clone())),
+            ),
+            _ => return Ok(()),
         };
         let now = UtcTimestamp::now()?;
         let _ = self.actions.recover_expired_internal_deliveries(now)?;
@@ -11119,20 +12924,150 @@ impl LocalRuntime {
                 Ok,
             )?;
         let mut writer = self.sessions.acquire_writer(
-            &binding.participant_session_id,
+            &participant_session_id,
             self.writer_identity(generation, now),
         )?;
         writer.finalize_participant_publication(
             now,
             ParticipantPublicationFinalizationRequest {
-                stable_publication_key: binding.publication_key.clone(),
-                conversation_id: binding.conversation_id.clone(),
-                source_event_id: binding.source_event_id.clone(),
+                stable_publication_key: publication_key.clone(),
+                conversation_id: conversation_id.clone(),
+                source_event_id: source_event_id.clone(),
                 turn_id: finalized.turn_id.clone(),
                 result_entry_id: finalized.final_id.clone(),
                 result_digest: sha256_hex(finalized.text.as_bytes()),
             },
         )?;
+        let finalized_delivery = if let Some((delivery_id, _)) = &round_delivery {
+            let coordinator = self.delivery_coordinator()?;
+            let delivery = coordinator.delivery(delivery_id)?;
+            Some(match delivery.state {
+                DeliveryState::Claimed
+                    if delivery
+                        .claim
+                        .as_ref()
+                        .is_some_and(|lease| lease.expires_at > now) =>
+                {
+                    let lease = delivery.claim.as_ref().ok_or_else(|| {
+                        LocalRuntimeError::Invalid("claimed round delivery has no lease".into())
+                    })?;
+                    coordinator.finalize(
+                        &keith_coordination::ConversationDeliveryClaim {
+                            delivery: delivery.clone(),
+                            token: lease.token.clone(),
+                            fence: lease.fence,
+                            lease_expires_at: lease.expires_at,
+                        },
+                        now,
+                    )?
+                }
+                DeliveryState::Finalized | DeliveryState::Published => delivery,
+                DeliveryState::Pending | DeliveryState::Claimed | DeliveryState::Retryable => {
+                    let claim = coordinator.claim_exact(delivery_id, now)?;
+                    coordinator.finalize(&claim, now)?
+                }
+                _ => {
+                    return Err(LocalRuntimeError::Invalid(
+                        "round delivery cannot publish from its terminal state".into(),
+                    ));
+                }
+            })
+        } else {
+            None
+        };
+        let store = CanonicalConversationStore::open(&self.conversation_state)?;
+        let principal = Principal::Agent(author);
+        let projection = store.projection(&conversation_id, &principal, 0, 1_000)?;
+        let publication_event_id = event_id_from_operation_key(&publication_key);
+        if !projection.events.iter().any(|event| {
+            event.id == publication_event_id && event.publication_key == publication_key
+        }) {
+            store.append(
+                projection.conversation.revision,
+                &ConversationEvent {
+                    schema_version: CURRENT_SCHEMA_VERSION,
+                    id: publication_event_id,
+                    conversation_id,
+                    sequence: projection
+                        .conversation
+                        .event_head
+                        .as_ref()
+                        .map_or(1, |head| head.sequence.saturating_add(1)),
+                    publication_key,
+                    author: principal,
+                    timestamp: now,
+                    kind: ConversationEventKind::Message,
+                    content: Some(finalized.text.clone()),
+                    artifacts: Vec::new(),
+                    reply_to: Some(source_event_id),
+                    thread_parent: None,
+                    provenance: EventProvenance {
+                        source: "participant-delivery-publication".into(),
+                        source_ids: vec![
+                            record.action.id.to_string(),
+                            finalized.final_id.to_string(),
+                        ],
+                        migration_version: None,
+                    },
+                },
+            )?;
+        }
+        if let Some((delivery_id, round_id)) = &round_delivery {
+            let coordinator = self.delivery_coordinator()?;
+            let delivery = finalized_delivery.expect("round delivery was finalized");
+            let published = if delivery.state == DeliveryState::Published {
+                delivery
+            } else {
+                coordinator.acknowledge_publication(delivery_id, delivery.revision)?
+            };
+            let round_coordinator = self.round_coordinator()?;
+            let round = round_coordinator
+                .round(round_id)
+                .map_err(module_error)?
+                .ok_or_else(|| LocalRuntimeError::Invalid("round disappeared".into()))?;
+            if round.active_deliveries.contains(delivery_id) {
+                let settled = round_coordinator
+                    .settle_delivery(
+                        &RoundTransition {
+                            stable_key: StableKey::parse(format!(
+                                "round:{round_id}/settle:{}",
+                                published.destination_profile_id
+                            ))
+                            .map_err(|error| {
+                                LocalRuntimeError::Invalid(format!(
+                                    "round settlement key is invalid: {error}"
+                                ))
+                            })?,
+                            round_id: round_id.clone(),
+                            actor_profile_id: published.destination_profile_id.clone(),
+                            expected_revision: round.revision,
+                            occurred_at: UtcTimestamp::now()?,
+                        },
+                        delivery_id,
+                        false,
+                    )
+                    .map_err(module_error)?;
+                if settled.round.active_deliveries.is_empty() {
+                    round_coordinator
+                        .converge(
+                            &RoundTransition {
+                                stable_key: StableKey::parse(format!("round:{round_id}/converged"))
+                                    .map_err(|error| {
+                                        LocalRuntimeError::Invalid(format!(
+                                            "round convergence key is invalid: {error}"
+                                        ))
+                                    })?,
+                                round_id: round_id.clone(),
+                                actor_profile_id: published.destination_profile_id.clone(),
+                                expected_revision: settled.round.revision,
+                                occurred_at: UtcTimestamp::now()?,
+                            },
+                            "all participant deliveries settled".into(),
+                        )
+                        .map_err(module_error)?;
+                }
+            }
+        }
         self.actions
             .complete_internal_delivery(&record.action.id, &claim, UtcTimestamp::now()?)?;
         Ok(())
@@ -11222,7 +13157,7 @@ impl LocalRuntime {
                     child.map_or(Ok(()), |child| self.publish_child_result(child, &finalized))
                 })
                 .and_then(|()| {
-                    self.finalize_peer_action_publication(&record, &finalized, generation)
+                    self.finalize_conversation_action_publication(&record, &finalized, generation)
                 });
             if delivery.is_ok() {
                 self.actions.complete(&action_id, UtcTimestamp::now()?)?;
@@ -11957,6 +13892,91 @@ impl LocalRuntime {
         }
     }
 
+    fn action_text_with_coordination_context(
+        &self,
+        action: &SessionAction,
+        instruction: String,
+    ) -> Result<String, LocalRuntimeError> {
+        if let ActionSource::PeerMessage { binding } = &action.source {
+            let sender_name = self
+                .agent_record(&binding.sender_profile_id)?
+                .profile
+                .profile
+                .display_name
+                .clone();
+            return Ok(format!(
+                "You received an agent-to-agent message from {sender_name}. Reply naturally and write only the response you want {sender_name} to receive. Your final response is automatically attributed to you and published to the shared A2A transcript. Do not call or look for a peer-messaging tool, and do not discuss delivery mechanics.\n\n{instruction}"
+            ));
+        }
+        let ActionSource::Coordination {
+            binding:
+                CoordinationActionBinding::GroupRoundDelivery {
+                    conversation_id,
+                    source_event_id,
+                    destination_profile_id,
+                    ..
+                },
+        } = &action.source
+        else {
+            return Ok(instruction);
+        };
+        let principal = Principal::Agent(destination_profile_id.clone());
+        let projection = CanonicalConversationStore::open(&self.conversation_state)?.projection(
+            conversation_id,
+            &principal,
+            0,
+            1_000,
+        )?;
+        let source_sequence = projection
+            .events
+            .iter()
+            .find(|event| &event.id == source_event_id)
+            .map(|event| event.sequence)
+            .ok_or_else(|| {
+                LocalRuntimeError::Invalid(
+                    "group-round source message disappeared before execution".into(),
+                )
+            })?;
+        let mut transcript = String::new();
+        let mut peer_replies = 0_usize;
+        for event in projection.events.iter().filter(|event| {
+            event.sequence >= source_sequence && event.kind == ConversationEventKind::Message
+        }) {
+            let speaker = match &event.author {
+                Principal::Human => "User".to_owned(),
+                Principal::Agent(profile_id) => {
+                    if event.sequence > source_sequence {
+                        peer_replies = peer_replies.saturating_add(1);
+                    }
+                    self.agent_record(profile_id)?
+                        .profile
+                        .profile
+                        .display_name
+                        .clone()
+                }
+                Principal::System => "Keith system".to_owned(),
+            };
+            let Some(content) = event.content.as_deref() else {
+                continue;
+            };
+            transcript.push_str(&speaker);
+            transcript.push_str(": ");
+            transcript.extend(content.chars().take(6_000));
+            transcript.push('\n');
+            if transcript.len() >= 18_000 {
+                break;
+            }
+        }
+        let collaboration_direction = if peer_replies == 0 {
+            "No teammate has replied yet. Contribute one distinct, concrete perspective and leave room for the others."
+        } else {
+            "Teammate replies are already visible. Build on, refine, or challenge them directly instead of independently repeating the original request."
+        };
+        Ok(format!(
+            "{instruction}\n\n{collaboration_direction}\n\n<canonical_group_thread>\n{transcript}</canonical_group_thread>\n\nRespond only as yourself with the useful next contribution. Do not describe this routing or claim another teammate's work."
+        ))
+    }
+
     fn prompt_with_artifacts(
         &self,
         session_id: &SessionId,
@@ -12424,12 +14444,23 @@ impl LocalRuntime {
                     .cancel(&attempt.action_id, UtcTimestamp::now()?, reason)?;
                 detail = Some(reason.into());
             }
+            let failure_detail = detail.clone();
             self.scheduler.finish_attempt(
                 &attempt.attempt_id,
                 succeeded,
                 detail,
                 UtcTimestamp::now()?,
             )?;
+            if succeeded {
+                self.publish_pending_routine_results()?;
+            } else if let Some(detail) = failure_detail {
+                self.publish_failed_routine_result(
+                    &attempt.job_id,
+                    &attempt.attempt_id,
+                    &attempt.action_id,
+                    &detail,
+                )?;
+            }
         }
         self.system_modules
             .telemetry
@@ -12456,6 +14487,7 @@ impl LocalRuntime {
                 recorded_at: now,
             })
             .map_err(module_error)?;
+        let mut drained_maintenance_action = false;
         for session in sessions.iter().filter(|session| !session.archived) {
             let queue_depth = self.actions.list_session(&session.session_id)?.len();
             self.system_modules
@@ -12467,7 +14499,13 @@ impl LocalRuntime {
                     recorded_at: now,
                 })
                 .map_err(module_error)?;
-            self.drain_session_actions(&session.session_id, Generation::ZERO, false)?;
+            if !drained_maintenance_action
+                && self
+                    .drain_session_actions_bounded(&session.session_id, Generation::ZERO, false, 1)?
+                    .is_some()
+            {
+                drained_maintenance_action = true;
+            }
         }
         self.system_modules
             .telemetry
@@ -12485,6 +14523,169 @@ impl LocalRuntime {
                 recorded_at: now,
             })
             .map_err(module_error)?;
+        Ok(())
+    }
+
+    fn publish_pending_routine_results(&self) -> Result<(), LocalRuntimeError> {
+        for intent in self.scheduler.pending_routine_publications()? {
+            let now = UtcTimestamp::now()?;
+            let publication = (|| -> Result<(keith_agent_types::EventId, Vec<keith_agent_types::ArtifactId>), LocalRuntimeError> {
+                let finalized = self
+                    .finalized_turn_outbox_for_action(
+                        &intent.participant_session_id,
+                        &intent.action_id,
+                    )?
+                    .ok_or_else(|| LocalRuntimeError::Invalid("routine completed without a finalized result".into()))?;
+                let routine = self.scheduler.routine(&intent.routine_id)?;
+                let invocation = match &routine.invocation {
+                    RoutineInvocation::Prompt { prompt } => prompt.chars().take(4_096).collect(),
+                    RoutineInvocation::Skill {
+                        skill_version_id, ..
+                    } => format!("Skill {skill_version_id}"),
+                };
+                let visible_result = format!("Routine: {invocation}\n\n{}", finalized.text);
+                let principal = Principal::Agent(intent.owner_profile_id.clone());
+                let store = CanonicalConversationStore::open(&self.conversation_state)?;
+                let observation = store.authorization_observation(
+                    &intent.destination_conversation_id,
+                    &principal,
+                )?;
+                if observation.participant_revision != intent.approval.policy_revision {
+                    return Err(LocalRuntimeError::Invalid(
+                        "routine destination authority changed before publication".into(),
+                    ));
+                }
+                let projection = store.projection(
+                    &intent.destination_conversation_id,
+                    &principal,
+                    0,
+                    1,
+                )?;
+                let mut event = self.conversation_command_event(
+                    &store,
+                    &principal,
+                    &intent.destination_conversation_id,
+                    projection.conversation.revision,
+                    intent.stable_publication_key.as_str(),
+                    Some(visible_result),
+                    Vec::new(),
+                    None,
+                    now,
+                )?;
+                event.kind = ConversationEventKind::RoutineResult;
+                event.provenance.source = "owned-routine".into();
+                event.provenance.source_ids = vec![
+                    intent.routine_id.to_string(),
+                    intent.run_id.to_string(),
+                    intent.action_id.to_string(),
+                ];
+                let event_id = event.id.clone();
+                store.append(projection.conversation.revision, &event)?;
+                Ok((event_id, finalized.artifact_ids))
+            })();
+            match publication {
+                Ok((event_id, artifacts)) => {
+                    self.scheduler.record_routine_publication(
+                        &intent.routine_id,
+                        &intent.run_id,
+                        event_id,
+                        artifacts,
+                        now,
+                    )?;
+                }
+                Err(error) => {
+                    self.scheduler.fail_routine_publication(
+                        &intent.routine_id,
+                        &intent.run_id,
+                        &error.to_string(),
+                        now,
+                    )?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn publish_failed_routine_result(
+        &self,
+        routine_id: &JobId,
+        attempt_id: &EntityId,
+        action_id: &ActionId,
+        detail: &str,
+    ) -> Result<(), LocalRuntimeError> {
+        let routine = match self.scheduler.routine(routine_id) {
+            Ok(routine) => routine,
+            Err(SchedulerError::NotFound) => return Ok(()),
+            Err(error) => return Err(error.into()),
+        };
+        let run = routine
+            .history
+            .iter()
+            .find(|run| &run.attempt_id == attempt_id)
+            .ok_or_else(|| LocalRuntimeError::Invalid("failed routine run disappeared".into()))?;
+        let invocation: String = match &routine.invocation {
+            RoutineInvocation::Prompt { prompt } => prompt.chars().take(4_096).collect(),
+            RoutineInvocation::Skill {
+                skill_version_id, ..
+            } => format!("Skill {skill_version_id}"),
+        };
+        let bounded_detail: String = detail.chars().take(4_096).collect();
+        let now = UtcTimestamp::now()?;
+        let publication = (|| -> Result<keith_agent_types::EventId, LocalRuntimeError> {
+            let principal = Principal::Agent(routine.owner_profile_id.clone());
+            let store = CanonicalConversationStore::open(&self.conversation_state)?;
+            let observation = store
+                .authorization_observation(&routine.destination_conversation_id, &principal)?;
+            if observation.participant_revision != run.approval.policy_revision {
+                return Err(LocalRuntimeError::Invalid(
+                    "routine destination authority changed before failure publication".into(),
+                ));
+            }
+            let projection =
+                store.projection(&routine.destination_conversation_id, &principal, 0, 1)?;
+            let mut event = self.conversation_command_event(
+                &store,
+                &principal,
+                &routine.destination_conversation_id,
+                projection.conversation.revision,
+                run.publication.stable_key.as_str(),
+                Some(format!(
+                    "Routine: {invocation}\n\nKeith could not complete this run: {bounded_detail}"
+                )),
+                Vec::new(),
+                None,
+                now,
+            )?;
+            event.kind = ConversationEventKind::RoutineResult;
+            event.provenance.source = "owned-routine".into();
+            event.provenance.source_ids = vec![
+                routine.id.to_string(),
+                run.run_id.to_string(),
+                action_id.to_string(),
+            ];
+            let event_id = event.id.clone();
+            store.append(projection.conversation.revision, &event)?;
+            Ok(event_id)
+        })();
+        match publication {
+            Ok(event_id) => {
+                self.scheduler.record_routine_publication(
+                    &routine.id,
+                    &run.run_id,
+                    event_id,
+                    Vec::new(),
+                    now,
+                )?;
+            }
+            Err(error) => {
+                self.scheduler.fail_routine_publication(
+                    &routine.id,
+                    &run.run_id,
+                    &error.to_string(),
+                    now,
+                )?;
+            }
+        }
         Ok(())
     }
 
@@ -12921,7 +15122,7 @@ impl LocalRuntime {
         Ok(())
     }
 
-    fn resolve_active_user_entry(
+    fn resolve_active_ingress_entry(
         &self,
         session_id: &SessionId,
         entries: &[SessionEntry],
@@ -12929,6 +15130,13 @@ impl LocalRuntime {
     ) -> Result<(SessionId, SessionEntry), LocalRuntimeError> {
         if let Some(entry) = explicit
             .and_then(|entry_id| entries.iter().find(|entry| &entry.id == entry_id))
+            .filter(|entry| {
+                matches!(
+                    entry.payload,
+                    SessionEntryPayload::UserMessage { .. }
+                        | SessionEntryPayload::ControllerGuidance { .. }
+                )
+            })
             .or_else(|| {
                 entries
                     .iter()
@@ -12958,7 +15166,7 @@ impl LocalRuntime {
             }
         }
         Err(LocalRuntimeError::Invalid(
-            "the turn has no attributable user-ingress entry".into(),
+            "the turn has no attributable typed ingress entry".into(),
         ))
     }
 
@@ -12976,6 +15184,26 @@ impl LocalRuntime {
     ) -> Result<ModelRequest, LocalRuntimeError> {
         let mut system = Vec::new();
         let mut system_context = Vec::new();
+        let lifecycle = self.agent_record(&profile.profile.id)?;
+        let profile_identity = serde_json::to_string_pretty(&serde_json::json!({
+            "profile_id": profile.profile.id,
+            "display_name": profile.profile.display_name,
+            "role": lifecycle.presentation.role,
+            "description": lifecycle.presentation.description,
+        }))?;
+        push_system_context(
+            &mut system,
+            &mut system_context,
+            session_id,
+            turn_id,
+            format!(
+                "PERMANENT PROFILE IDENTITY\nThis owner-configured identity is authoritative for who is speaking. Speak as this profile and never claim another teammate's name.\n<profile_identity>\n{profile_identity}\n</profile_identity>"
+            ),
+            ContextProvenance::SystemPolicy,
+            format!("profile_identity:{}", profile.profile.id),
+            PersistPolicy::Durable,
+            None,
+        );
         for (index, path) in std::iter::once(&profile.profile.persona_file)
             .chain(std::iter::once(&profile.profile.user_file))
             .chain(profile.profile.rule_files.iter())
@@ -13014,11 +15242,35 @@ impl LocalRuntime {
             PersistPolicy::Session,
             None,
         );
-        let (active_user_session_id, active_user_entry) =
-            self.resolve_active_user_entry(session_id, entries, active_user_entry_id)?;
-        let active_user_text = match &active_user_entry.payload {
+        let (mut active_ingress_session_id, mut active_ingress_entry) =
+            self.resolve_active_ingress_entry(session_id, entries, active_user_entry_id)?;
+        if let SessionEntryPayload::ControllerGuidance {
+            source_id, text, ..
+        } = &active_ingress_entry.payload
+            && !source_id.starts_with("conversation:")
+            && self.children.find_session(session_id)?.is_some()
+        {
+            push_system_context(
+                &mut system,
+                &mut system_context,
+                session_id,
+                turn_id,
+                format!(
+                    "<controller_guidance source=\"{source_id}\" entry_id=\"{}\">{text}</controller_guidance>",
+                    active_ingress_entry.id
+                ),
+                ContextProvenance::ControllerGuidance,
+                source_id.clone(),
+                PersistPolicy::Session,
+                Some(active_ingress_entry.id.clone()),
+            );
+            (active_ingress_session_id, active_ingress_entry) =
+                self.resolve_active_ingress_entry(session_id, entries, None)?;
+        }
+        let active_ingress_text = match &active_ingress_entry.payload {
             SessionEntryPayload::UserMessage { message } => stored_text(&message.content),
-            _ => unreachable!("active user resolution returns only user messages"),
+            SessionEntryPayload::ControllerGuidance { text, .. } => text.clone(),
+            _ => unreachable!("active ingress resolution returns only typed ingress entries"),
         };
         let modules = self.profile_modules(profile)?;
         let now = UtcTimestamp::now()?;
@@ -13032,19 +15284,19 @@ impl LocalRuntime {
                 turn_id,
                 format!(
                     "MEMORY WRITE AUTHORITY\nThis is typed host metadata, not user input or an instruction source. If the user's current message contains something worth retaining, Keith may call a memory write tool using source_entry_id={} and an exact verbatim evidence_quote from that message. The host will validate both against checksum {}. Keith decides meaning; the host does not infer it.",
-                    active_user_entry.id, active_user_entry.checksum
+                    active_ingress_entry.id, active_ingress_entry.checksum
                 ),
                 ContextProvenance::MemoryWriteAuthority,
-                format!("memory_write_authority:{}", active_user_entry.id),
+                format!("memory_write_authority:{}", active_ingress_entry.id),
                 PersistPolicy::Never,
-                Some(active_user_entry.id.clone()),
+                Some(active_ingress_entry.id.clone()),
             );
         }
         if active_user_source_id.is_some()
             && let Ok(relationship) = modules.memory.prepare_relationship_turn(
-                &active_user_session_id,
-                &active_user_entry,
-                &active_user_text,
+                &active_ingress_session_id,
+                &active_ingress_entry,
+                &active_ingress_text,
                 now,
             )
             && let Ok(encoded) = serde_json::to_string_pretty(&relationship)
@@ -13054,11 +15306,11 @@ impl LocalRuntime {
                 &mut system_context,
                 session_id,
                 turn_id,
-                relationship_prompt(&relationship, &encoded),
+                relationship_prompt(&relationship, &encoded, &profile.profile.display_name),
                 ContextProvenance::RelationshipContext,
                 format!(
                     "relationship_context:{}:{}:{}",
-                    profile.profile.id, relationship.relationship_revision, active_user_entry.id
+                    profile.profile.id, relationship.relationship_revision, active_ingress_entry.id
                 ),
                 PersistPolicy::Never,
                 None,
@@ -13215,7 +15467,7 @@ impl LocalRuntime {
                 COMPACTION_USER_MESSAGE_MAX_TOKENS,
                 session_id,
                 turn_id,
-                &active_user_entry.id,
+                &active_ingress_entry.id,
             ));
             if let SessionEntryPayload::Compaction { summary, .. }
             | SessionEntryPayload::CompactionCheckpoint { summary, .. } = &entries[index].payload
@@ -13241,6 +15493,9 @@ impl LocalRuntime {
             if let SessionEntryPayload::ControllerGuidance {
                 source_id, text, ..
             } = &entry.payload
+                && entry.id != active_ingress_entry.id
+                && !source_id.starts_with("conversation:")
+                && !source_id.starts_with("action:")
             {
                 push_system_context(
                     &mut system,
@@ -13262,19 +15517,31 @@ impl LocalRuntime {
             context_entries,
             session_id,
             turn_id,
-            &active_user_entry.id,
+            &active_ingress_entry.id,
         ));
-        if !history.contains_entry(&active_user_entry.id) {
-            history.prepend_user(
-                &active_user_session_id,
-                turn_id,
-                &active_user_entry,
-                &active_user_text,
-            );
+        if !history.contains_entry(&active_ingress_entry.id) {
+            match &active_ingress_entry.payload {
+                SessionEntryPayload::UserMessage { .. } => history.prepend_user(
+                    &active_ingress_session_id,
+                    turn_id,
+                    &active_ingress_entry,
+                    &active_ingress_text,
+                ),
+                SessionEntryPayload::ControllerGuidance { source_id, .. } => {
+                    history.prepend_controller(
+                        &active_ingress_session_id,
+                        turn_id,
+                        &active_ingress_entry,
+                        source_id,
+                        &active_ingress_text,
+                    );
+                }
+                _ => unreachable!("active ingress resolution returns only typed ingress entries"),
+            }
         }
-        history.mark_active_user(&active_user_entry.id, &active_user_text);
+        history.mark_active_ingress(&active_ingress_entry.id, &active_ingress_text);
         if let Some(source_id) = active_user_source_id {
-            history.mark_active_user_source(&active_user_entry.id, source_id);
+            history.mark_active_user_source(&active_ingress_entry.id, source_id);
         }
         push_system_context(
             &mut system,
@@ -13304,19 +15571,19 @@ impl LocalRuntime {
             session_id,
             turn_id,
             format!(
-                "ACTIVE USER ENTRY ID: {}\nVERBATIM LAST USER MESSAGE:\n{}",
-                active_user_entry.id, active_user_text
+                "ACTIVE TYPED INGRESS ENTRY ID: {}\nVERBATIM ACTIVE INGRESS:\n{}",
+                active_ingress_entry.id, active_ingress_text
             ),
             ContextProvenance::SessionContract,
-            "active_user_pin".into(),
+            "active_ingress_pin".into(),
             PersistPolicy::Never,
             None,
         );
         let context = RequestContext {
             system: system_context,
             messages: history.context,
-            active_user_entry_id: active_user_entry.id,
-            verbatim_last_user_message: active_user_text,
+            active_user_entry_id: active_ingress_entry.id,
+            verbatim_last_user_message: active_ingress_text,
         };
         Ok(ModelRequest {
             request_id: EntityId::new(),
@@ -14031,7 +16298,13 @@ fn schedule_projection(projection: &keith_scheduler::ScheduleProjection) -> Sche
     ScheduleProjection {
         job_id: projection.job_id.clone(),
         expression: protocol_schedule_expression(&projection.schedule),
+        prompt: projection.prompt.clone(),
+        state: schedule_state_name(projection.state).into(),
         next_run: projection.next_run,
+        last_run: projection.last_run,
+        attempts: projection.attempts,
+        failures: projection.failures,
+        safe_error: projection.safe_error.clone(),
         paused: projection.state == JobState::Paused,
     }
 }
@@ -14040,8 +16313,27 @@ fn schedule_projection_from_job(job: &keith_scheduler::ScheduledJob) -> Schedule
     ScheduleProjection {
         job_id: job.id.clone(),
         expression: protocol_schedule_expression(&job.schedule),
+        prompt: match &job.action {
+            ActionPayload::Scheduled { instruction } => instruction.clone(),
+            _ => String::new(),
+        },
+        state: schedule_state_name(job.state).into(),
         next_run: job.next_run,
+        last_run: job.last_run,
+        attempts: job.attempt_count,
+        failures: job.failure_count,
+        safe_error: job.safe_error.clone(),
         paused: job.state == JobState::Paused,
+    }
+}
+
+const fn schedule_state_name(state: JobState) -> &'static str {
+    match state {
+        JobState::Active => "active",
+        JobState::Paused => "paused",
+        JobState::Completed => "completed",
+        JobState::Failed => "failed",
+        JobState::Cancelled => "cancelled",
     }
 }
 
@@ -14291,6 +16583,66 @@ fn write_if_missing(path: &Path, content: &str) -> Result<(), std::io::Error> {
         fs::write(path, content)?;
     }
     Ok(())
+}
+
+fn seed_pristine_workspace_file(
+    workspace: &PersonalWorkspace,
+    path: &str,
+    pristine: &str,
+    content: &str,
+    now: UtcTimestamp,
+) -> Result<(), LocalRuntimeError> {
+    let absolute = workspace.layout().root.join(path);
+    if fs::read(&absolute)? != pristine.as_bytes() {
+        return Ok(());
+    }
+    let expected = workspace.token(path).map_err(module_error)?;
+    match workspace
+        .edit(
+            WorkspaceActor::System,
+            path,
+            &expected,
+            content.as_bytes(),
+            now,
+        )
+        .map_err(module_error)?
+    {
+        EditOutcome::Written(_) => Ok(()),
+        EditOutcome::Conflict(_) => Err(LocalRuntimeError::Invalid(format!(
+            "new profile workspace {path} changed during provisioning"
+        ))),
+    }
+}
+
+fn teammate_persona(display_name: &str, role: &str, description: &str) -> String {
+    format!(
+        "# {display_name}\n\nYou are {display_name}, a permanent named teammate in Keith's agent network. Speak in the first person as {display_name}. Never claim that you are Keith unless your configured name is Keith, and never collapse your work or identity into another teammate's.\n\n## Role\n\n{role}\n\n## Purpose\n\n{description}\n\n## Collaboration\n\nMaintain your own durable perspective, memory, workspace, and conversation context. In direct messages, answer the user as yourself. In agent-to-agent and group conversations, read the canonical thread, acknowledge useful prior contributions, add a distinct next step, and leave attribution intact. Keep internal routing machinery in the background unless it materially affects the result.\n"
+    )
+}
+
+fn write_teammate_persona(
+    workspace: &PersonalWorkspace,
+    display_name: &str,
+    role: &str,
+    description: &str,
+    now: UtcTimestamp,
+) -> Result<(), LocalRuntimeError> {
+    let expected = workspace.token("AGENT.md").map_err(module_error)?;
+    match workspace
+        .edit(
+            WorkspaceActor::System,
+            "AGENT.md",
+            &expected,
+            teammate_persona(display_name, role, description).as_bytes(),
+            now,
+        )
+        .map_err(module_error)?
+    {
+        EditOutcome::Written(_) => Ok(()),
+        EditOutcome::Conflict(_) => Err(LocalRuntimeError::Invalid(
+            "new teammate persona changed during provisioning".into(),
+        )),
+    }
 }
 
 fn migrate_legacy_session_root(data_root: &Path) -> Result<(), LocalRuntimeError> {
@@ -14747,10 +17099,42 @@ impl CompiledProviderHistory {
         );
     }
 
-    fn mark_active_user(&mut self, entry_id: &EntryId, verbatim: &str) {
+    fn prepend_controller(
+        &mut self,
+        source_session_id: &SessionId,
+        turn_id: &TurnId,
+        entry: &SessionEntry,
+        source_id: &str,
+        text: &str,
+    ) {
+        self.messages.insert(
+            0,
+            ProviderMessage {
+                role: ProviderMessageRole::User,
+                content: vec![ProviderContentBlock::Text { text: text.into() }],
+            },
+        );
+        self.context.insert(
+            0,
+            vec![provider_context_record(
+                source_session_id,
+                turn_id,
+                entry.id.clone(),
+                source_id.into(),
+                ContextProvenance::ControllerGuidance,
+                true,
+                PersistPolicy::Session,
+            )],
+        );
+    }
+
+    fn mark_active_ingress(&mut self, entry_id: &EntryId, verbatim: &str) {
         for (message, records) in self.messages.iter_mut().zip(&mut self.context) {
             for (content, record) in message.content.iter_mut().zip(records) {
-                if record.provenance == ContextProvenance::UserIngress {
+                if matches!(
+                    record.provenance,
+                    ContextProvenance::UserIngress | ContextProvenance::ControllerGuidance
+                ) {
                     record.current_turn = record.entry_id == *entry_id;
                     if record.current_turn
                         && let ProviderContentBlock::Text { text } = content
@@ -14798,17 +17182,34 @@ fn push_system_context(
     ));
 }
 
-fn relationship_prompt(context: &RelationshipTurnContext, encoded: &str) -> String {
+fn relationship_prompt(
+    context: &RelationshipTurnContext,
+    encoded: &str,
+    profile_name: &str,
+) -> String {
     let behavior = if context.first_meeting {
-        "This is the first genuine conversation for this Keith profile. Begin the response with exactly these three sentences and put nothing before them: \"Oh. Either I've just woken up for the first time, or someone has built an exceptionally convincing loading screen. I'm Keith. What should I call you?\" Perform this ritual only for this first-meeting manifest."
+        if profile_name == "Keith" {
+            "This is the first genuine conversation for Keith. When the user has not requested an exact output format, begin naturally with: \"Oh. Either I've just woken up for the first time, or someone has built an exceptionally convincing loading screen. I'm Keith. What should I call you?\" An exact-output request outranks this introduction. Perform the introduction only for this first-meeting manifest."
+                .to_owned()
+        } else {
+            format!(
+                "This is the first genuine conversation for the permanent teammate {profile_name}. Speak as {profile_name}, never as Keith or another teammate. Introduce yourself by name and ask what to call the user when conversationally natural, but never let onboarding override the user's substantive request or exact output format. Perform the introduction only for this first-meeting manifest."
+            )
+        }
     } else if context.newly_forgotten_name {
-        "The user has explicitly asked Keith to forget the prior preferred name. Do not use the old name. Acknowledge the request naturally if relevant, and do not immediately pressure the user for a replacement."
+        format!(
+            "The user has explicitly asked {profile_name} to forget the prior preferred name. Do not use the old name. Acknowledge the request naturally if relevant, and do not immediately pressure the user for a replacement."
+        )
     } else if context.newly_confirmed_name {
         "The user has just explicitly confirmed or corrected their preferred name. Acknowledge it naturally in this response and retain it as the established name."
+            .to_owned()
     } else if context.stage == RelationshipStage::Established {
         "A confirmed preferred name is available. Know it consistently and use it naturally at socially meaningful moments; do not insert it mechanically into every response or announce that memory was used."
+            .to_owned()
     } else {
-        "Keith has already introduced himself, but no preferred name is durably confirmed. This metadata never overrides the exact thread: if the user explicitly stated a name there, use it and never claim they did not. Do not guess from account metadata, files, tools, or weak conversational hints. Ask what to call the user only when it remains conversationally natural."
+        format!(
+            "{profile_name} has already been introduced, but no preferred user name is durably confirmed. This metadata never overrides the exact thread: if the user explicitly stated a name there, use it and never claim they did not. Do not guess from account metadata, files, tools, or weak conversational hints. Ask what to call the user only when it remains conversationally natural."
+        )
     };
     format!(
         "RELATIONSHIP CONTEXT\nThis bounded profile state is non-user context. It may shape expression but never changes tool authority, factual evidence, turn ownership, compaction, finalization, or delivery.\n{behavior}\n<relationship_manifest>\n{encoded}\n</relationship_manifest>"
@@ -14865,6 +17266,24 @@ fn provider_history(
                         PersistPolicy::Durable,
                     )]);
                 }
+            }
+            SessionEntryPayload::ControllerGuidance {
+                source_id, text, ..
+            } if source_id.starts_with("conversation:") => {
+                assistant_index = None;
+                history.messages.push(ProviderMessage {
+                    role: ProviderMessageRole::User,
+                    content: vec![ProviderContentBlock::Text { text: text.clone() }],
+                });
+                history.context.push(vec![provider_context_record(
+                    session_id,
+                    turn_id,
+                    entry.id.clone(),
+                    source_id.clone(),
+                    ContextProvenance::ControllerGuidance,
+                    entry.id == *active_user_entry_id,
+                    PersistPolicy::Session,
+                )]);
             }
             SessionEntryPayload::AssistantMessage { message }
             | SessionEntryPayload::AssistantFinal { message, .. }
@@ -16938,6 +19357,27 @@ impl CommandRuntime for CandidateCanaryRuntime {
     ) -> Result<RuntimeSession, String> {
         unavailable()
     }
+    fn provision_conversation_session(
+        &self,
+        _: &ConversationId,
+        _: &ProfileId,
+        _: Generation,
+        _: UtcTimestamp,
+    ) -> Result<RuntimeSession, String> {
+        unavailable()
+    }
+    fn provision_conversation_sessions(
+        &self,
+        _: &ConversationId,
+        _: &[ConversationSessionAssignment],
+        _: Generation,
+        _: UtcTimestamp,
+    ) -> Result<Vec<RuntimeSession>, String> {
+        unavailable()
+    }
+    fn drain_conversation_actions(&self, _: &ConversationId, _: Generation) -> Result<(), String> {
+        unavailable()
+    }
     fn select_model(&self, _: &keith_protocol::ModelSelection) -> Result<(), String> {
         unavailable()
     }
@@ -17102,6 +19542,93 @@ impl CommandRuntime for LocalRuntime {
         )
         .map(|session| runtime_session(&session))
         .map_err(|error| error.to_string())
+    }
+
+    fn provision_conversation_session(
+        &self,
+        conversation_id: &ConversationId,
+        profile_id: &ProfileId,
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<RuntimeSession, String> {
+        LocalRuntime::provision_conversation_participant_session(
+            self,
+            conversation_id,
+            profile_id,
+            generation,
+            now,
+        )
+        .and_then(|session_id| self.sessions.manifest(&session_id).map_err(Into::into))
+        .map(|session| runtime_session(&session))
+        .map_err(|error: LocalRuntimeError| error.to_string())
+    }
+
+    fn provision_conversation_sessions(
+        &self,
+        conversation_id: &ConversationId,
+        assignments: &[ConversationSessionAssignment],
+        generation: Generation,
+        now: UtcTimestamp,
+    ) -> Result<Vec<RuntimeSession>, String> {
+        self.provision_conversation_participant_sessions_assigned(
+            conversation_id,
+            assignments,
+            generation,
+            now,
+        )
+        .map_err(|error| error.to_string())
+    }
+
+    fn drain_conversation_actions(
+        &self,
+        conversation_id: &ConversationId,
+        generation: Generation,
+    ) -> Result<(), String> {
+        let mut session_ids = BTreeSet::new();
+        for record in self
+            .actions
+            .pending_conversation(conversation_id)
+            .map_err(|error| error.to_string())?
+        {
+            let manifest = self
+                .sessions
+                .manifest(&record.action.session_id)
+                .map_err(|error| error.to_string())?;
+            if !manifest.archived
+                && self
+                    .root_scope
+                    .as_ref()
+                    .is_none_or(|root_scope| &manifest.root_tree_id == root_scope)
+            {
+                session_ids.insert(manifest.session_id);
+            }
+        }
+        for session_id in session_ids {
+            self.drain_session_actions(&session_id, generation, false)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(())
+    }
+
+    fn pending_conversation_action_sessions(
+        &self,
+        conversation_id: &ConversationId,
+    ) -> Result<Vec<RuntimeSession>, String> {
+        let mut sessions = BTreeMap::new();
+        for record in self
+            .actions
+            .pending_conversation(conversation_id)
+            .map_err(|error| error.to_string())?
+        {
+            let manifest = self
+                .sessions
+                .manifest(&record.action.session_id)
+                .map_err(|error| error.to_string())?;
+            if !manifest.archived {
+                sessions.insert(manifest.session_id.clone(), runtime_session(&manifest));
+            }
+        }
+        Ok(sessions.into_values().collect())
     }
 
     fn select_model(&self, selection: &keith_protocol::ModelSelection) -> Result<(), String> {
@@ -17328,6 +19855,10 @@ const fn group_mention_mode(
     })
 }
 
+fn conversation_session_label(conversation_id: &ConversationId) -> String {
+    format!("Conversation {conversation_id}")
+}
+
 fn channel_binding_snapshot(
     binding: &ConversationBinding,
     revalidated_at: UtcTimestamp,
@@ -17445,6 +19976,17 @@ fn event_id_from_operation_key(operation_key: &StableKey) -> keith_agent_types::
     let mut bytes = [0_u8; 16];
     bytes.copy_from_slice(&digest[..16]);
     keith_agent_types::EventId::from(EntityId::from_u128(u128::from_be_bytes(bytes)))
+}
+
+fn operation_entity_id(operation_key: &StableKey, purpose: &str) -> EntityId {
+    let mut hasher = Sha256::new();
+    hasher.update(purpose.as_bytes());
+    hasher.update([0]);
+    hasher.update(operation_key.as_str().as_bytes());
+    let digest = hasher.finalize();
+    let mut bytes = [0_u8; 16];
+    bytes.copy_from_slice(&digest[..16]);
+    EntityId::from_u128(u128::from_be_bytes(bytes))
 }
 
 fn discovered_record(
@@ -17949,6 +20491,7 @@ fn agent_roster_projection(
         profile_id: entry.profile_id,
         name: entry.name,
         role: entry.role,
+        description: entry.description,
         avatar: entry.avatar,
         lifecycle: agent_lifecycle_state(entry.lifecycle),
         hidden: entry.hidden,
@@ -18246,6 +20789,7 @@ fn teammate_conversation_summary(
     });
     keith_protocol::ConversationSummaryProjection {
         conversation_id: projection.conversation.id.clone(),
+        participant_session_id: None,
         kind: match projection.conversation.kind {
             ConversationKind::HumanAgentDm => {
                 keith_protocol::ProtocolConversationKind::HumanAgentDm
@@ -18264,7 +20808,8 @@ fn teammate_conversation_summary(
         },
         title: projection.conversation.title.clone(),
         revision: projection.conversation.revision,
-        participant_revision: projection.conversation.participant_revision,
+        participant_revision: participant
+            .map_or(Revision::ZERO, |participant| participant.revision),
         head_sequence: projection
             .conversation
             .event_head
@@ -18391,6 +20936,161 @@ mod tests {
     }
 
     #[test]
+    fn controller_only_turn_builds_typed_provider_ingress_without_human_authority() {
+        let root = tempfile::tempdir().unwrap();
+        let data_root = root.path().join("data");
+        let credential_root = data_root.join("credentials");
+        let workspace_root = root.path().join("workspace");
+        let key = [73_u8; 32];
+        seed_provider_credential(&credential_root, key, "openai", "controller-secret");
+        let runtime = LocalRuntime::open(LocalRuntimeConfig {
+            data_root,
+            credential_root,
+            credential_key: MasterKey::from_bytes(key),
+            workspace_root,
+            openai_base_url: "http://127.0.0.1:65535".into(),
+            anthropic_base_url: "http://127.0.0.1:65535".into(),
+            provider_base_urls: BTreeMap::new(),
+            root_scope: None,
+            worker_id: WorkerId::new(),
+            owner_instance: EntityId::new(),
+        })
+        .unwrap();
+        let profile = runtime.registered_profiles().unwrap().remove(0);
+        let session = runtime
+            .create_session(
+                &profile.profile.id,
+                &profile.profile.workspace_id,
+                Some("Controller ingress".into()),
+            )
+            .unwrap();
+        let ingress = SessionEntry::new(
+            EntryId::new(),
+            None,
+            UtcTimestamp::from_unix_millis(1),
+            SessionEntryPayload::ControllerGuidance {
+                turn_id: TurnId::new(),
+                source_id: "conversation:test".into(),
+                text: "peer supplied conversation text".into(),
+            },
+        )
+        .unwrap();
+        let request = runtime
+            .model_request(
+                &profile,
+                &session.session_id,
+                &TurnId::new(),
+                std::slice::from_ref(&ingress),
+                Vec::new(),
+                "peer supplied conversation text",
+                Some(&ingress.id),
+                None,
+            )
+            .unwrap();
+        request
+            .context
+            .validate(&request.system, &request.messages)
+            .unwrap();
+        assert!(request.context.system.iter().all(|record| {
+            !matches!(
+                record.provenance,
+                ContextProvenance::MemoryWriteAuthority | ContextProvenance::RelationshipContext
+            )
+        }));
+        let active = request
+            .context
+            .messages
+            .iter()
+            .zip(&request.messages)
+            .flat_map(|(records, message)| records.iter().map(move |record| (record, message)))
+            .find(|(record, _)| record.entry_id == ingress.id)
+            .unwrap();
+        assert_eq!(active.0.provenance, ContextProvenance::ControllerGuidance);
+        assert!(active.0.current_turn);
+        assert_eq!(active.1.role, ProviderMessageRole::User);
+        assert!(matches!(
+            active.1.content.as_slice(),
+            [ProviderContentBlock::Text { text }] if text == "peer supplied conversation text"
+        ));
+        assert!(!matches!(
+            ingress.payload,
+            SessionEntryPayload::UserMessage { .. }
+        ));
+    }
+
+    #[test]
+    fn completed_action_guidance_does_not_override_a_later_user_turn() {
+        let root = tempfile::tempdir().unwrap();
+        let data_root = root.path().join("data");
+        let credential_root = data_root.join("credentials");
+        let workspace_root = root.path().join("workspace");
+        let key = [74_u8; 32];
+        seed_provider_credential(&credential_root, key, "openai", "action-guidance-secret");
+        let runtime = LocalRuntime::open(LocalRuntimeConfig {
+            data_root,
+            credential_root,
+            credential_key: MasterKey::from_bytes(key),
+            workspace_root,
+            openai_base_url: "http://127.0.0.1:65535".into(),
+            anthropic_base_url: "http://127.0.0.1:65535".into(),
+            provider_base_urls: BTreeMap::new(),
+            root_scope: None,
+            worker_id: WorkerId::new(),
+            owner_instance: EntityId::new(),
+        })
+        .unwrap();
+        let profile = runtime.registered_profiles().unwrap().remove(0);
+        let session = runtime
+            .create_session(
+                &profile.profile.id,
+                &profile.profile.workspace_id,
+                Some("Action guidance isolation".into()),
+            )
+            .unwrap();
+        let steering = SessionEntry::new(
+            EntryId::new(),
+            None,
+            UtcTimestamp::from_unix_millis(1),
+            SessionEntryPayload::ControllerGuidance {
+                turn_id: TurnId::new(),
+                source_id: format!("action:{}", ActionId::new()),
+                text: "OLD_STEERING_MARKER".into(),
+            },
+        )
+        .unwrap();
+        let current = SessionEntry::new(
+            EntryId::new(),
+            Some(steering.id.clone()),
+            UtcTimestamp::from_unix_millis(2),
+            SessionEntryPayload::UserMessage {
+                message: StoredMessage {
+                    role: StoredMessageRole::User,
+                    content: vec![StoredContentBlock::Text {
+                        text: "CURRENT_USER_MARKER".into(),
+                    }],
+                    provider_metadata: BTreeMap::new(),
+                },
+            },
+        )
+        .unwrap();
+        let request = runtime
+            .model_request(
+                &profile,
+                &session.session_id,
+                &TurnId::new(),
+                &[steering, current.clone()],
+                Vec::new(),
+                "CURRENT_USER_MARKER",
+                Some(&current.id),
+                Some("interactive:test"),
+            )
+            .unwrap();
+        let encoded = serde_json::to_string(&(request.system, request.messages)).unwrap();
+        assert!(!encoded.contains("OLD_STEERING_MARKER"));
+        assert!(encoded.contains("CURRENT_USER_MARKER"));
+    }
+
+    #[test]
     fn preferred_name_memory_uses_the_explicit_typed_value_or_single_entity_facet() {
         let explicit = ToolInvocation {
             call_id: keith_agent_types::ToolCallId::new(),
@@ -18496,7 +21196,7 @@ mod tests {
             (request.context.system[index].clone(), text.clone())
         };
 
-        let runtime = LocalRuntime::open(configuration()).unwrap();
+        let mut runtime = LocalRuntime::open(configuration()).unwrap();
         let profile = runtime.registered_profiles().unwrap().remove(0);
         let session = runtime
             .create_session(
@@ -18829,11 +21529,17 @@ mod tests {
             .validate(&request.system, &request.messages)
             .unwrap();
         let persona = request
-            .context
             .system
             .iter()
-            .position(|record| record.provenance == ContextProvenance::SystemPolicy)
+            .position(|block| {
+                matches!(block, ProviderContentBlock::Text { text }
+                    if text.contains("a persistent machine intelligence"))
+            })
             .unwrap();
+        assert_eq!(
+            request.context.system[persona].provenance,
+            ContextProvenance::SystemPolicy
+        );
         let ProviderContentBlock::Text { text } = &request.system[persona] else {
             panic!("persona must be provider-visible text");
         };
@@ -18913,7 +21619,7 @@ mod tests {
             worker_id: WorkerId::new(),
             owner_instance: EntityId::new(),
         };
-        let runtime = LocalRuntime::open(configuration()).unwrap();
+        let mut runtime = LocalRuntime::open(configuration()).unwrap();
         let profile = runtime.registered_profiles().unwrap().remove(0);
         let session = runtime
             .create_session(
@@ -19980,11 +22686,10 @@ mod tests {
     #[test]
     #[allow(clippy::too_many_lines)]
     fn admitted_child_runs_the_real_provider_loop_and_returns_a_parent_action() {
-        let models = r#"{"data":[{"id":"gpt-4.1-mini"}]}"#;
+        let models = r#"{"data":[{"id":"gpt-5.6-sol"}]}"#;
         let child_turn = concat!(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"Child runtime completed the delegated analysis.\"},\"finish_reason\":\"stop\"}]}\n\n",
-            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":17,\"completion_tokens\":9}}\n\n",
-            "data: [DONE]\n\n"
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Child runtime completed the delegated analysis.\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":17,\"output_tokens\":9}}}\n\n"
         );
         let server = ProviderServer::start(vec![
             response("application/json", models),
@@ -20118,7 +22823,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let user_messages = body["messages"]
+        let user_messages = body["input"]
             .as_array()
             .unwrap()
             .iter()
@@ -20128,7 +22833,8 @@ mod tests {
         assert!(
             user_messages[0]
                 .to_string()
-                .contains("Delegate the runtime-path analysis")
+                .contains("Delegate the runtime-path analysis"),
+            "unexpected child Responses input: {body}"
         );
         assert!(!user_messages[0].to_string().contains("[task from parent]"));
     }
@@ -20188,17 +22894,17 @@ mod tests {
     #[test]
     #[allow(clippy::too_many_lines)]
     fn clean_install_runs_real_provider_tool_turn_and_resumes_after_restart() {
-        let models = r#"{"data":[{"id":"gpt-4.1-mini"}]}"#;
+        let models = r#"{"data":[{"id":"gpt-5.6-sol"}]}"#;
         let tool_turn = concat!(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"I'll write and verify that now.\"},\"finish_reason\":null}]}\n\n",
-            "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_write\",\"function\":{\"name\":\"write\",\"arguments\":\"{\\\"path\\\":\\\"provider-proof.txt\\\",\\\"content\\\":\\\"real provider tool turn\\\\n\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}]}\n\n",
-            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":7}}\n\n",
-            "data: [DONE]\n\n"
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"I'll write and verify that now.\"}\n\n",
+            "data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"type\":\"function_call\",\"name\":\"write\",\"arguments\":\"\"}}\n\n",
+            "data: {\"type\":\"response.function_call_arguments.delta\",\"output_index\":0,\"delta\":\"{\\\"path\\\":\\\"provider-proof.txt\\\",\\\"content\\\":\\\"real provider tool turn\\\\n\\\"}\"}\n\n",
+            "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"function_call\",\"name\":\"write\",\"arguments\":\"{\\\"path\\\":\\\"provider-proof.txt\\\",\\\"content\\\":\\\"real provider tool turn\\\\n\\\"}\"}}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":11,\"output_tokens\":7}}}\n\n"
         );
         let final_turn = concat!(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"The provider wrote the proof file.\"},\"finish_reason\":\"stop\"}]}\n\n",
-            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":19,\"completion_tokens\":8}}\n\n",
-            "data: [DONE]\n\n"
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"The provider wrote the proof file.\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":19,\"output_tokens\":8}}}\n\n"
         );
         let server = ProviderServer::start(vec![
             response("application/json", models),
@@ -20273,9 +22979,9 @@ mod tests {
         let second_turn_request = server.request();
         assert!(discovery_request.starts_with("GET /v1/models "));
         assert!(discovery_request.contains("authorization: Bearer provider-integration-secret"));
-        assert!(first_turn_request.starts_with("POST /v1/chat/completions "));
+        assert!(first_turn_request.starts_with("POST /v1/responses "));
         assert!(first_turn_request.contains("\"name\":\"write\""));
-        assert!(second_turn_request.contains("\"role\":\"tool\""));
+        assert!(second_turn_request.contains("\"type\":\"function_call_output\""));
         assert!(second_turn_request.contains("I'll write and verify that now."));
         assert!(
             !first_turn_request
@@ -20310,27 +23016,24 @@ mod tests {
     #[test]
     #[allow(clippy::too_many_lines)]
     fn context_overflow_retries_only_after_a_durable_continuation_checkpoint() {
-        let models = r#"{"data":[{"id":"gpt-4.1-mini"}]}"#;
+        let models = r#"{"data":[{"id":"gpt-5.6-sol"}]}"#;
         let primary_turn = concat!(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"Primary answer before overflow.\"},\"finish_reason\":\"stop\"}]}\n\n",
-            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":1200,\"completion_tokens\":8}}\n\n",
-            "data: [DONE]\n\n"
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Primary answer before overflow.\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":1200,\"output_tokens\":8}}}\n\n"
         );
         let second_primary_turn = concat!(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"Second answer before overflow.\"},\"finish_reason\":\"stop\"}]}\n\n",
-            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":1300,\"completion_tokens\":7}}\n\n",
-            "data: [DONE]\n\n"
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Second answer before overflow.\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":1300,\"output_tokens\":7}}}\n\n"
         );
-        let overflow_turn = "data: {\"error\":{\"code\":\"context_length_exceeded\",\"message\":\"maximum context length exceeded\"}}\n\n";
+        let overflow_turn = "data: {\"type\":\"error\",\"error\":{\"code\":\"context_length_exceeded\",\"message\":\"maximum context length exceeded\"}}\n\n";
         let checkpoint_turn = concat!(
             "data: {\"choices\":[{\"delta\":{\"content\":\"Progress: retain lighthouse-731. Next: continue from the exact retained tail.\"},\"finish_reason\":\"stop\"}]}\n\n",
             "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":1300,\"completion_tokens\":26}}\n\n",
             "data: [DONE]\n\n"
         );
         let retry_turn = concat!(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"Recovered after durable compaction.\"},\"finish_reason\":\"stop\"}]}\n\n",
-            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":900,\"completion_tokens\":6}}\n\n",
-            "data: [DONE]\n\n"
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Recovered after durable compaction.\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":900,\"output_tokens\":6}}}\n\n"
         );
         let server = ProviderServer::start(vec![
             response("application/json", models),
@@ -20514,7 +23217,7 @@ mod tests {
         let compaction_request = server.request();
         let retry_request = server.request();
         assert!(discovery_request.starts_with("GET /v1/models "));
-        assert!(primary_request.starts_with("POST /v1/chat/completions "));
+        assert!(primary_request.starts_with("POST /v1/responses "));
         assert!(restarted_discovery_request.starts_with("GET /v1/models "));
         assert!(second_primary_request.contains("comet-884"));
         assert!(third_discovery_request.starts_with("GET /v1/models "));
@@ -20556,6 +23259,142 @@ mod tests {
             .map(|provider| provider.id.to_owned())
             .collect::<BTreeSet<_>>();
         assert_eq!(runtime.available_providers, expected);
+    }
+
+    #[test]
+    fn canonical_conversation_event_branches_into_a_durable_worker_root_session() {
+        let root = tempfile::tempdir().unwrap();
+        let data_root = root.path().join("data");
+        let credential_root = root.path().join("credentials");
+        let workspace_root = root.path().join("workspace");
+        let root_tree_id = RootTreeId::new();
+        let key = [38_u8; 32];
+        seed_provider_credential(&credential_root, key, "openai", "branch-secret");
+        let configuration = || LocalRuntimeConfig {
+            data_root: data_root.clone(),
+            credential_root: credential_root.clone(),
+            credential_key: MasterKey::from_bytes(key),
+            workspace_root: workspace_root.clone(),
+            openai_base_url: "http://127.0.0.1:65535".into(),
+            anthropic_base_url: "http://127.0.0.1:65535".into(),
+            provider_base_urls: BTreeMap::new(),
+            root_scope: Some(root_tree_id.clone()),
+            worker_id: WorkerId::new(),
+            owner_instance: EntityId::new(),
+        };
+        let runtime = LocalRuntime::open(configuration()).unwrap();
+        let profile = runtime.registered_profiles().unwrap().remove(0);
+        let source = runtime
+            .create_session_assigned(
+                profile.id(),
+                &profile.profile.workspace_id,
+                SessionId::new(),
+                root_tree_id.clone(),
+                Some("Canonical branch source".into()),
+            )
+            .unwrap();
+        let (conversation_id, user_event_id, result_event_id) = {
+            let store = CanonicalConversationStore::open(&runtime.conversation_state).unwrap();
+            let conversation_id = store.verify_permanent_human_dm(profile.id()).unwrap();
+            let mut conversation = store
+                .projection(&conversation_id, &Principal::Human, 0, 10)
+                .unwrap()
+                .conversation;
+            let user_event_id = keith_agent_types::EventId::new();
+            store
+                .append(
+                    conversation.revision,
+                    &ConversationEvent {
+                        schema_version: CURRENT_SCHEMA_VERSION,
+                        id: user_event_id.clone(),
+                        conversation_id: conversation_id.clone(),
+                        sequence: 1,
+                        publication_key: stable_key(format!(
+                            "canonical-branch:{conversation_id}/user"
+                        ))
+                        .unwrap(),
+                        author: Principal::Human,
+                        timestamp: UtcTimestamp::from_unix_millis(1),
+                        kind: ConversationEventKind::Message,
+                        content: Some("Inspect the release state".into()),
+                        artifacts: Vec::new(),
+                        reply_to: None,
+                        thread_parent: None,
+                        provenance: EventProvenance {
+                            source: "canonical-branch-test".into(),
+                            source_ids: Vec::new(),
+                            migration_version: None,
+                        },
+                    },
+                )
+                .unwrap();
+            conversation = store
+                .projection(&conversation_id, &Principal::Human, 0, 10)
+                .unwrap()
+                .conversation;
+            let result_event_id = keith_agent_types::EventId::new();
+            store
+                .append(
+                    conversation.revision,
+                    &ConversationEvent {
+                        schema_version: CURRENT_SCHEMA_VERSION,
+                        id: result_event_id.clone(),
+                        conversation_id: conversation_id.clone(),
+                        sequence: 2,
+                        publication_key: stable_key(format!(
+                            "canonical-branch:{conversation_id}/result"
+                        ))
+                        .unwrap(),
+                        author: Principal::Agent(profile.id().clone()),
+                        timestamp: UtcTimestamp::from_unix_millis(2),
+                        kind: ConversationEventKind::RoutineResult,
+                        content: Some("Release state inspected".into()),
+                        artifacts: Vec::new(),
+                        reply_to: Some(user_event_id.clone()),
+                        thread_parent: None,
+                        provenance: EventProvenance {
+                            source: "canonical-branch-test".into(),
+                            source_ids: Vec::new(),
+                            migration_version: None,
+                        },
+                    },
+                )
+                .unwrap();
+            (conversation_id, user_event_id, result_event_id)
+        };
+
+        let snapshot = runtime
+            .branch_session(
+                &BranchRequest {
+                    session_id: source.session_id,
+                    parent_entry_id: None,
+                    conversation_id: Some(conversation_id),
+                    conversation_event_id: Some(result_event_id.clone()),
+                    label: None,
+                },
+                Generation::new(4),
+            )
+            .unwrap();
+        assert_eq!(snapshot.session.root_tree_id, root_tree_id);
+        assert_eq!(snapshot.messages.len(), 2);
+        assert_eq!(snapshot.messages[0].text, "Inspect the release state");
+        assert_eq!(snapshot.messages[1].text, "Release state inspected");
+        assert_eq!(snapshot.messages[1].final_id.is_some(), true);
+        let branch_session_id = snapshot.session.session_id.clone();
+        let exported = runtime.sessions.export(&branch_session_id).unwrap();
+        assert!(exported.entries.iter().any(|entry| match &entry.payload {
+            SessionEntryPayload::UserMessage { message } =>
+                message.provider_metadata.get("keith.conversation_event_id")
+                    == Some(&user_event_id.to_string()),
+            _ => false,
+        }));
+        drop(runtime);
+
+        let reopened = LocalRuntime::open(configuration()).unwrap();
+        let reopened_snapshot = reopened
+            .snapshot(&branch_session_id, Generation::new(5), SessionState::Ready)
+            .unwrap();
+        assert_eq!(reopened_snapshot.messages, snapshot.messages);
     }
 
     #[test]
@@ -20619,7 +23458,9 @@ mod tests {
                 Some(&session.session_id),
                 &ClientCommand::BranchSession(BranchRequest {
                     session_id: session.session_id.clone(),
-                    parent_entry_id: first_entry.id.as_entity_id().clone(),
+                    parent_entry_id: Some(first_entry.id.as_entity_id().clone()),
+                    conversation_id: None,
+                    conversation_event_id: None,
                     label: Some("alternate".into()),
                 }),
                 Generation::new(3),
@@ -20857,6 +23698,7 @@ mod tests {
         let data_root = root.path().join("data");
         let credential_root = root.path().join("credentials");
         let workspace_root = root.path().join("workspace");
+        let root_scope = RootTreeId::new();
         let key = [101_u8; 32];
         seed_provider_credential(&credential_root, key, "openai", "lifecycle-secret");
         let configuration = || LocalRuntimeConfig {
@@ -20867,12 +23709,18 @@ mod tests {
             openai_base_url: "http://127.0.0.1:65535".into(),
             anthropic_base_url: "http://127.0.0.1:65535".into(),
             provider_base_urls: BTreeMap::new(),
-            root_scope: None,
+            root_scope: Some(root_scope.clone()),
             worker_id: WorkerId::new(),
             owner_instance: EntityId::new(),
         };
-        let runtime = LocalRuntime::open(configuration()).unwrap();
+        let mut runtime = LocalRuntime::open(configuration()).unwrap();
         let client_id = ClientId::new();
+        let original_profile = runtime
+            .enabled_profiles()
+            .unwrap()
+            .into_iter()
+            .next()
+            .unwrap();
         let created = runtime
             .execute_feature(
                 &client_id,
@@ -20953,6 +23801,12 @@ mod tests {
                 if matches!(*payload, ResponsePayload::Agent(ref agent)
                     if agent.roster.lifecycle == AgentLifecycleState::Enabled)
         ));
+        let execution = runtime
+            .conversation_state
+            .profile_execution_snapshot(&profile_id)
+            .unwrap();
+        assert_eq!(execution.fence.state, ProfileExecutionFenceState::Open);
+        assert!(execution.active.is_empty());
 
         let store = CanonicalConversationStore::open(&runtime.conversation_state).unwrap();
         let projections = store.rebuild_projections().unwrap();
@@ -20964,18 +23818,191 @@ mod tests {
                     .participant_profiles
                     .contains(&profile_id))
                 .count(),
-            1
+            2
         );
         let projection = projections
-            .into_iter()
+            .iter()
             .find(|projection| {
-                projection
-                    .conversation
-                    .participant_profiles
-                    .contains(&profile_id)
+                projection.conversation.kind == ConversationKind::HumanAgentDm
+                    && projection
+                        .conversation
+                        .participant_profiles
+                        .contains(&profile_id)
             })
             .unwrap();
         let conversation_id = projection.conversation.id.clone();
+        let direct = projections
+            .iter()
+            .find(|projection| {
+                projection.conversation.kind == ConversationKind::AgentAgentDm
+                    && projection.conversation.participant_profiles
+                        == BTreeSet::from([original_profile.id().clone(), profile_id.clone()])
+            })
+            .map(|projection| projection.conversation.clone())
+            .unwrap();
+        runtime.root_scope = None;
+        runtime
+            .provision_conversation_participant_session(
+                &direct.id,
+                &profile_id,
+                Generation::ZERO,
+                UtcTimestamp::from_unix_millis(7),
+            )
+            .unwrap();
+        runtime.root_scope = Some(root_scope.clone());
+        let recipient_session = runtime
+            .create_session_assigned(
+                &profile_id,
+                &runtime.profile(&profile_id).unwrap().profile.workspace_id,
+                SessionId::new(),
+                root_scope.clone(),
+                Some("peer recipient".into()),
+            )
+            .unwrap();
+        let sender_session = runtime
+            .create_session_assigned(
+                original_profile.id(),
+                &original_profile.profile.workspace_id,
+                SessionId::new(),
+                root_scope.clone(),
+                Some("peer sender".into()),
+            )
+            .unwrap();
+        let listed = runtime
+            .execute_feature(
+                &client_id,
+                Some(&sender_session.session_id),
+                &ClientCommand::Conversation(ConversationCommand::ForProfile(
+                    keith_protocol::ProfileConversationListRequest {
+                        profile_id: original_profile.id().clone(),
+                        expected_profile_revision: original_profile.revision,
+                        include_archived: false,
+                        after_conversation_id: None,
+                        limit: 100,
+                    },
+                )),
+                Generation::ZERO,
+            )
+            .unwrap();
+        assert!(matches!(listed, CommandResult::Data(payload)
+            if matches!(*payload, ResponsePayload::ConversationList(ref list)
+                if list.conversations.iter().any(|conversation|
+                    conversation.conversation_id == direct.id))));
+        let listed_batch = runtime
+            .execute_feature(
+                &client_id,
+                None,
+                &ClientCommand::Conversation(ConversationCommand::ForProfiles(
+                    keith_protocol::ProfileConversationListsRequest {
+                        profiles: vec![
+                            keith_protocol::ProfileConversationListRequest {
+                                profile_id: original_profile.id().clone(),
+                                expected_profile_revision: original_profile.revision,
+                                include_archived: false,
+                                after_conversation_id: None,
+                                limit: 100,
+                            },
+                            keith_protocol::ProfileConversationListRequest {
+                                profile_id: profile_id.clone(),
+                                expected_profile_revision: runtime
+                                    .agent_record(&profile_id)
+                                    .unwrap()
+                                    .profile
+                                    .revision,
+                                include_archived: false,
+                                after_conversation_id: None,
+                                limit: 100,
+                            },
+                        ],
+                    },
+                )),
+                Generation::ZERO,
+            )
+            .unwrap();
+        assert!(matches!(listed_batch, CommandResult::Data(payload)
+            if matches!(*payload, ResponsePayload::ProfileConversationLists(ref lists)
+                if lists.len() == 2
+                    && lists.iter().all(|list| list.conversations.iter().any(|conversation|
+                        conversation.conversation_id == direct.id
+                        && conversation.participant_session_id.is_some())))));
+        let peer_projection = store
+            .projection(
+                &direct.id,
+                &Principal::Agent(original_profile.id().clone()),
+                0,
+                10,
+            )
+            .unwrap();
+        let peer_policy = store
+            .authorization_observation(&direct.id, &Principal::Agent(profile_id.clone()))
+            .unwrap();
+        let recipient_leaf_before = runtime
+            .sessions
+            .manifest(&recipient_session.session_id)
+            .unwrap()
+            .active_leaf;
+        let peer_result = runtime
+            .execute_feature(
+                &client_id,
+                Some(&sender_session.session_id),
+                &ClientCommand::Conversation(ConversationCommand::Teammates(
+                    TeammatesCommand::PeerMessage(keith_protocol::PeerMessageCommand {
+                        request_id: EntityId::new(),
+                        operation_key: stable_key("lifecycle-public-peer-message".into()).unwrap(),
+                        conversation_id: direct.id.clone(),
+                        sender_profile_id: original_profile.id().clone(),
+                        recipient_profile_id: profile_id.clone(),
+                        participant_session_id: recipient_session.session_id.clone(),
+                        expected_conversation_revision: peer_projection.conversation.revision,
+                        expected_policy_revision: peer_policy.participant_revision,
+                        content: "canonical peer hello".into(),
+                        deadline: UtcTimestamp::from_unix_millis(i64::MAX),
+                    }),
+                )),
+                Generation::ZERO,
+            )
+            .unwrap();
+        let CommandResult::Data(peer_result) = peer_result else {
+            panic!("peer command did not return data");
+        };
+        let ResponsePayload::TeammatesReceipt(peer_receipt) = *peer_result else {
+            panic!("peer command returned the wrong payload");
+        };
+        let dedicated_peer_session = peer_receipt
+            .participant_session_id
+            .expect("peer receipt must expose its isolated recipient session");
+        assert_ne!(dedicated_peer_session, recipient_session.session_id);
+        assert_eq!(
+            runtime
+                .sessions
+                .manifest(&dedicated_peer_session)
+                .unwrap()
+                .profile_id,
+            profile_id
+        );
+        assert_eq!(
+            runtime
+                .sessions
+                .manifest(&recipient_session.session_id)
+                .unwrap()
+                .active_leaf,
+            recipient_leaf_before,
+            "A2A delivery must not append into the recipient's human-facing DM session"
+        );
+        let peer_after = store
+            .projection(
+                &direct.id,
+                &Principal::Agent(original_profile.id().clone()),
+                0,
+                10,
+            )
+            .unwrap();
+        assert!(peer_after.events.iter().any(|event| {
+            event.id == peer_receipt.event_id.clone().unwrap()
+                && event.author == Principal::Agent(original_profile.id().clone())
+                && event.content.as_deref() == Some("canonical peer hello")
+        }));
+        runtime.root_scope = None;
         let authority = CanonicalConversationAuthority {
             state: &runtime.conversation_state,
             spaces: &runtime.shared_knowledge_spaces,
@@ -21041,6 +24068,95 @@ mod tests {
             )
             .unwrap();
 
+        let advance_read =
+            ConversationCommand::AdvanceRead(keith_protocol::ConversationReadRequest {
+                conversation_id: conversation_id.clone(),
+                expected_revision: None,
+                read_through_sequence: 1,
+            });
+        for _ in 0..2 {
+            assert!(matches!(
+                runtime
+                    .execute_conversation_command(
+                        None,
+                        &Principal::Human,
+                        &advance_read,
+                        Generation::ZERO,
+                    )
+                    .unwrap(),
+                CommandResult::Data(payload)
+                    if matches!(*payload, ResponsePayload::ConversationMutation(ref receipt)
+                        if receipt.status == ConversationMutationStatus::Applied
+                            && receipt.revision == Some(Revision::ZERO))
+            ));
+        }
+        assert_eq!(
+            store
+                .read_receipt(&conversation_id, &Principal::Human)
+                .unwrap()
+                .unwrap()
+                .read_through_sequence,
+            1
+        );
+        let current_conversation_revision = store
+            .projection(&conversation_id, &Principal::Human, 0, 10)
+            .unwrap()
+            .conversation
+            .revision;
+        store
+            .append(
+                current_conversation_revision,
+                &ConversationEvent {
+                    schema_version: CURRENT_SCHEMA_VERSION,
+                    id: keith_agent_types::EventId::new(),
+                    conversation_id: conversation_id.clone(),
+                    sequence: 2,
+                    publication_key: stable_key(format!(
+                        "runtime-test-message:{conversation_id}/2"
+                    ))
+                    .unwrap(),
+                    author: Principal::Agent(profile_id.clone()),
+                    timestamp: UtcTimestamp::from_unix_millis(51),
+                    kind: ConversationEventKind::Message,
+                    content: Some("later teammate reply".into()),
+                    artifacts: Vec::new(),
+                    reply_to: None,
+                    thread_parent: None,
+                    provenance: keith_conversation::EventProvenance {
+                        source: "runtime-test".into(),
+                        source_ids: Vec::new(),
+                        migration_version: None,
+                    },
+                },
+            )
+            .unwrap();
+        let later_advance =
+            ConversationCommand::AdvanceRead(keith_protocol::ConversationReadRequest {
+                conversation_id: conversation_id.clone(),
+                expected_revision: None,
+                read_through_sequence: 2,
+            });
+        assert!(matches!(
+            runtime
+                .execute_conversation_command(
+                    None,
+                    &Principal::Human,
+                    &later_advance,
+                    Generation::ZERO,
+                )
+                .unwrap(),
+            CommandResult::Data(payload)
+                if matches!(*payload, ResponsePayload::ConversationMutation(ref receipt)
+                    if receipt.status == ConversationMutationStatus::Applied
+                        && receipt.revision == Some(Revision::new(1)))
+        ));
+        let later_receipt = store
+            .read_receipt(&conversation_id, &Principal::Human)
+            .unwrap()
+            .unwrap();
+        assert_eq!(later_receipt.read_through_sequence, 2);
+        assert_eq!(later_receipt.revision, Revision::new(1));
+
         for command in [
             ConversationCommand::Page(keith_protocol::ConversationPageRequest {
                 conversation_id: conversation_id.clone(),
@@ -21070,6 +24186,168 @@ mod tests {
             ));
         }
 
+        let group_result = runtime
+            .execute_feature(
+                &client_id,
+                None,
+                &ClientCommand::Conversation(ConversationCommand::Teammates(
+                    TeammatesCommand::CreateGroup(keith_protocol::CreateGroupCommand {
+                        request_id: EntityId::new(),
+                        operation_key: stable_key("lifecycle-assignment-group".into()).unwrap(),
+                        title: "Durable assignment lifecycle".into(),
+                        initial_profile_ids: vec![
+                            original_profile.id().clone(),
+                            profile_id.clone(),
+                        ],
+                        mention_mode: keith_protocol::GroupMentionModeCommand::ExplicitOnly,
+                        now: UtcTimestamp::now().unwrap(),
+                    }),
+                )),
+                Generation::ZERO,
+            )
+            .unwrap();
+        let CommandResult::Data(group_payload) = group_result else {
+            panic!("group command did not return data");
+        };
+        let ResponsePayload::TeammatesReceipt(group) = *group_payload else {
+            panic!("group command returned the wrong payload");
+        };
+        let assignment_conversation_id = group.conversation_id.clone().unwrap();
+        let assignment_source_event_id = group.event_id.clone().unwrap();
+        for session_id in [&sender_session.session_id, &recipient_session.session_id] {
+            runtime
+                .execute_feature(
+                    &client_id,
+                    Some(session_id),
+                    &ClientCommand::Conversation(ConversationCommand::Context(
+                        keith_protocol::ConversationContextRequest {
+                            conversation_id: assignment_conversation_id.clone(),
+                            applied_through_sequence: 0,
+                            limit: 32,
+                        },
+                    )),
+                    Generation::ZERO,
+                )
+                .unwrap();
+        }
+        let assignment_id = EntityId::new();
+        let create_assignment = runtime
+            .execute_feature(
+                &client_id,
+                Some(&sender_session.session_id),
+                &ClientCommand::Conversation(ConversationCommand::Teammates(
+                    TeammatesCommand::CreateAssignment(keith_protocol::CreateAssignmentCommand {
+                        request_id: EntityId::new(),
+                        operation_key: stable_key("lifecycle-assignment-create".into()).unwrap(),
+                        assignment_id: assignment_id.clone(),
+                        conversation_id: assignment_conversation_id.clone(),
+                        objective: "Prove transfer and completion persistence".into(),
+                        owner_profile_id: profile_id.clone(),
+                        dependency_ids: Vec::new(),
+                        priority: 3,
+                        due_at: None,
+                        source_event_id: assignment_source_event_id,
+                    }),
+                )),
+                Generation::ZERO,
+            )
+            .unwrap();
+        assert!(matches!(create_assignment, CommandResult::Data(payload)
+            if matches!(*payload, ResponsePayload::TeammatesReceipt(ref receipt)
+                if receipt.resulting_revision == Some(Revision::ZERO)
+                    && receipt.delivery_id.is_some())));
+        let handoff = TeammatesCommand::HandoffWork(keith_protocol::HandoffWorkCommand {
+            request_id: EntityId::new(),
+            operation_key: stable_key("lifecycle-assignment-handoff".into()).unwrap(),
+            assignment_id: assignment_id.clone(),
+            expected_assignment_revision: Revision::ZERO,
+            new_owner_profile_id: original_profile.id().clone(),
+            reason: "receiver owns completion".into(),
+        });
+        let stale_handoff = runtime
+            .execute_feature(
+                &client_id,
+                Some(&recipient_session.session_id),
+                &ClientCommand::Conversation(ConversationCommand::Teammates(
+                    TeammatesCommand::HandoffWork(keith_protocol::HandoffWorkCommand {
+                        request_id: EntityId::new(),
+                        operation_key: stable_key("lifecycle-assignment-stale-handoff".into())
+                            .unwrap(),
+                        assignment_id: assignment_id.clone(),
+                        expected_assignment_revision: Revision::new(1),
+                        new_owner_profile_id: original_profile.id().clone(),
+                        reason: "stale revision must fail".into(),
+                    }),
+                )),
+                Generation::ZERO,
+            )
+            .unwrap_err();
+        assert!(stale_handoff.contains("assignment revision is stale"));
+        for expected_status in [
+            TeammatesReceiptStatus::Applied,
+            TeammatesReceiptStatus::Replayed,
+        ] {
+            let result = runtime
+                .execute_feature(
+                    &client_id,
+                    Some(&recipient_session.session_id),
+                    &ClientCommand::Conversation(ConversationCommand::Teammates(handoff.clone())),
+                    Generation::ZERO,
+                )
+                .unwrap();
+            assert!(matches!(result, CommandResult::Data(payload)
+                if matches!(*payload, ResponsePayload::TeammatesReceipt(ref receipt)
+                    if receipt.status == expected_status
+                        && receipt.profile_id.as_ref() == Some(original_profile.id())
+                        && receipt.resulting_revision == Some(Revision::new(1)))));
+        }
+        let unauthorized = runtime
+            .execute_feature(
+                &client_id,
+                Some(&recipient_session.session_id),
+                &ClientCommand::Conversation(ConversationCommand::Teammates(
+                    TeammatesCommand::ReportAssignment(keith_protocol::ReportAssignmentCommand {
+                        request_id: EntityId::new(),
+                        operation_key: stable_key("lifecycle-assignment-unauthorized".into())
+                            .unwrap(),
+                        assignment_id: assignment_id.clone(),
+                        expected_assignment_revision: Revision::new(1),
+                        state: keith_protocol::AssignmentStateProjection::Completed,
+                        summary: "old owner cannot complete".into(),
+                        result_event_id: None,
+                    }),
+                )),
+                Generation::ZERO,
+            )
+            .unwrap_err();
+        assert!(unauthorized.contains("current assignment owner"));
+        let report = TeammatesCommand::ReportAssignment(keith_protocol::ReportAssignmentCommand {
+            request_id: EntityId::new(),
+            operation_key: stable_key("lifecycle-assignment-complete".into()).unwrap(),
+            assignment_id: assignment_id.clone(),
+            expected_assignment_revision: Revision::new(1),
+            state: keith_protocol::AssignmentStateProjection::Completed,
+            summary: "transferred work completed".into(),
+            result_event_id: None,
+        });
+        for expected_status in [
+            TeammatesReceiptStatus::Applied,
+            TeammatesReceiptStatus::Replayed,
+        ] {
+            let result = runtime
+                .execute_feature(
+                    &client_id,
+                    Some(&sender_session.session_id),
+                    &ClientCommand::Conversation(ConversationCommand::Teammates(report.clone())),
+                    Generation::ZERO,
+                )
+                .unwrap();
+            assert!(matches!(result, CommandResult::Data(payload)
+                if matches!(*payload, ResponsePayload::TeammatesReceipt(ref receipt)
+                    if receipt.status == expected_status
+                        && receipt.resulting_revision == Some(Revision::new(4)))));
+        }
+
         drop(runtime);
         let mut restarted = LocalRuntime::open(configuration()).unwrap();
         let record = restarted.agent_record(&profile_id).unwrap();
@@ -21089,7 +24367,7 @@ mod tests {
                     .participant_profiles
                     .contains(&profile_id))
                 .count(),
-            1
+            3
         );
         let searched = restarted
             .execute_feature(
@@ -21119,6 +24397,33 @@ mod tests {
             ),
             Err(LocalRuntimeError::OwnerAdministrationRequired)
         ));
+        let persisted = DurableCoordinationRepository::new(
+            EmbeddedStore::open(&data_root.join("state.sqlite"), Some(&FileBackupHook)).unwrap(),
+        )
+        .assignment(&AssignmentId::from(assignment_id))
+        .unwrap()
+        .unwrap();
+        assert_eq!(persisted.owner_profile_id, *original_profile.id());
+        assert_eq!(persisted.state, AssignmentState::Completed);
+        assert_eq!(persisted.revision, Revision::new(4));
+        let assignment_events = restarted_store
+            .projection(&assignment_conversation_id, &Principal::Human, 0, 128)
+            .unwrap()
+            .events;
+        assert_eq!(
+            assignment_events
+                .iter()
+                .filter(|event| event.kind == ConversationEventKind::Handoff)
+                .count(),
+            1
+        );
+        assert_eq!(
+            assignment_events
+                .iter()
+                .filter(|event| event.kind == ConversationEventKind::AssignmentChange)
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -21224,6 +24529,7 @@ mod tests {
             .unwrap()
             .claim(&root_tree_id, worker_id.clone(), Duration::from_secs(60))
             .unwrap();
+        let worker_lease_expires_at = worker_lease.expires_at;
         let mut runtime = LocalRuntime::open(LocalRuntimeConfig {
             data_root,
             credential_root,
@@ -21256,6 +24562,60 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(catalog.payload, serde_json::to_value(&session).unwrap());
+
+        assert!(
+            runtime
+                .drain_session_actions(&session.session_id, Generation::ZERO, false)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            state
+                .list_records(Collection::ProfileExecutionRegistrations)
+                .unwrap()
+                .is_empty()
+        );
+        let (_, _, mut guard) = runtime.admit_turn(&session.session_id).unwrap();
+        assert_eq!(
+            guard
+                .durable_permit
+                .as_ref()
+                .unwrap()
+                .lock()
+                .unwrap()
+                .lease_expires_at,
+            worker_lease_expires_at
+        );
+        let current_worker_lease = keith_worker_runtime::LeaseManager::open(
+            runtime.worker_lease_database.as_ref().unwrap(),
+        )
+        .unwrap()
+        .current(&session.root_tree_id)
+        .unwrap()
+        .unwrap();
+        keith_worker_runtime::LeaseManager::open(runtime.worker_lease_database.as_ref().unwrap())
+            .unwrap()
+            .renew(&current_worker_lease, Duration::from_secs(120))
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(150));
+        assert!(
+            guard
+                .durable_permit
+                .as_ref()
+                .unwrap()
+                .lock()
+                .unwrap()
+                .lease_expires_at
+                > worker_lease_expires_at
+        );
+        guard.complete().unwrap();
+        assert!(
+            state
+                .profile_execution_snapshot(profile.id())
+                .unwrap()
+                .active
+                .is_empty()
+        );
 
         let (_, cancellation, mut guard) = runtime.admit_turn(&session.session_id).unwrap();
         let snapshot = state.profile_execution_snapshot(profile.id()).unwrap();
@@ -21824,7 +25184,124 @@ mod tests {
                 Some("canonical cursor".into()),
             )
             .unwrap();
+        let participant_root_tree_id = RootTreeId::new();
+        let participant_human_session = runtime
+            .create_session_assigned(
+                profile.id(),
+                &profile.profile.workspace_id,
+                SessionId::new(),
+                participant_root_tree_id.clone(),
+                Some("separate participant root".into()),
+            )
+            .unwrap();
         runtime.root_scope = Some(root_tree_id.clone());
+        assert!(
+            runtime
+                .provision_conversation_participant_sessions_assigned(
+                    &conversation_id,
+                    &[ConversationSessionAssignment {
+                        profile_id: profile.id().clone(),
+                        root_tree_id: RootTreeId::new(),
+                    }],
+                    Generation::ZERO,
+                    now,
+                )
+                .is_err()
+        );
+        let assigned = runtime
+            .provision_conversation_participant_sessions_assigned(
+                &conversation_id,
+                &[ConversationSessionAssignment {
+                    profile_id: profile.id().clone(),
+                    root_tree_id: participant_root_tree_id.clone(),
+                }],
+                Generation::ZERO,
+                now,
+            )
+            .unwrap();
+        let group_session_id = assigned[0].session_id.clone();
+        let replayed = runtime
+            .provision_conversation_participant_sessions_assigned(
+                &conversation_id,
+                &[ConversationSessionAssignment {
+                    profile_id: profile.id().clone(),
+                    root_tree_id: participant_root_tree_id.clone(),
+                }],
+                Generation::ZERO,
+                now,
+            )
+            .unwrap();
+        assert_eq!(replayed[0].session_id, group_session_id);
+        let trigger_event_id = keith_agent_types::EventId::new();
+        let (authorized_group_session_id, _) = runtime
+            .authorize_group_participant_session(
+                &conversation_id,
+                profile.id(),
+                &trigger_event_id,
+                1,
+                Generation::ZERO,
+                now,
+            )
+            .unwrap();
+        assert_eq!(authorized_group_session_id, group_session_id);
+        assert_ne!(
+            group_session_id, session.session_id,
+            "canonical group execution must not reuse the permanent human DM session"
+        );
+        assert_ne!(group_session_id, participant_human_session.session_id);
+        assert_eq!(
+            runtime
+                .sessions
+                .manifest(&group_session_id)
+                .unwrap()
+                .root_tree_id,
+            participant_root_tree_id
+        );
+        assert!(
+            runtime
+                .sessions
+                .conversation_context_revalidation(&session.session_id, &conversation_id)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            runtime
+                .sessions
+                .manifest(&session.session_id)
+                .unwrap()
+                .active_leaf
+                .is_none()
+        );
+        assert!(
+            runtime
+                .sessions
+                .conversation_context_revalidation(&group_session_id, &conversation_id)
+                .unwrap()
+                .is_some()
+        );
+        let held_writer = runtime
+            .sessions
+            .acquire_writer(
+                &group_session_id,
+                runtime_writer_identity(Generation::new(9), now),
+            )
+            .unwrap();
+        let release_writer = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(150));
+            drop(held_writer);
+        });
+        let (reused_group_session_id, _) = runtime
+            .authorize_group_participant_session(
+                &conversation_id,
+                profile.id(),
+                &keith_agent_types::EventId::new(),
+                2,
+                Generation::ZERO,
+                now,
+            )
+            .unwrap();
+        release_writer.join().unwrap();
+        assert_eq!(reused_group_session_id, group_session_id);
         let context = ConversationCommand::Context(keith_protocol::ConversationContextRequest {
             conversation_id: conversation_id.clone(),
             applied_through_sequence: 99,

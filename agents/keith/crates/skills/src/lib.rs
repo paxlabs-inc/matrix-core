@@ -1371,6 +1371,48 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
+    fn chromium_runtime_symlinks_do_not_disable_valid_skill_selection() {
+        use std::os::unix::fs::symlink;
+
+        let directory = tempdir().unwrap();
+        let builtins = directory.path().join("builtins");
+        write_package(
+            &builtins,
+            "repository-awareness",
+            &skill(
+                "repository-awareness",
+                "1",
+                "inspect a repository before changing it",
+                "repository change",
+                "filesystem",
+            ),
+        );
+        let registry = registry(directory.path());
+        let browser = directory.path().join("workspace/browser");
+        fs::create_dir_all(&browser).unwrap();
+        symlink("/tmp/chromium-lock", browser.join("SingletonLock")).unwrap();
+        symlink("/tmp/chromium-cookie", browser.join("SingletonCookie")).unwrap();
+        symlink("/tmp/chromium-socket", browser.join("SingletonSocket")).unwrap();
+
+        let selected = registry
+            .select(
+                &SkillSelectionRequest {
+                    task: "make a repository change".into(),
+                    platform: "linux".into(),
+                    ready_tools: BTreeSet::from(["filesystem".into()]),
+                    max_prompt_bytes: 4_096,
+                    max_skills: 1,
+                },
+                UtcTimestamp::from_unix_millis(1),
+            )
+            .unwrap();
+
+        assert_eq!(selected.selected.len(), 1);
+        assert_eq!(selected.selected[0].id, "repository-awareness");
+    }
+
+    #[test]
     fn precedence_selection_budget_readiness_and_irrelevance_are_deterministic() {
         let directory = tempdir().unwrap();
         let builtins = directory.path().join("builtins");

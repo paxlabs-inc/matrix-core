@@ -4,6 +4,8 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
 
 use keith_agent_types::{AuditId, EntityId, ProfileId, Revision, StableKey, UtcTimestamp};
 use keith_resource_governor::{ResourceScope, ScopePath};
@@ -554,6 +556,28 @@ impl<R: ComputerRepository> ComputerHost<R> {
             let _ = xvfb.kill();
             return Err(ComputerHostError::ProcessExited);
         }
+        let readiness = (|| {
+            let output = runner
+                .stdout
+                .as_mut()
+                .ok_or(ComputerHostError::RunnerProtocol)?;
+            let response = read_bounded_line(output, 64 * 1024)?;
+            let response: serde_json::Value =
+                serde_json::from_slice(&response).map_err(|_| ComputerHostError::RunnerProtocol)?;
+            validate_runner_readiness(
+                &response,
+                &record.owner_profile_id,
+                &control_endpoint.to_string(),
+                &format!(":{display}"),
+            )
+        })();
+        if let Err(error) = readiness {
+            let _ = runner.kill();
+            let _ = runner.wait();
+            let _ = xvfb.kill();
+            let _ = xvfb.wait();
+            return Err(error);
+        }
         let mut running = self
             .running
             .lock()
@@ -1031,31 +1055,48 @@ impl<R: ComputerRepository> ComputerHost<R> {
         policy: &ComputerBoundaryPolicy,
         display: Option<u16>,
     ) -> Result<Child, ComputerHostError> {
-        let mut command = Command::new(&self.config.systemd_run_binary);
-        command
-            .args(["--user", "--scope", "--quiet", "--collect"])
-            .arg("-p")
-            .arg(format!("CPUQuota={}%", policy.resources.cpu_quota_percent))
-            .arg("-p")
-            .arg(format!("MemoryMax={}", policy.resources.max_memory_bytes))
-            .arg("-p")
-            .arg(format!("TasksMax={}", policy.resources.max_processes))
-            .arg("-p")
-            .arg(format!(
-                "RuntimeMaxSec={}",
-                policy.resources.idle_timeout_seconds
-            ))
-            .arg("--");
-        command
-            .arg(program)
-            .args(args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null());
-        if let Some(display) = display {
-            command.env("DISPLAY", format!(":{display}"));
+        let command = |user_scope: bool| {
+            let mut command = Command::new(&self.config.systemd_run_binary);
+            if user_scope {
+                command.arg("--user");
+            }
+            command
+                .args(["--scope", "--quiet", "--collect"])
+                .arg("-p")
+                .arg(format!("CPUQuota={}%", policy.resources.cpu_quota_percent))
+                .arg("-p")
+                .arg(format!("MemoryMax={}", policy.resources.max_memory_bytes))
+                .arg("-p")
+                .arg(format!("TasksMax={}", policy.resources.max_processes))
+                .arg("-p")
+                .arg(format!(
+                    "RuntimeMaxSec={}",
+                    policy.resources.idle_timeout_seconds
+                ))
+                .arg("--")
+                .arg(program)
+                .args(args)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null());
+            if let Some(display) = display {
+                command.env("DISPLAY", format!(":{display}"));
+            }
+            command
+        };
+
+        let mut child = command(true).spawn()?;
+        thread::sleep(Duration::from_millis(100));
+        if child.try_wait()?.is_none() {
+            return Ok(child);
         }
-        Ok(command.spawn()?)
+
+        let mut child = command(false).spawn()?;
+        thread::sleep(Duration::from_millis(100));
+        if child.try_wait()?.is_some() {
+            return Err(ComputerHostError::ProcessExited);
+        }
+        Ok(child)
     }
 
     fn audit(
@@ -1134,6 +1175,39 @@ fn runner_outcome<'a>(
         .get("value")
         .filter(|value| value.is_object())
         .ok_or(ComputerHostError::RunnerProtocol)
+}
+
+fn validate_runner_readiness(
+    response: &serde_json::Value,
+    owner: &ProfileId,
+    control_endpoint: &str,
+    display: &str,
+) -> Result<(), ComputerHostError> {
+    let owner = owner.to_string();
+    if response
+        .get("request_id")
+        .is_none_or(|value| !value.is_null())
+        || response
+            .get("profile_id")
+            .and_then(serde_json::Value::as_str)
+            != Some(owner.as_str())
+    {
+        return Err(ComputerHostError::RunnerProtocol);
+    }
+    let readiness = runner_outcome(response, "ready")?;
+    if readiness
+        .get("control_endpoint")
+        .and_then(serde_json::Value::as_str)
+        != Some(control_endpoint)
+        || readiness.get("display").and_then(serde_json::Value::as_str) != Some(display)
+        || readiness
+            .get("persistent_profile")
+            .and_then(serde_json::Value::as_bool)
+            != Some(true)
+    {
+        return Err(ComputerHostError::RunnerProtocol);
+    }
+    Ok(())
 }
 
 fn bounded_u32(value: Option<&serde_json::Value>, maximum: u32) -> Result<u32, ComputerHostError> {
@@ -1333,6 +1407,29 @@ mod tests {
     use crate::{ComputerState, InMemoryComputerRepository};
 
     #[test]
+    fn runner_readiness_is_bound_to_the_exact_profile_display_and_endpoint() {
+        let owner = ProfileId::new();
+        let response = serde_json::json!({
+            "request_id": null,
+            "profile_id": owner,
+            "outcome": {
+                "status": "ready",
+                "value": {
+                    "control_endpoint": "127.0.0.1:32001",
+                    "display": ":201",
+                    "persistent_profile": true
+                }
+            }
+        });
+        assert!(validate_runner_readiness(&response, &owner, "127.0.0.1:32001", ":201").is_ok());
+        assert!(validate_runner_readiness(&response, &owner, "127.0.0.1:32002", ":201").is_err());
+        assert!(
+            validate_runner_readiness(&response, &ProfileId::new(), "127.0.0.1:32001", ":201")
+                .is_err()
+        );
+    }
+
+    #[test]
     #[ignore = "requires real systemd user manager, Xvfb, Chromium, and keith-browser-runner"]
     fn host_process_real_headed_navigation_script_restart_and_profile_fencing() {
         let browser_runner_binary = PathBuf::from(
@@ -1402,6 +1499,7 @@ mod tests {
         let mut stdin = runner.runner.stdin.take().unwrap();
         let stdout = runner.runner.stdout.take().unwrap();
         let mut output = BufReader::new(stdout);
+        let mut line = String::new();
         for (request_id, command) in [
             ("1", serde_json::json!({"kind":"ping"})),
             (
@@ -1416,7 +1514,7 @@ mod tests {
         ] {
             writeln!(stdin, "{}", serde_json::json!({"request_id":request_id,"profile_id":profile_id,"command":command})).unwrap();
             stdin.flush().unwrap();
-            let mut line = String::new();
+            line.clear();
             output.read_line(&mut line).unwrap();
             assert!(line.len() <= 1_048_576);
             let response: serde_json::Value = serde_json::from_str(&line).unwrap();

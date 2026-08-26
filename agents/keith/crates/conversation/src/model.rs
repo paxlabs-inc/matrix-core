@@ -328,7 +328,7 @@ impl ConversationEvent {
             return Err(DomainError::Invalid("event sequence must start at one"));
         }
         if let Some(content) = &self.content {
-            validate_text("content", content, MAX_CONTENT_BYTES, true)?;
+            validate_message_content(content)?;
         }
         if self.artifacts.len() > MAX_ARTIFACTS {
             return Err(DomainError::BoundExceeded("event artifacts"));
@@ -614,6 +614,19 @@ fn validate_text(
         return Err(DomainError::BoundExceeded(field));
     }
     if text.chars().any(char::is_control) {
+        return Err(DomainError::Invalid("text contains control characters"));
+    }
+    Ok(())
+}
+
+fn validate_message_content(text: &str) -> Result<(), DomainError> {
+    if text.len() > MAX_CONTENT_BYTES {
+        return Err(DomainError::BoundExceeded("content"));
+    }
+    if text
+        .chars()
+        .any(|character| character.is_control() && !matches!(character, '\n' | '\t'))
+    {
         return Err(DomainError::Invalid("text contains control characters"));
     }
     Ok(())

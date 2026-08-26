@@ -124,7 +124,7 @@ pub enum ContextContractError {
     SystemAlignment,
     #[error("message context metadata does not align with provider messages")]
     MessageAlignment,
-    #[error("provider role=user if and only if provenance=user_ingress")]
+    #[error("provider role=user requires typed user or controller ingress provenance")]
     UserRoleProvenance,
     #[error("provider tool content must retain tool provenance")]
     ToolProvenance,
@@ -177,7 +177,10 @@ impl RequestContext {
         for (message, records) in messages.iter().zip(&self.messages) {
             for (content, record) in message.content.iter().zip(records) {
                 if (message.role == MessageRole::User)
-                    != (record.provenance == ContextProvenance::UserIngress)
+                    != matches!(
+                        record.provenance,
+                        ContextProvenance::UserIngress | ContextProvenance::ControllerGuidance
+                    )
                 {
                     return Err(ContextContractError::UserRoleProvenance);
                 }
@@ -202,7 +205,11 @@ impl RequestContext {
             })
             .find(|(_, _, record)| record.entry_id == self.active_user_entry_id)
             .ok_or(ContextContractError::ActiveUserEntry)?;
-        if active.2.provenance != ContextProvenance::UserIngress || !active.2.current_turn {
+        if !matches!(
+            active.2.provenance,
+            ContextProvenance::UserIngress | ContextProvenance::ControllerGuidance
+        ) || !active.2.current_turn
+        {
             return Err(ContextContractError::ActiveUserEntry);
         }
         let text = match &messages[active.0].content[active.1] {
@@ -784,6 +791,13 @@ mod tests {
                 .is_ok()
         );
         request.context.messages[0][0].provenance = ContextProvenance::ControllerGuidance;
+        assert!(
+            request
+                .context
+                .validate(&request.system, &request.messages)
+                .is_ok()
+        );
+        request.messages[0].role = MessageRole::Assistant;
         assert_eq!(
             request.context.validate(&request.system, &request.messages),
             Err(ContextContractError::UserRoleProvenance)

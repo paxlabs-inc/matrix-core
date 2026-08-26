@@ -2883,7 +2883,13 @@ mod tests {
             DaemonEvent::ScheduleChanged(ScheduleProjection {
                 job_id: JobId::new(),
                 expression: ScheduleExpression::IntervalSeconds(60),
+                prompt: "follow up".into(),
+                state: "active".into(),
                 next_run: Some(UtcTimestamp::from_unix_millis(100)),
+                last_run: None,
+                attempts: 0,
+                failures: 0,
+                safe_error: None,
                 paused: false,
             }),
             DaemonEvent::DeliveryChanged(DeliveryProjection {
@@ -3249,7 +3255,13 @@ mod tests {
         snapshot.schedules.push(ScheduleProjection {
             job_id: JobId::new(),
             expression: ScheduleExpression::IntervalSeconds(3_600),
+            prompt: "Arrange the visit".into(),
+            state: "active".into(),
             next_run: Some(UtcTimestamp::from_unix_millis(2)),
+            last_run: None,
+            attempts: 0,
+            failures: 0,
+            safe_error: None,
             paused: false,
         });
         snapshot.memory_changes.push(MemoryChangeProjection {

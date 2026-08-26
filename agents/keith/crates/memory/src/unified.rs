@@ -672,6 +672,7 @@ impl MemoryService {
             .values()
             .find(|record| {
                 record.source_entries.contains(&source.source_entry_id)
+                    && record.source_kind == EvidenceSourceKind::UserMessage
                     && matches!(
                         record.validity,
                         EvidenceValidity::Active | EvidenceValidity::Disputed

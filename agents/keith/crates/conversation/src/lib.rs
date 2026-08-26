@@ -495,6 +495,14 @@ impl<'a, R: StateRecordRepository> ConversationStore<'a, R> {
         }])
     }
 
+    pub fn read_receipt(
+        &self,
+        conversation: &ConversationId,
+        reader: &Principal,
+    ) -> Result<Option<ReadReceipt>, RepositoryError> {
+        self.repository.read_receipt(conversation, reader)
+    }
+
     pub fn update_participant_projection(
         &self,
         actor: &Principal,
@@ -1023,50 +1031,35 @@ impl<'a, R: StateRecordRepository> ConversationStore<'a, R> {
         }
         let state = RepositoryState::load(self.repository.store)?;
         ensure_visible(&state, id, principal)?;
-        let conversation = state
-            .conversations
-            .get(id)
-            .cloned()
-            .ok_or(RepositoryError::NotFound("conversation"))?;
-        let participants = state
-            .participants
-            .range((id.clone(), ParticipantPrincipal::Human)..)
-            .take_while(|((conversation_id, _), _)| conversation_id == id)
-            .map(|(_, value)| value.clone())
-            .collect::<Vec<_>>();
-        let events = state
-            .events
-            .range((id.clone(), after.saturating_add(1))..=(id.clone(), u64::MAX))
-            .take(limit)
-            .map(|(_, value)| value.clone())
-            .collect::<Vec<_>>();
-        let read_through_sequence = state
-            .receipts
-            .get(&(id.clone(), principal.clone()))
-            .map_or(0, |receipt| receipt.read_through_sequence);
-        let head = conversation
-            .event_head
-            .as_ref()
-            .map_or(0, |head| head.sequence);
-        let participant = participant_for(&state, id, principal);
-        let materialized = reduce_events(
-            state
-                .events
-                .range((id.clone(), 0)..=(id.clone(), u64::MAX))
-                .map(|(_, event)| event),
-        )?;
-        let pinned = !materialized.pinned.is_empty();
-        Ok(ConversationProjection {
-            archived: conversation.lifecycle == ConversationLifecycle::Archived,
-            hidden: participant.is_some_and(|value| value.hidden),
-            conversation,
-            participants,
-            events,
-            read_through_sequence,
-            unread_count: head.saturating_sub(read_through_sequence),
-            pinned,
-            materialized,
-        })
+        projection_from_state(&state, id, principal, after, limit)
+    }
+
+    /// Loads one durable repository snapshot and projects every visible request from it.
+    ///
+    /// Requests that are not visible to their principal return `None` at the matching index.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid bounds, corrupt durable state, or projection failure.
+    pub fn projections(
+        &self,
+        requests: &[(ConversationId, Principal)],
+        after: u64,
+        limit: usize,
+    ) -> Result<Vec<Option<ConversationProjection>>, RepositoryError> {
+        if limit == 0 || limit > 1_000 {
+            return Err(DomainError::BoundExceeded("conversation page").into());
+        }
+        let state = RepositoryState::load(self.repository.store)?;
+        requests
+            .iter()
+            .map(|(id, principal)| {
+                if ensure_visible(&state, id, principal).is_err() {
+                    return Ok(None);
+                }
+                projection_from_state(&state, id, principal, after, limit).map(Some)
+            })
+            .collect()
     }
 
     pub fn reconstruct_context(
@@ -1396,6 +1389,59 @@ fn ensure_visible(
     } else {
         Err(RepositoryError::NotFound("conversation"))
     }
+}
+
+fn projection_from_state(
+    state: &RepositoryState,
+    id: &ConversationId,
+    principal: &Principal,
+    after: u64,
+    limit: usize,
+) -> Result<ConversationProjection, RepositoryError> {
+    let conversation = state
+        .conversations
+        .get(id)
+        .cloned()
+        .ok_or(RepositoryError::NotFound("conversation"))?;
+    let participants = state
+        .participants
+        .range((id.clone(), ParticipantPrincipal::Human)..)
+        .take_while(|((conversation_id, _), _)| conversation_id == id)
+        .map(|(_, value)| value.clone())
+        .collect::<Vec<_>>();
+    let events = state
+        .events
+        .range((id.clone(), after.saturating_add(1))..=(id.clone(), u64::MAX))
+        .take(limit)
+        .map(|(_, value)| value.clone())
+        .collect::<Vec<_>>();
+    let read_through_sequence = state
+        .receipts
+        .get(&(id.clone(), principal.clone()))
+        .map_or(0, |receipt| receipt.read_through_sequence);
+    let head = conversation
+        .event_head
+        .as_ref()
+        .map_or(0, |head| head.sequence);
+    let participant = participant_for(state, id, principal);
+    let materialized = reduce_events(
+        state
+            .events
+            .range((id.clone(), 0)..=(id.clone(), u64::MAX))
+            .map(|(_, event)| event),
+    )?;
+    let pinned = !materialized.pinned.is_empty();
+    Ok(ConversationProjection {
+        archived: conversation.lifecycle == ConversationLifecycle::Archived,
+        hidden: participant.is_some_and(|value| value.hidden),
+        conversation,
+        participants,
+        events,
+        read_through_sequence,
+        unread_count: head.saturating_sub(read_through_sequence),
+        pinned,
+        materialized,
+    })
 }
 
 fn require_owner(
@@ -1918,8 +1964,24 @@ fn hex_sha256(bytes: &[u8]) -> String {
 impl RepositoryState {
     #[allow(clippy::too_many_lines)]
     fn load<R: StateRecordRepository>(repository: &R) -> Result<Self, RepositoryError> {
+        let mut snapshot = repository
+            .list_records_snapshot(&[
+                Collection::Conversations,
+                Collection::ConversationParticipants,
+                Collection::ConversationEvents,
+                Collection::ConversationStableKeys,
+                Collection::ReadReceipts,
+                Collection::SharedKnowledgeGrants,
+                Collection::TeammateAudits,
+            ])
+            .map_err(|error| RepositoryError::Durable(error.to_string()))?
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
         let mut state = Self::default();
-        for stored in list(repository, Collection::Conversations)? {
+        for stored in snapshot
+            .remove(&Collection::Conversations)
+            .unwrap_or_default()
+        {
             let value: ConversationRecord = decode_stored(&stored)?;
             check_metadata(
                 &stored,
@@ -1935,7 +1997,10 @@ impl RepositoryState {
                 return Err(RepositoryError::Conflict("conversation ID"));
             }
         }
-        for stored in list(repository, Collection::ConversationParticipants)? {
+        for stored in snapshot
+            .remove(&Collection::ConversationParticipants)
+            .unwrap_or_default()
+        {
             let value: ConversationParticipant = decode_stored(&stored)?;
             value.validate()?;
             let expected = compound_id(
@@ -1949,7 +2014,10 @@ impl RepositoryState {
             }
         }
         let mut sentinels = BTreeMap::new();
-        for stored in list(repository, Collection::ConversationEvents)? {
+        for stored in snapshot
+            .remove(&Collection::ConversationEvents)
+            .unwrap_or_default()
+        {
             let value: DurableEventRecord = serde_json::from_value(stored.payload.clone())
                 .map_err(|error| DomainError::Malformed(error.to_string()))?;
             match value {
@@ -2000,7 +2068,10 @@ impl RepositoryState {
                 }
             }
         }
-        for stored in list(repository, Collection::ConversationStableKeys)? {
+        for stored in snapshot
+            .remove(&Collection::ConversationStableKeys)
+            .unwrap_or_default()
+        {
             let event_id = stored
                 .payload
                 .get("event_id")
@@ -2036,7 +2107,10 @@ impl RepositoryState {
         if !sentinels.is_empty() {
             return Err(DomainError::Invalid("orphan publication sentinel").into());
         }
-        for stored in list(repository, Collection::ReadReceipts)? {
+        for stored in snapshot
+            .remove(&Collection::ReadReceipts)
+            .unwrap_or_default()
+        {
             let value: ReadReceipt = decode_stored(&stored)?;
             let expected = compound_id(
                 &value.conversation_id.to_string(),
@@ -2047,7 +2121,10 @@ impl RepositoryState {
                 .receipts
                 .insert((value.conversation_id.clone(), value.reader.clone()), value);
         }
-        for stored in list(repository, Collection::SharedKnowledgeGrants)? {
+        for stored in snapshot
+            .remove(&Collection::SharedKnowledgeGrants)
+            .unwrap_or_default()
+        {
             let value: SharedKnowledgeGrant = decode_stored(&stored)?;
             check_metadata(
                 &stored,
@@ -2057,7 +2134,13 @@ impl RepositoryState {
             )?;
             state.grants.insert(value.id.clone(), value);
         }
-        for stored in list(repository, Collection::TeammateAudits)? {
+        for stored in snapshot
+            .remove(&Collection::TeammateAudits)
+            .unwrap_or_default()
+        {
+            if is_coordination_audit_payload(&stored.payload)? {
+                continue;
+            }
             let value: ConversationAuditRecord = decode_stored(&stored)?;
             check_metadata(
                 &stored,
@@ -2558,15 +2641,6 @@ impl RepositoryState {
     }
 }
 
-fn list<R: StateRecordRepository>(
-    repository: &R,
-    collection: Collection,
-) -> Result<Vec<VersionedRecord>, RepositoryError> {
-    repository
-        .list_records(collection)
-        .map_err(|error| RepositoryError::Durable(error.to_string()))
-}
-
 fn decode_stored<T: serde::de::DeserializeOwned + ValidateRecord>(
     stored: &VersionedRecord,
 ) -> Result<T, RepositoryError> {
@@ -2574,6 +2648,28 @@ fn decode_stored<T: serde::de::DeserializeOwned + ValidateRecord>(
         .map_err(|error| DomainError::Malformed(error.to_string()))?;
     value.validate_record()?;
     Ok(value)
+}
+
+fn is_coordination_audit_payload(payload: &serde_json::Value) -> Result<bool, RepositoryError> {
+    let object = payload.as_object().ok_or(DomainError::Invalid(
+        "teammate audit payload is not an object",
+    ))?;
+    let conversation = object.contains_key("schema_version");
+    let coordination = object.contains_key("version")
+        && object.contains_key("stable_key")
+        && object.contains_key("actor_profile_id")
+        && object.contains_key("resulting_revision");
+    let coordination_index = object.contains_key("coordination_index")
+        && object.contains_key("record_id")
+        && object.contains_key("stable_key");
+    if coordination_index {
+        return Ok(true);
+    }
+    match (conversation, coordination) {
+        (true, false) => Ok(false),
+        (false, true) => Ok(true),
+        _ => Err(DomainError::Invalid("unrecognized teammate audit payload").into()),
+    }
 }
 
 fn check_metadata(

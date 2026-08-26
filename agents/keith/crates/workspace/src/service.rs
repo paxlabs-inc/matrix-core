@@ -27,7 +27,15 @@ const INDEX_PATH: &str = ".keith/index.json";
 const CORE_FILES: &[&str] = &["AGENT.md", "USER.md", "RULE.md", "MEMORY.md"];
 const EDITABLE_DIRECTORIES: &[&str] =
     &["memory/daily", "state", "knowledge", "skills", "artifacts"];
-const PROTECTED_TOP_LEVEL: &[&str] = &[".keith", "backups"];
+const RUNTIME_PROTECTED_TOP_LEVEL: &[&str] = &["browser", "builtins", "credentials", "runtime"];
+const PROTECTED_TOP_LEVEL: &[&str] = &[
+    ".keith",
+    "backups",
+    RUNTIME_PROTECTED_TOP_LEVEL[0],
+    RUNTIME_PROTECTED_TOP_LEVEL[1],
+    RUNTIME_PROTECTED_TOP_LEVEL[2],
+    RUNTIME_PROTECTED_TOP_LEVEL[3],
+];
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -100,8 +108,12 @@ impl PersonalWorkspace {
         )?;
         let index_path = root.join(INDEX_PATH);
         let index = if index_path.exists() {
-            let index: WorkspaceIndex = serde_json::from_slice(&fs::read(index_path)?)?;
+            let mut index: WorkspaceIndex = serde_json::from_slice(&fs::read(&index_path)?)?;
+            let migrated = tombstone_legacy_runtime_paths(&root, &mut index, now)?;
             validate_index(&index)?;
+            if migrated {
+                persist_index(&root, &index)?;
+            }
             index
         } else {
             WorkspaceIndex::default()
@@ -1103,6 +1115,17 @@ fn editable_path(path: &Path) -> Result<PathBuf, PersonalWorkspaceError> {
     Ok(clean)
 }
 
+fn is_runtime_protected_path(path: &Path) -> bool {
+    path.components().next().is_some_and(|component| {
+        let Component::Normal(name) = component else {
+            return false;
+        };
+        RUNTIME_PROTECTED_TOP_LEVEL
+            .iter()
+            .any(|protected| name == std::ffi::OsStr::new(protected))
+    })
+}
+
 fn authorize(actor: WorkspaceActor, path: &Path) -> Result<(), PersonalWorkspaceError> {
     let allowed = match actor {
         WorkspaceActor::Human | WorkspaceActor::Agent | WorkspaceActor::System => true,
@@ -1187,10 +1210,34 @@ fn validate_limits(limits: PersonalWorkspaceLimits) -> Result<(), PersonalWorksp
     }
 }
 
+fn tombstone_legacy_runtime_paths(
+    root: &Path,
+    index: &mut WorkspaceIndex,
+    now: UtcTimestamp,
+) -> Result<bool, PersonalWorkspaceError> {
+    let paths = index
+        .current
+        .keys()
+        .filter(|path| is_runtime_protected_path(path))
+        .cloned()
+        .collect::<Vec<_>>();
+    for path in &paths {
+        record_version(
+            root,
+            index,
+            path.clone(),
+            None,
+            VersionOrigin::External,
+            now,
+        )?;
+    }
+    Ok(!paths.is_empty())
+}
+
 fn validate_index(index: &WorkspaceIndex) -> Result<(), PersonalWorkspaceError> {
     let mut revisions = BTreeSet::new();
     let versions_valid = index.versions.iter().all(|(path, versions)| {
-        editable_path(path).is_ok()
+        (editable_path(path).is_ok() || is_runtime_protected_path(path))
             && !versions.is_empty()
             && versions
                 .windows(2)
@@ -1472,10 +1519,100 @@ mod tests {
             workspace.token(".keith/credentials/provider"),
             Err(PersonalWorkspaceError::Protected)
         ));
+        for path in [
+            "browser/SingletonSocket",
+            "builtins/core.md",
+            "credentials/provider",
+            "runtime/worker.sock",
+        ] {
+            assert!(matches!(
+                workspace.token(path),
+                Err(PersonalWorkspaceError::Protected)
+            ));
+        }
         assert!(matches!(
             workspace.token("../outside"),
             Err(PersonalWorkspaceError::UnsafePath)
         ));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn runtime_browser_symlinks_are_excluded_from_external_workspace_scans() {
+        use std::os::unix::fs::symlink;
+
+        let root = TempDir::new().unwrap();
+        let workspace = workspace(&root);
+        let browser = root.path().join("browser");
+        fs::create_dir_all(&browser).unwrap();
+        symlink("/tmp/chromium-singleton", browser.join("SingletonSocket")).unwrap();
+
+        let events = workspace
+            .scan_external_changes(UtcTimestamp::from_unix_millis(1))
+            .unwrap();
+
+        assert!(events.iter().all(|event| match event {
+            WorkspaceEvent::Changed { version, .. } => !version.path.starts_with("browser"),
+            WorkspaceEvent::Rejected { path, .. } => !path.starts_with("browser"),
+            WorkspaceEvent::WatcherError { .. } => true,
+        }));
+    }
+
+    #[test]
+    fn legacy_runtime_entries_are_tombstoned_without_deleting_live_state() {
+        let root = TempDir::new().unwrap();
+        let workspace = workspace(&root);
+        drop(workspace);
+        let browser_file = root.path().join("browser/Preferences");
+        fs::create_dir_all(browser_file.parent().unwrap()).unwrap();
+        fs::write(&browser_file, b"live chromium state").unwrap();
+
+        let index_path = root.path().join(INDEX_PATH);
+        let mut index: WorkspaceIndex =
+            serde_json::from_slice(&fs::read(&index_path).unwrap()).unwrap();
+        record_version(
+            root.path(),
+            &mut index,
+            PathBuf::from("browser/Preferences"),
+            Some(b"live chromium state"),
+            VersionOrigin::External,
+            UtcTimestamp::from_unix_millis(1),
+        )
+        .unwrap();
+        persist_index(root.path(), &index).unwrap();
+
+        let reopened =
+            PersonalWorkspace::open(root.path(), limits(), UtcTimestamp::from_unix_millis(2))
+                .unwrap();
+
+        assert_eq!(fs::read(&browser_file).unwrap(), b"live chromium state");
+        assert!(matches!(
+            reopened.token("browser/Preferences"),
+            Err(PersonalWorkspaceError::Protected)
+        ));
+        let migrated: WorkspaceIndex =
+            serde_json::from_slice(&fs::read(&index_path).unwrap()).unwrap();
+        assert!(
+            !migrated
+                .current
+                .contains_key(Path::new("browser/Preferences"))
+        );
+        let history = migrated
+            .versions
+            .get(Path::new("browser/Preferences"))
+            .unwrap();
+        assert_eq!(history.len(), 2);
+        assert!(history.last().unwrap().digest.is_none());
+        assert!(
+            reopened
+                .scan_external_changes(UtcTimestamp::from_unix_millis(3))
+                .unwrap()
+                .iter()
+                .all(|event| !matches!(
+                    event,
+                    WorkspaceEvent::Rejected { path, .. } if path.starts_with("browser")
+                ))
+        );
     }
 
     #[test]

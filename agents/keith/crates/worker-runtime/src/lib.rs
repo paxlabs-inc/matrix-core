@@ -6,7 +6,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{self, Receiver, SyncSender, TryRecvError, TrySendError};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, SyncSender, TryRecvError, TrySendError};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -753,13 +753,49 @@ where
     F: FnOnce(&WorkerArguments) -> Result<Box<dyn CommandRuntime>, String>,
 {
     let arguments = WorkerArguments::parse(std::env::args_os())?;
-    let runtime = factory(&arguments).map_err(WorkerRuntimeError::Runtime)?;
     let shutdown = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(SIGTERM, Arc::clone(&shutdown))
         .map_err(WorkerRuntimeError::Signal)?;
     signal_hook::flag::register(SIGINT, Arc::clone(&shutdown))
         .map_err(WorkerRuntimeError::Signal)?;
+    let runtime = initialize_with_lease_renewal(&arguments, factory)?;
     run_worker_with_runtime(&arguments, &shutdown, runtime)
+}
+
+fn initialize_with_lease_renewal<T, F>(
+    arguments: &WorkerArguments,
+    factory: F,
+) -> Result<T, WorkerRuntimeError>
+where
+    T: Send,
+    F: FnOnce(&WorkerArguments) -> Result<T, String>,
+{
+    let manager = LeaseManager::open(&arguments.lease_database)?;
+    let initial = manager.renew(&arguments.grant, arguments.lease_duration)?;
+    let database = arguments.lease_database.clone();
+    let interval = arguments.heartbeat_interval;
+    let lease_duration = arguments.lease_duration;
+    let (stop_sender, stop_receiver) = mpsc::channel();
+    let renewer = thread::spawn(move || -> Result<LeaseGrant, LeaseError> {
+        let manager = LeaseManager::open(&database)?;
+        let mut grant = initial;
+        loop {
+            match stop_receiver.recv_timeout(interval) {
+                Ok(()) | Err(RecvTimeoutError::Disconnected) => {
+                    return manager.renew(&grant, lease_duration);
+                }
+                Err(RecvTimeoutError::Timeout) => {
+                    grant = manager.renew(&grant, lease_duration)?;
+                }
+            }
+        }
+    });
+    let initialized = factory(arguments);
+    let _ = stop_sender.send(());
+    renewer
+        .join()
+        .map_err(|_| WorkerRuntimeError::Runtime("bootstrap lease renewer panicked".into()))??;
+    initialized.map_err(WorkerRuntimeError::Runtime)
 }
 
 /// # Errors
@@ -830,10 +866,24 @@ fn run_worker_inner(
     let mut active_request = None;
     let (work_sender, work_receiver) = mpsc::sync_channel(1);
     let (result_sender, result_receiver) = mpsc::sync_channel(256);
+    let (maintenance_sender, maintenance_receiver) = mpsc::sync_channel(1);
+    let maintenance_running = Arc::new(AtomicBool::new(false));
+    let maintenance_shutdown = Arc::new(AtomicBool::new(false));
     let runtime = runtime.map(Arc::<dyn CommandRuntime>::from);
     let executor_runtime = runtime.clone();
     let executor = thread::spawn(move || {
         runtime_executor(executor_runtime.as_deref(), &work_receiver, &result_sender);
+    });
+    let maintenance_runtime = runtime.clone();
+    let maintenance_running_for_executor = Arc::clone(&maintenance_running);
+    let maintenance_shutdown_for_executor = Arc::clone(&maintenance_shutdown);
+    let maintenance_executor = thread::spawn(move || {
+        runtime_maintenance_executor(
+            maintenance_runtime.as_deref(),
+            &maintenance_receiver,
+            &maintenance_running_for_executor,
+            &maintenance_shutdown_for_executor,
+        );
     });
     while !shutdown.load(Ordering::Acquire) && !requested_shutdown {
         if let Some(deadline) = service_control(
@@ -842,6 +892,7 @@ fn run_worker_inner(
             &grant,
             runtime.as_ref(),
             &work_sender,
+            &maintenance_sender,
             &result_receiver,
             &mut active_request,
         )? {
@@ -870,6 +921,8 @@ fn run_worker_inner(
         thread::sleep(Duration::from_millis(5));
     }
     drop(work_sender);
+    maintenance_shutdown.store(true, Ordering::Release);
+    drop(maintenance_sender);
     if active_request.is_some() {
         registration.state = WorkerRunState::Failed;
         registration.heartbeat_at = UtcTimestamp::now()?;
@@ -879,6 +932,11 @@ fn run_worker_inner(
         ));
     }
     let _ = executor.join();
+    if maintenance_running.load(Ordering::Acquire) {
+        drop(maintenance_executor);
+    } else {
+        let _ = maintenance_executor.join();
+    }
     registration.state = WorkerRunState::Draining;
     registration.heartbeat_at = UtcTimestamp::now()?;
     write_registration(&arguments.state_dir, &registration)?;
@@ -897,6 +955,7 @@ fn service_control(
     grant: &LeaseGrant,
     runtime: Option<&Arc<dyn CommandRuntime>>,
     work_sender: &SyncSender<RuntimeWork>,
+    maintenance_sender: &SyncSender<()>,
     result_receiver: &Receiver<RuntimeWorkOutput>,
     active_request: &mut Option<EntityId>,
 ) -> Result<Option<UtcTimestamp>, WorkerRuntimeError> {
@@ -936,7 +995,12 @@ fn service_control(
             request_id,
             request,
         }) => {
-            let response = if active_request.is_some() {
+            let response = if matches!(request.as_ref(), RuntimeRequest::Maintain) {
+                Some(dispatch_runtime_maintenance(
+                    runtime.is_some(),
+                    maintenance_sender,
+                ))
+            } else if active_request.is_some() {
                 Some(RuntimeResponse::Failed(
                     "worker already has an active runtime request".into(),
                 ))
@@ -989,6 +1053,21 @@ fn service_control(
         *control = Some(connection);
     }
     Ok(shutdown_deadline)
+}
+
+fn dispatch_runtime_maintenance(
+    runtime_configured: bool,
+    sender: &SyncSender<()>,
+) -> RuntimeResponse {
+    if !runtime_configured {
+        return RuntimeResponse::Failed("worker runtime is not configured".into());
+    }
+    match sender.try_send(()) {
+        Ok(()) | Err(TrySendError::Full(())) => RuntimeResponse::Complete,
+        Err(TrySendError::Disconnected(())) => {
+            RuntimeResponse::Failed("worker maintenance executor is unavailable".into())
+        }
+    }
 }
 
 fn forward_completed_work(
@@ -1108,6 +1187,25 @@ fn runtime_executor(
     }
 }
 
+fn runtime_maintenance_executor(
+    runtime: Option<&dyn CommandRuntime>,
+    receiver: &Receiver<()>,
+    running: &AtomicBool,
+    shutdown: &AtomicBool,
+) {
+    while receiver.recv().is_ok() {
+        running.store(true, Ordering::Release);
+        if shutdown.load(Ordering::Acquire) {
+            running.store(false, Ordering::Release);
+            break;
+        }
+        if let Some(runtime) = runtime {
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| runtime.maintain()));
+        }
+        running.store(false, Ordering::Release);
+    }
+}
+
 fn renew_and_publish(
     manager: &LeaseManager,
     grant: &mut LeaseGrant,
@@ -1197,10 +1295,139 @@ fn write_registration(
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
+    use std::sync::atomic::AtomicUsize;
     use std::sync::{Arc, Barrier};
 
     use super::*;
-    use keith_runtime_api::{RuntimeCommandAuthority, RuntimeWorkerBinding};
+    use keith_agent_types::{ClientId, ConversationId, ProfileId};
+    use keith_protocol::{
+        ClientCommand, CommandResult, CreateSession, ModelSelection, ProfileSummary,
+        SessionSnapshot, SessionState, SubmitPrompt,
+    };
+    use keith_runtime_api::{
+        ConversationSessionAssignment, RuntimeCommandAuthority, RuntimeSession,
+        RuntimeWorkerBinding,
+    };
+
+    struct BlockingMaintenanceRuntime {
+        calls: AtomicUsize,
+        first_started: Barrier,
+        release_first: Barrier,
+    }
+
+    impl BlockingMaintenanceRuntime {
+        fn unsupported<T>() -> Result<T, String> {
+            Err("unsupported test operation".into())
+        }
+    }
+
+    impl CommandRuntime for BlockingMaintenanceRuntime {
+        fn profiles(&self) -> Result<Vec<ProfileSummary>, String> {
+            Ok(Vec::new())
+        }
+
+        fn sessions(&self) -> Result<Vec<RuntimeSession>, String> {
+            Self::unsupported()
+        }
+
+        fn create_default_session(&self, _title: Option<String>) -> Result<RuntimeSession, String> {
+            Self::unsupported()
+        }
+
+        fn create_session(&self, _request: &CreateSession) -> Result<RuntimeSession, String> {
+            Self::unsupported()
+        }
+
+        fn create_default_session_assigned(
+            &self,
+            _session_id: &SessionId,
+            _root_tree_id: &RootTreeId,
+            _title: Option<String>,
+        ) -> Result<RuntimeSession, String> {
+            Self::unsupported()
+        }
+
+        fn create_session_assigned(
+            &self,
+            _session_id: &SessionId,
+            _root_tree_id: &RootTreeId,
+            _request: &CreateSession,
+        ) -> Result<RuntimeSession, String> {
+            Self::unsupported()
+        }
+
+        fn provision_conversation_session(
+            &self,
+            _conversation_id: &ConversationId,
+            _profile_id: &ProfileId,
+            _generation: Generation,
+            _now: UtcTimestamp,
+        ) -> Result<RuntimeSession, String> {
+            Self::unsupported()
+        }
+
+        fn provision_conversation_sessions(
+            &self,
+            _conversation_id: &ConversationId,
+            _assignments: &[ConversationSessionAssignment],
+            _generation: Generation,
+            _now: UtcTimestamp,
+        ) -> Result<Vec<RuntimeSession>, String> {
+            Self::unsupported()
+        }
+
+        fn drain_conversation_actions(
+            &self,
+            _conversation_id: &ConversationId,
+            _generation: Generation,
+        ) -> Result<(), String> {
+            Self::unsupported()
+        }
+
+        fn select_model(&self, _selection: &ModelSelection) -> Result<(), String> {
+            Self::unsupported()
+        }
+
+        fn run_prompt(
+            &self,
+            _prompt: &SubmitPrompt,
+            _generation: Generation,
+        ) -> Result<SessionSnapshot, String> {
+            Self::unsupported()
+        }
+
+        fn cancel_active(&self, _session_id: &SessionId) -> Result<bool, String> {
+            Self::unsupported()
+        }
+
+        fn snapshot(
+            &self,
+            _session_id: &SessionId,
+            _generation: Generation,
+            _state: SessionState,
+        ) -> Result<SessionSnapshot, String> {
+            Self::unsupported()
+        }
+
+        fn execute_feature(
+            &self,
+            _client_id: &ClientId,
+            _scope_session_id: Option<&SessionId>,
+            _command: &ClientCommand,
+            _generation: Generation,
+        ) -> Result<CommandResult, String> {
+            Self::unsupported()
+        }
+
+        fn maintain(&self) -> Result<(), String> {
+            let call = self.calls.fetch_add(1, Ordering::AcqRel);
+            if call == 0 {
+                self.first_started.wait();
+                self.release_first.wait();
+            }
+            Ok(())
+        }
+    }
 
     fn grant(root: RootTreeId) -> LeaseGrant {
         LeaseGrant {
@@ -1327,6 +1554,118 @@ mod tests {
         ));
         drop(first);
         WriterGuard::acquire(directory.path(), &grant).unwrap();
+    }
+
+    #[test]
+    fn runtime_initialization_renews_the_worker_lease_until_the_control_loop_starts() {
+        let directory = tempfile::tempdir().unwrap();
+        let database = directory.path().join("leases.sqlite");
+        let manager = LeaseManager::open(&database).unwrap();
+        let root = RootTreeId::new();
+        let grant = manager
+            .claim(&root, WorkerId::new(), Duration::from_millis(120))
+            .unwrap();
+        let arguments = WorkerArguments {
+            state_dir: directory.path().to_path_buf(),
+            lease_database: database,
+            control_socket: directory.path().join("control.sock"),
+            grant: grant.clone(),
+            image_id: "image-7".into(),
+            image_manifest_sha256: "a".repeat(64),
+            source_manifest_sha256: "b".repeat(64),
+            heartbeat_interval: Duration::from_millis(20),
+            lease_duration: Duration::from_millis(120),
+            runtime_config: None,
+            canary: false,
+        };
+
+        initialize_with_lease_renewal(&arguments, |_| {
+            thread::sleep(Duration::from_millis(300));
+            Ok(())
+        })
+        .unwrap();
+
+        manager.validate(&grant).unwrap();
+        manager.release(&grant).unwrap();
+    }
+
+    #[test]
+    fn maintenance_is_coalesced_without_occupying_the_foreground_executor() {
+        let runtime = Arc::new(BlockingMaintenanceRuntime {
+            calls: AtomicUsize::new(0),
+            first_started: Barrier::new(2),
+            release_first: Barrier::new(2),
+        });
+        let running = Arc::new(AtomicBool::new(false));
+        let shutdown = Arc::new(AtomicBool::new(false));
+        let (maintenance_sender, maintenance_receiver) = mpsc::sync_channel(1);
+        let maintenance_runtime = Arc::clone(&runtime);
+        let maintenance_running = Arc::clone(&running);
+        let maintenance_shutdown = Arc::clone(&shutdown);
+        let maintenance = thread::spawn(move || {
+            runtime_maintenance_executor(
+                Some(maintenance_runtime.as_ref()),
+                &maintenance_receiver,
+                &maintenance_running,
+                &maintenance_shutdown,
+            );
+        });
+
+        assert_eq!(
+            dispatch_runtime_maintenance(true, &maintenance_sender),
+            RuntimeResponse::Complete
+        );
+        runtime.first_started.wait();
+        assert!(running.load(Ordering::Acquire));
+        assert_eq!(
+            dispatch_runtime_maintenance(true, &maintenance_sender),
+            RuntimeResponse::Complete
+        );
+        assert_eq!(
+            dispatch_runtime_maintenance(true, &maintenance_sender),
+            RuntimeResponse::Complete
+        );
+
+        let (work_sender, work_receiver) = mpsc::sync_channel(1);
+        let (result_sender, result_receiver) = mpsc::sync_channel(1);
+        let foreground_runtime = Arc::clone(&runtime);
+        let foreground = thread::spawn(move || {
+            runtime_executor(
+                Some(foreground_runtime.as_ref()),
+                &work_receiver,
+                &result_sender,
+            );
+        });
+        let request_id = EntityId::new();
+        work_sender
+            .send(RuntimeWork {
+                request_id: request_id.clone(),
+                request: RuntimeRequest::Profiles,
+            })
+            .unwrap();
+        let output = result_receiver
+            .recv_timeout(Duration::from_secs(1))
+            .unwrap();
+        assert!(matches!(
+            output,
+            RuntimeWorkOutput::Result {
+                request_id: completed,
+                response: RuntimeResponse::Profiles(profiles),
+            } if completed == request_id && profiles.is_empty()
+        ));
+
+        runtime.release_first.wait();
+        let deadline = Instant::now() + Duration::from_secs(1);
+        while runtime.calls.load(Ordering::Acquire) < 2 && Instant::now() < deadline {
+            thread::yield_now();
+        }
+        assert_eq!(runtime.calls.load(Ordering::Acquire), 2);
+
+        shutdown.store(true, Ordering::Release);
+        drop(maintenance_sender);
+        maintenance.join().unwrap();
+        drop(work_sender);
+        foreground.join().unwrap();
     }
 
     #[test]

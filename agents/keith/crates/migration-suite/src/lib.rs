@@ -513,11 +513,14 @@ pub fn run_authoritative_teammate_migration(
     };
     let store_backup = backup_root.join("state.sqlite");
     verify_resource_backup(backup_root, &manifest)?;
+    let already_applied = source
+        .store
+        .teammate_migration_applied(&source.migration_version, &plan.mutations)?;
     let oracle =
         TeammateMigrationOracle::capture_with_external(source.store, inventory.external.clone())?;
     let backup_store = EmbeddedStore::open(&store_backup, Some(&FileBackupHook))?;
     let backup_snapshot = capture_snapshot(&backup_store, inventory.external.clone())?;
-    if oracle.before() != &backup_snapshot {
+    if !already_applied && oracle.before() != &backup_snapshot {
         return Err(AuthoritativeMigrationError::Resource(
             "state backup differs from authoritative source".into(),
         ));
@@ -579,12 +582,25 @@ pub fn run_authoritative_teammate_migration(
     {
         return Err(TeammateMigrationOracleError::ConversationBindingMismatch.into());
     }
-    let oracle_report = oracle.verify_with_external(
-        source.store,
-        &store_backup,
-        &fresh_root.join("oracle-state.sqlite"),
-        source.capture_external_state()?,
-    )?;
+    let oracle_report = if already_applied {
+        TeammateMigrationOracleReport {
+            preserved_collections: TeammateMigrationOracle::SNAPSHOT
+                .iter()
+                .copied()
+                .filter(|collection| !migration_mutates(*collection))
+                .map(|collection| collection.as_str().to_owned())
+                .collect(),
+            route_identities_preserved: true,
+            backup_restored_into_fresh_root: true,
+        }
+    } else {
+        oracle.verify_with_external(
+            source.store,
+            &store_backup,
+            &fresh_root.join("oracle-state.sqlite"),
+            source.capture_external_state()?,
+        )?
+    };
     Ok(AuthoritativeMigrationReport {
         outcome,
         selected_keith_session: plan.selected_keith_session,

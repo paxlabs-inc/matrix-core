@@ -9,6 +9,8 @@ use keith_worker_runtime::LeaseManager;
 #[cfg(unix)]
 use nix::sys::signal::{Signal, kill};
 #[cfg(unix)]
+use nix::sys::wait::waitpid;
+#[cfg(unix)]
 use nix::unistd::Pid;
 use ring::rand::SystemRandom;
 use ring::signature::{Ed25519KeyPair, KeyPair};
@@ -134,6 +136,33 @@ fn real_workers_are_adopted_isolated_restarted_and_evicted() {
     let evicted = restarted_daemon.evict_idle(Duration::ZERO).unwrap();
     assert_eq!(evicted.len(), 2);
     assert!(restarted_daemon.statuses().is_empty());
+}
+
+#[test]
+#[cfg(unix)]
+fn restart_reclaims_a_dead_workers_unexpired_lease_before_activation() {
+    let directory = tempfile::tempdir().unwrap();
+    let executable = env!("CARGO_BIN_EXE_keith-worker-process-host");
+    let root = RootTreeId::new();
+
+    let mut initial = WorkerSupervisor::open(directory.path(), executable, options()).unwrap();
+    let original = initial.start(root.clone()).unwrap();
+    kill(
+        Pid::from_raw(i32::try_from(original.pid).unwrap()),
+        Signal::SIGKILL,
+    )
+    .unwrap();
+    waitpid(Pid::from_raw(i32::try_from(original.pid).unwrap()), None).unwrap();
+    drop(initial);
+
+    let mut restarted = WorkerSupervisor::open(directory.path(), executable, options()).unwrap();
+    assert!(restarted.adopt_existing().unwrap().is_empty());
+    let replacement = restarted.start(root.clone()).unwrap();
+    assert_eq!(replacement.generation, Generation::new(2));
+    restarted
+        .validate_route(&root, replacement.generation)
+        .unwrap();
+    restarted.drain(&root).unwrap();
 }
 
 #[test]
