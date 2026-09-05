@@ -1,0 +1,325 @@
+.harness-repairs {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  color: var(--neo-text-primary);
+}
+
+.harness-header,
+.harness-section-heading,
+.harness-repair-card > header,
+.harness-repair-card > footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.harness-header h2,
+.harness-section-heading h3,
+.harness-repair-card h3 {
+  margin: 2px 0 4px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+}
+
+.harness-header p,
+.harness-section-heading p,
+.harness-repair-card header p,
+.harness-empty p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--neo-text-secondary);
+}
+
+.harness-eyebrow {
+  color: var(--neo-text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.harness-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--neo-status-danger) 38%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--neo-status-danger) 10%, var(--neo-layer-surface));
+  color: var(--neo-text-primary);
+}
+
+.harness-alert button {
+  padding: 2px 7px;
+  background: transparent;
+  color: inherit;
+}
+
+.harness-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.harness-modes legend {
+  grid-column: 1 / -1;
+  margin-bottom: 5px;
+  color: var(--neo-text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.harness-modes label {
+  display: flex;
+  min-height: 92px;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--neo-layer-surface);
+}
+
+.harness-modes label[data-selected='true'] {
+  border-color: color-mix(in srgb, var(--neo-status-running) 55%, var(--border));
+  background: color-mix(in srgb, var(--neo-status-running) 8%, var(--neo-layer-surface));
+}
+
+.harness-modes label[data-available='false'] {
+  opacity: 0.6;
+}
+
+.harness-modes input {
+  margin-top: 3px;
+  accent-color: var(--neo-status-running);
+}
+
+.harness-modes span,
+.harness-boundary p {
+  display: grid;
+  gap: 3px;
+}
+
+.harness-modes small,
+.harness-modes em,
+.harness-boundary small {
+  color: var(--neo-text-secondary);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.harness-modes em {
+  color: var(--neo-status-warning);
+}
+
+.harness-section-heading {
+  align-items: end;
+  padding-top: 4px;
+}
+
+.harness-section-heading > span,
+.harness-mode-chip {
+  color: var(--neo-text-tertiary);
+  font-size: 12px;
+}
+
+.harness-empty {
+  padding: 28px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.harness-repair-list {
+  display: grid;
+  gap: 12px;
+}
+
+.harness-repair-card {
+  display: grid;
+  gap: 16px;
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--neo-layer-surface);
+}
+
+.harness-phase,
+.harness-mode-chip {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--neo-layer-control);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+}
+
+.harness-phase-success { color: var(--neo-status-success); }
+.harness-phase-danger { color: var(--neo-status-danger); }
+.harness-phase-running { color: var(--neo-status-running); }
+.harness-phase-neutral { color: var(--neo-text-secondary); }
+
+.harness-progress {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.harness-progress li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  color: var(--neo-text-tertiary);
+}
+
+.harness-progress li:not(:last-child)::after {
+  position: absolute;
+  top: 11px;
+  left: calc(50% + 13px);
+  width: calc(100% - 26px);
+  height: 1px;
+  background: var(--border-strong);
+  content: '';
+}
+
+.harness-progress li > span {
+  z-index: 1;
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--neo-layer-surface);
+  font-size: 10px;
+}
+
+.harness-progress li[data-state='complete'] > span {
+  border-color: var(--neo-status-success);
+  background: var(--neo-status-success);
+  color: var(--neo-layer-canvas);
+}
+
+.harness-progress li[data-state='current'] {
+  color: var(--neo-text-primary);
+}
+
+.harness-progress li[data-state='current'] > span {
+  border-color: var(--neo-status-running);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--neo-status-running) 13%, transparent);
+}
+
+.harness-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--border);
+}
+
+.harness-metrics > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--neo-layer-raised);
+}
+
+.harness-metrics dt {
+  color: var(--neo-text-tertiary);
+  font-size: 11px;
+}
+
+.harness-metrics dd {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.harness-boundary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--neo-layer-raised);
+}
+
+.harness-boundary > span {
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--neo-layer-control);
+  color: var(--neo-text-tertiary);
+}
+
+.harness-boundary[data-authorized='true'] > span {
+  background: color-mix(in srgb, var(--neo-status-success) 20%, var(--neo-layer-control));
+  color: var(--neo-status-success);
+}
+
+.harness-boundary p,
+.harness-boundary strong,
+.harness-boundary small {
+  margin: 0;
+}
+
+.harness-repair-card > footer {
+  align-items: center;
+}
+
+.harness-repair-card time {
+  color: var(--neo-text-tertiary);
+  font-size: 11px;
+}
+
+.harness-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+@media (max-width: 800px) {
+  .harness-modes { grid-template-columns: 1fr; }
+  .harness-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .harness-header, .harness-repair-card > footer { align-items: stretch; flex-direction: column; }
+  .harness-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 520px) {
+  .harness-repairs { gap: 14px; }
+  .harness-repair-card { padding: 13px; }
+  .harness-metrics { grid-template-columns: 1fr; }
+  .harness-progress small { font-size: 10px; }
+  .harness-repair-card > header { flex-direction: column-reverse; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .harness-repairs *,
+  .harness-repairs *::before,
+  .harness-repairs *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

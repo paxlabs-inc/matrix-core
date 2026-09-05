@@ -4,13 +4,19 @@ ignore = []
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# Every local package is enforced as publish=false by `cargo dependency-policy`.
+# Internal path dependencies therefore cannot become crates.io wildcard requirements.
+allow-wildcard-paths = true
 
 [licenses]
 confidence-threshold = 0.8
 allow = [
+  "0BSD",
   "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
   "BSD-2-Clause",
   "BSD-3-Clause",
+  "CDLA-Permissive-2.0",
   "ISC",
   "MIT",
   "Unicode-3.0",
@@ -21,4 +27,3 @@ allow = [
 unknown-git = "deny"
 unknown-registry = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-

@@ -7,17 +7,14 @@ pub use image::{
     WorkerImageRegistry, worker_image_data_inventory,
 };
 
-use std::cell::RefCell;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use keith_agent_types::{
-    EntityId, Generation, ProfileId, RootTreeId, SessionId, UtcTimestamp, WorkerId,
-};
+use keith_agent_types::{EntityId, Generation, RootTreeId, SessionId, UtcTimestamp, WorkerId};
 use keith_connection::{
     LocalStream, connect_local, set_local_read_timeout, set_local_write_timeout,
 };
@@ -42,74 +39,6 @@ pub enum WorkerHealth {
     Unresponsive,
     Draining,
     Exited,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum AuxiliaryProcessKind {
-    Browser,
-    Display,
-    StreamBridge,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum AuxiliaryProcessHealth {
-    Running,
-    Exited,
-    Quarantined,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AuxiliaryProcessSpec {
-    pub id: EntityId,
-    pub profile_id: ProfileId,
-    pub kind: AuxiliaryProcessKind,
-    pub executable: PathBuf,
-    pub arguments: Vec<String>,
-    pub runtime_directory: PathBuf,
-    pub environment: BTreeMap<String, String>,
-    pub crash_limit: usize,
-    pub crash_window: Duration,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AuxiliaryProcessStatus {
-    pub id: EntityId,
-    pub profile_id: ProfileId,
-    pub kind: AuxiliaryProcessKind,
-    pub pid: Option<u32>,
-    pub health: AuxiliaryProcessHealth,
-    pub crashes_in_window: usize,
-}
-
-struct ManagedAuxiliaryProcess {
-    spec: AuxiliaryProcessSpec,
-    child: Option<Child>,
-    crashes: VecDeque<Instant>,
-    quarantined: bool,
-}
-
-#[derive(Default)]
-pub struct AuxiliaryProcessSupervisor {
-    processes: BTreeMap<EntityId, ManagedAuxiliaryProcess>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct HeadedBrowserStatus {
-    pub profile_id: ProfileId,
-    pub display: AuxiliaryProcessStatus,
-    pub browser: AuxiliaryProcessStatus,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct HeadedBrowserProcesses {
-    display_id: EntityId,
-    browser_id: EntityId,
-}
-
-#[derive(Default)]
-pub struct HeadedBrowserSupervisor {
-    auxiliary: AuxiliaryProcessSupervisor,
-    profiles: BTreeMap<ProfileId, HeadedBrowserProcesses>,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -173,27 +102,18 @@ impl Default for SupervisorOptions {
             drain_timeout: Duration::from_secs(2),
             stale_heartbeat: Duration::from_secs(2),
             heartbeat_interval: Duration::from_millis(100),
-            lease_duration: Duration::from_secs(10),
+            lease_duration: Duration::from_secs(2),
         }
     }
 }
 
 struct ManagedWorker {
     registration: WorkerRegistration,
-    status_registration: RefCell<WorkerRegistration>,
     grant: LeaseGrant,
     control: Option<PrivateTransport<LocalStream>>,
     child: Option<Child>,
     last_activity: Instant,
     draining: bool,
-}
-
-#[derive(Clone)]
-struct AdoptedCleanupCandidate {
-    registration: WorkerRegistration,
-    process_start_identity: Option<String>,
-    executable: PathBuf,
-    executable_sha256: String,
 }
 
 pub struct WorkerSupervisor {
@@ -208,7 +128,6 @@ pub struct WorkerSupervisor {
     options: SupervisorOptions,
     leases: LeaseManager,
     workers: BTreeMap<RootTreeId, ManagedWorker>,
-    adopted_cleanup: BTreeMap<RootTreeId, AdoptedCleanupCandidate>,
 }
 
 #[derive(Debug, Error)]
@@ -247,14 +166,6 @@ pub enum SupervisorError {
     Runtime(String),
     #[error("worker returned a result for a different runtime request")]
     MismatchedRuntimeResponse,
-    #[error("auxiliary process {0} is already active")]
-    AuxiliaryAlreadyActive(EntityId),
-    #[error("auxiliary process {0} is not registered")]
-    AuxiliaryNotActive(EntityId),
-    #[error("auxiliary process {0} is quarantined after repeated crashes")]
-    AuxiliaryQuarantined(EntityId),
-    #[error("auxiliary process specification is invalid: {0}")]
-    InvalidAuxiliary(String),
     #[error(
         "worker {root_tree_id} failed to roll to image {candidate_image_id}: {roll_error}; rollback to {previous_image_id} failed: {rollback_error}"
     )]
@@ -265,320 +176,6 @@ pub enum SupervisorError {
         roll_error: String,
         rollback_error: String,
     },
-}
-
-impl AuxiliaryProcessSupervisor {
-    /// Starts an installation-owned browser, display, or stream process with a cleared environment.
-    ///
-    /// # Errors
-    /// Returns an error for invalid process boundaries, duplicate identities, quarantine, or spawn
-    /// failure.
-    pub fn start(
-        &mut self,
-        spec: AuxiliaryProcessSpec,
-    ) -> Result<AuxiliaryProcessStatus, SupervisorError> {
-        validate_auxiliary_spec(&spec)?;
-        if let Some(existing) = self.processes.get(&spec.id) {
-            if existing.quarantined {
-                return Err(SupervisorError::AuxiliaryQuarantined(spec.id));
-            }
-            if existing.child.is_some() {
-                return Err(SupervisorError::AuxiliaryAlreadyActive(spec.id));
-            }
-        }
-        fs::create_dir_all(&spec.runtime_directory)?;
-        let child = spawn_auxiliary(&spec)?;
-        let id = spec.id.clone();
-        let process = self
-            .processes
-            .entry(id.clone())
-            .or_insert_with(|| ManagedAuxiliaryProcess {
-                spec: spec.clone(),
-                child: None,
-                crashes: VecDeque::new(),
-                quarantined: false,
-            });
-        process.spec = spec;
-        process.child = Some(child);
-        Ok(auxiliary_status(process))
-    }
-
-    /// Observes process exits and advances bounded crash-loop quarantine state.
-    ///
-    /// # Errors
-    /// Returns an error when the process is unknown or its status cannot be observed.
-    pub fn poll(&mut self, id: &EntityId) -> Result<AuxiliaryProcessStatus, SupervisorError> {
-        let process = self
-            .processes
-            .get_mut(id)
-            .ok_or_else(|| SupervisorError::AuxiliaryNotActive(id.clone()))?;
-        let exited = process
-            .child
-            .as_mut()
-            .map(|child| child.try_wait())
-            .transpose()?
-            .flatten()
-            .is_some();
-        if exited {
-            process.child = None;
-            let now = Instant::now();
-            process.crashes.push_back(now);
-            while process
-                .crashes
-                .front()
-                .is_some_and(|crash| now.duration_since(*crash) > process.spec.crash_window)
-            {
-                process.crashes.pop_front();
-            }
-            process.quarantined = process.crashes.len() >= process.spec.crash_limit;
-        }
-        Ok(auxiliary_status(process))
-    }
-
-    /// Restarts a known exited process unless its durable owner has quarantined it.
-    ///
-    /// # Errors
-    /// Returns an error for unknown, running, quarantined, invalid, or unspawnable processes.
-    pub fn restart(&mut self, id: &EntityId) -> Result<AuxiliaryProcessStatus, SupervisorError> {
-        let process = self
-            .processes
-            .get_mut(id)
-            .ok_or_else(|| SupervisorError::AuxiliaryNotActive(id.clone()))?;
-        if process.quarantined {
-            return Err(SupervisorError::AuxiliaryQuarantined(id.clone()));
-        }
-        if process.child.is_some() {
-            return Err(SupervisorError::AuxiliaryAlreadyActive(id.clone()));
-        }
-        validate_auxiliary_spec(&process.spec)?;
-        process.child = Some(spawn_auxiliary(&process.spec)?);
-        Ok(auxiliary_status(process))
-    }
-
-    /// Terminates and forgets one auxiliary process.
-    ///
-    /// # Errors
-    /// Returns an error when the identity is unknown or process control fails.
-    pub fn stop(&mut self, id: &EntityId) -> Result<AuxiliaryProcessStatus, SupervisorError> {
-        let mut process = self
-            .processes
-            .remove(id)
-            .ok_or_else(|| SupervisorError::AuxiliaryNotActive(id.clone()))?;
-        if let Some(mut child) = process.child.take() {
-            child.kill()?;
-            child.wait()?;
-        }
-        Ok(AuxiliaryProcessStatus {
-            id: process.spec.id,
-            profile_id: process.spec.profile_id,
-            kind: process.spec.kind,
-            pid: None,
-            health: AuxiliaryProcessHealth::Exited,
-            crashes_in_window: process.crashes.len(),
-        })
-    }
-
-    pub fn status(&self, id: &EntityId) -> Option<AuxiliaryProcessStatus> {
-        self.processes.get(id).map(auxiliary_status)
-    }
-}
-
-impl HeadedBrowserSupervisor {
-    /// Starts one display and one headed browser process for a profile as a single supervised
-    /// allocation. A browser spawn failure tears down the display before returning.
-    ///
-    /// # Errors
-    /// Returns an error when the pair is malformed, the profile is active, or either process
-    /// cannot be started.
-    pub fn start(
-        &mut self,
-        display: AuxiliaryProcessSpec,
-        browser: AuxiliaryProcessSpec,
-    ) -> Result<HeadedBrowserStatus, SupervisorError> {
-        if display.kind != AuxiliaryProcessKind::Display
-            || browser.kind != AuxiliaryProcessKind::Browser
-            || display.profile_id != browser.profile_id
-            || display.id == browser.id
-        {
-            return Err(SupervisorError::InvalidAuxiliary(
-                "headed browser requires distinct display and browser identities for one profile"
-                    .into(),
-            ));
-        }
-        let profile_id = display.profile_id.clone();
-        if self.profiles.contains_key(&profile_id) {
-            return Err(SupervisorError::InvalidAuxiliary(format!(
-                "headed browser is already registered for profile {profile_id}"
-            )));
-        }
-        let display_status = self.auxiliary.start(display)?;
-        let display_id = display_status.id.clone();
-        let browser_status = match self.auxiliary.start(browser) {
-            Ok(status) => status,
-            Err(error) => {
-                let _ = self.auxiliary.stop(&display_id);
-                return Err(error);
-            }
-        };
-        self.profiles.insert(
-            profile_id.clone(),
-            HeadedBrowserProcesses {
-                display_id,
-                browser_id: browser_status.id.clone(),
-            },
-        );
-        Ok(HeadedBrowserStatus {
-            profile_id,
-            display: display_status,
-            browser: browser_status,
-        })
-    }
-
-    /// Observes both processes and returns quarantine state without attempting an unbounded
-    /// automatic restart.
-    ///
-    /// # Errors
-    /// Returns an error when the profile is unknown or process status cannot be observed.
-    pub fn poll(&mut self, profile_id: &ProfileId) -> Result<HeadedBrowserStatus, SupervisorError> {
-        let pair = self.profiles.get(profile_id).cloned().ok_or_else(|| {
-            SupervisorError::InvalidAuxiliary(format!(
-                "headed browser is not registered for profile {profile_id}"
-            ))
-        })?;
-        let display = self.auxiliary.poll(&pair.display_id)?;
-        let browser = self.auxiliary.poll(&pair.browser_id)?;
-        Ok(HeadedBrowserStatus {
-            profile_id: profile_id.clone(),
-            display,
-            browser,
-        })
-    }
-
-    /// Restarts only the exited members of a registered pair. Quarantined members remain fenced.
-    ///
-    /// # Errors
-    /// Returns an error when the profile is unknown or a required restart is not permitted.
-    pub fn restart_exited(
-        &mut self,
-        profile_id: &ProfileId,
-    ) -> Result<HeadedBrowserStatus, SupervisorError> {
-        let observed = self.poll(profile_id)?;
-        let pair = self.profiles.get(profile_id).cloned().ok_or_else(|| {
-            SupervisorError::InvalidAuxiliary(format!(
-                "headed browser is not registered for profile {profile_id}"
-            ))
-        })?;
-        let display = match observed.display.health {
-            AuxiliaryProcessHealth::Running => observed.display,
-            AuxiliaryProcessHealth::Exited => self.auxiliary.restart(&pair.display_id)?,
-            AuxiliaryProcessHealth::Quarantined => {
-                return Err(SupervisorError::AuxiliaryQuarantined(pair.display_id));
-            }
-        };
-        let browser = match observed.browser.health {
-            AuxiliaryProcessHealth::Running => observed.browser,
-            AuxiliaryProcessHealth::Exited => self.auxiliary.restart(&pair.browser_id)?,
-            AuxiliaryProcessHealth::Quarantined => {
-                return Err(SupervisorError::AuxiliaryQuarantined(pair.browser_id));
-            }
-        };
-        Ok(HeadedBrowserStatus {
-            profile_id: profile_id.clone(),
-            display,
-            browser,
-        })
-    }
-
-    /// Stops and forgets both members of one profile allocation.
-    ///
-    /// # Errors
-    /// Returns an error when the profile is unknown or process control fails.
-    pub fn stop(&mut self, profile_id: &ProfileId) -> Result<HeadedBrowserStatus, SupervisorError> {
-        let pair = self.profiles.remove(profile_id).ok_or_else(|| {
-            SupervisorError::InvalidAuxiliary(format!(
-                "headed browser is not registered for profile {profile_id}"
-            ))
-        })?;
-        let browser = self.auxiliary.stop(&pair.browser_id);
-        let display = self.auxiliary.stop(&pair.display_id);
-        Ok(HeadedBrowserStatus {
-            profile_id: profile_id.clone(),
-            display: display?,
-            browser: browser?,
-        })
-    }
-
-    pub fn status(&self, profile_id: &ProfileId) -> Option<HeadedBrowserStatus> {
-        let pair = self.profiles.get(profile_id)?;
-        Some(HeadedBrowserStatus {
-            profile_id: profile_id.clone(),
-            display: self.auxiliary.status(&pair.display_id)?,
-            browser: self.auxiliary.status(&pair.browser_id)?,
-        })
-    }
-}
-
-fn validate_auxiliary_spec(spec: &AuxiliaryProcessSpec) -> Result<(), SupervisorError> {
-    const ALLOWED_ENVIRONMENT: [&str; 7] = [
-        "DISPLAY",
-        "HOME",
-        "LANG",
-        "LC_ALL",
-        "TMPDIR",
-        "TZ",
-        "XAUTHORITY",
-    ];
-    if !spec.executable.is_absolute()
-        || !spec.runtime_directory.is_absolute()
-        || spec.arguments.len() > 256
-        || spec
-            .arguments
-            .iter()
-            .any(|argument| argument.len() > 8_192 || argument.contains('\0'))
-        || spec.environment.len() > ALLOWED_ENVIRONMENT.len()
-        || spec.environment.iter().any(|(name, value)| {
-            !ALLOWED_ENVIRONMENT.contains(&name.as_str())
-                || value.len() > 8_192
-                || value.contains('\0')
-        })
-        || spec.crash_limit == 0
-        || spec.crash_window.is_zero()
-    {
-        return Err(SupervisorError::InvalidAuxiliary(
-            "paths, arguments, environment, and crash bounds must be explicit and bounded".into(),
-        ));
-    }
-    Ok(())
-}
-
-fn spawn_auxiliary(spec: &AuxiliaryProcessSpec) -> Result<Child, SupervisorError> {
-    let mut command = Command::new(&spec.executable);
-    command
-        .args(&spec.arguments)
-        .current_dir(&spec.runtime_directory)
-        .env_clear()
-        .envs(&spec.environment)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
-    Ok(command.spawn()?)
-}
-
-fn auxiliary_status(process: &ManagedAuxiliaryProcess) -> AuxiliaryProcessStatus {
-    AuxiliaryProcessStatus {
-        id: process.spec.id.clone(),
-        profile_id: process.spec.profile_id.clone(),
-        kind: process.spec.kind,
-        pid: process.child.as_ref().map(Child::id),
-        health: if process.quarantined {
-            AuxiliaryProcessHealth::Quarantined
-        } else if process.child.is_some() {
-            AuxiliaryProcessHealth::Running
-        } else {
-            AuxiliaryProcessHealth::Exited
-        },
-        crashes_in_window: process.crashes.len(),
-    }
 }
 
 impl WorkerSupervisor {
@@ -592,7 +189,7 @@ impl WorkerSupervisor {
         executable: impl Into<PathBuf>,
         options: SupervisorOptions,
     ) -> Result<Self, SupervisorError> {
-        Self::open_internal(state_dir.into(), executable.into(), options, None)
+        Self::open_internal(state_dir.into(), &executable.into(), options, None)
     }
 
     /// Opens a supervisor that passes a non-secret runtime configuration to every worker.
@@ -608,7 +205,7 @@ impl WorkerSupervisor {
     ) -> Result<Self, SupervisorError> {
         Self::open_internal(
             state_dir.into(),
-            executable.into(),
+            &executable.into(),
             options,
             Some(runtime_config.into()),
         )
@@ -616,7 +213,7 @@ impl WorkerSupervisor {
 
     fn open_internal(
         state_dir: PathBuf,
-        executable: PathBuf,
+        executable: &Path,
         options: SupervisorOptions,
         runtime_config: Option<PathBuf>,
     ) -> Result<Self, SupervisorError> {
@@ -628,7 +225,7 @@ impl WorkerSupervisor {
         fs::create_dir_all(&state_dir)?;
         let lease_database = state_dir.join("leases.sqlite");
         let leases = LeaseManager::open(&lease_database)?;
-        let images = WorkerImageRegistry::open(state_dir.join("worker-images"), &executable)?;
+        let images = WorkerImageRegistry::open(state_dir.join("worker-images"), executable)?;
         let control_directory =
             std::env::temp_dir().join(format!("keith-agent-control-{}", WorkerId::new()));
         Ok(Self {
@@ -643,7 +240,6 @@ impl WorkerSupervisor {
             options,
             leases,
             workers: BTreeMap::new(),
-            adopted_cleanup: BTreeMap::new(),
         })
     }
 
@@ -669,32 +265,13 @@ impl WorkerSupervisor {
                 continue;
             }
             let registration = read_registration(&path)?;
-            if !process_is_alive(registration.pid) {
-                if let Some(grant) = self.leases.current(&registration.root_tree_id)?
-                    && grant.worker_id == registration.worker_id
-                    && grant.generation == registration.generation
-                {
-                    match self.leases.release(&grant) {
-                        Ok(()) | Err(LeaseError::OwnershipLost(_)) => {}
-                        Err(error) => return Err(error.into()),
-                    }
-                }
+            if !matches!(
+                registration.state,
+                WorkerRunState::Starting | WorkerRunState::Ready | WorkerRunState::Draining
+            ) || !process_is_alive(registration.pid)
+            {
                 continue;
             }
-            let image = self.resolve_image(&registration.image_id)?;
-            if registration.image_manifest_sha256 != image.manifest_sha256
-                || registration.source_manifest_sha256 != image.source_manifest_sha256
-            {
-                return Err(SupervisorError::Image(ImageRegistryError::ArtifactMismatch));
-            }
-            let cleanup = AdoptedCleanupCandidate {
-                process_start_identity: process_start_identity(registration.pid),
-                registration: registration.clone(),
-                executable: image.executable.clone(),
-                executable_sha256: image.executable_sha256.clone(),
-            };
-            self.adopted_cleanup
-                .insert(registration.root_tree_id.clone(), cleanup);
             let Some(grant) = self.leases.current(&registration.root_tree_id)? else {
                 continue;
             };
@@ -703,17 +280,16 @@ impl WorkerSupervisor {
             {
                 continue;
             }
-            let control = connect_control(&registration, &grant, self.options.startup_timeout)?;
-            if !matches!(
-                registration.state,
-                WorkerRunState::Starting | WorkerRunState::Ready | WorkerRunState::Draining
-            ) {
-                continue;
+            let image = self.resolve_image(&registration.image_id)?;
+            if registration.image_manifest_sha256 != image.manifest_sha256
+                || registration.source_manifest_sha256 != image.source_manifest_sha256
+            {
+                return Err(SupervisorError::Image(ImageRegistryError::ArtifactMismatch));
             }
+            let control = connect_control(&registration, &grant, self.options.startup_timeout)?;
             self.workers
                 .entry(registration.root_tree_id.clone())
                 .or_insert(ManagedWorker {
-                    status_registration: RefCell::new(registration.clone()),
                     registration,
                     grant,
                     control: Some(control),
@@ -732,7 +308,7 @@ impl WorkerSupervisor {
     /// Returns an error when a live worker exists or claim, process, or handshake fails.
     pub fn start(&mut self, root_tree_id: RootTreeId) -> Result<WorkerStatus, SupervisorError> {
         let image = self.images.resolve_current()?;
-        self.start_with_image(root_tree_id, image)
+        self.start_with_image(root_tree_id, &image)
     }
 
     /// Registers an already verified immutable candidate and enables the credential-free canary
@@ -758,13 +334,13 @@ impl WorkerSupervisor {
         image_id: &str,
     ) -> Result<WorkerStatus, SupervisorError> {
         let image = self.resolve_image(image_id)?;
-        self.start_with_image(root_tree_id, image)
+        self.start_with_image(root_tree_id, &image)
     }
 
     fn start_with_image(
         &mut self,
         root_tree_id: RootTreeId,
-        image: InstalledImage,
+        image: &InstalledImage,
     ) -> Result<WorkerStatus, SupervisorError> {
         if self
             .workers
@@ -781,7 +357,7 @@ impl WorkerSupervisor {
             .control_directory
             .join(format!("worker-{}.sock", self.next_control_id));
         self.next_control_id = self.next_control_id.saturating_add(1);
-        let mut child = match self.spawn(&grant, &control_socket, &image) {
+        let mut child = match self.spawn(&grant, &control_socket, image) {
             Ok(child) => child,
             Err(error) => {
                 let _ = self.leases.release(&grant);
@@ -810,7 +386,6 @@ impl WorkerSupervisor {
                 match connect_control(&registration, &grant, self.options.startup_timeout) {
                     Ok(control) => {
                         let worker = ManagedWorker {
-                            status_registration: RefCell::new(registration.clone()),
                             registration,
                             grant,
                             control: Some(control),
@@ -818,8 +393,7 @@ impl WorkerSupervisor {
                             last_activity: Instant::now(),
                             draining: false,
                         };
-                        let status =
-                            status_for(&worker, &self.state_dir, self.options.stale_heartbeat);
+                        let status = status_for(&worker, self.options.stale_heartbeat);
                         self.workers.insert(root_tree_id, worker);
                         return Ok(status);
                     }
@@ -934,7 +508,7 @@ impl WorkerSupervisor {
     pub fn statuses(&self) -> Vec<WorkerStatus> {
         self.workers
             .values()
-            .map(|worker| status_for(worker, &self.state_dir, self.options.stale_heartbeat))
+            .map(|worker| status_for(worker, self.options.stale_heartbeat))
             .collect()
     }
 
@@ -946,7 +520,7 @@ impl WorkerSupervisor {
     pub fn status(&self, root_tree_id: &RootTreeId) -> Option<WorkerStatus> {
         self.workers
             .get(root_tree_id)
-            .map(|worker| status_for(worker, &self.state_dir, self.options.stale_heartbeat))
+            .map(|worker| status_for(worker, self.options.stale_heartbeat))
     }
 
     pub fn mark_activity(&mut self, root_tree_id: &RootTreeId) -> bool {
@@ -1022,36 +596,14 @@ impl WorkerSupervisor {
             )?);
         }
         let request_id = EntityId::new();
-        let initial_send = worker
-            .control
-            .as_mut()
-            .ok_or_else(|| SupervisorError::NotActive(root_tree_id.clone()))?
-            .send(PrivateMessage::Execute {
-                request_id: request_id.clone(),
-                request: Box::new(request.clone()),
-            });
-        if let Err(error) = initial_send {
-            if !error.is_connection_loss() {
-                return Err(error.into());
-            }
-            worker.control = Some(connect_control(
-                &worker.registration,
-                &worker.grant,
-                self.options.startup_timeout,
-            )?);
-            worker
-                .control
-                .as_mut()
-                .ok_or_else(|| SupervisorError::NotActive(root_tree_id.clone()))?
-                .send(PrivateMessage::Execute {
-                    request_id: request_id.clone(),
-                    request: Box::new(request),
-                })?;
-        }
         let control = worker
             .control
             .as_mut()
             .ok_or_else(|| SupervisorError::NotActive(root_tree_id.clone()))?;
+        control.send(PrivateMessage::Execute {
+            request_id: request_id.clone(),
+            request: Box::new(request),
+        })?;
         loop {
             match control.receive() {
                 Ok(PrivateMessage::ExecutionResult {
@@ -1069,7 +621,6 @@ impl WorkerSupervisor {
                 }
                 Ok(PrivateMessage::Heartbeat { at }) => {
                     worker.registration.heartbeat_at = at;
-                    worker.status_registration.borrow_mut().heartbeat_at = at;
                 }
                 Ok(PrivateMessage::Idle { .. } | PrivateMessage::Ready { .. }) => {}
                 Ok(PrivateMessage::Fatal { reason }) => {
@@ -1117,7 +668,6 @@ impl WorkerSupervisor {
                         match control.receive() {
                             Ok(PrivateMessage::Heartbeat { at }) => {
                                 worker.registration.heartbeat_at = at;
-                                worker.status_registration.borrow_mut().heartbeat_at = at;
                             }
                             Ok(PrivateMessage::Fatal { reason }) => {
                                 events.push(WorkerEvent::Fatal {
@@ -1256,21 +806,6 @@ impl WorkerSupervisor {
                 first_error = Some(error);
             }
         }
-        let candidates = std::mem::take(&mut self.adopted_cleanup);
-        for candidate in candidates.into_values() {
-            if !cleanup_identity_matches(&self.state_dir, &candidate)? {
-                continue;
-            }
-            let pid = candidate.registration.pid;
-            signal(pid, ProcessSignal::Graceful)?;
-            let deadline = Instant::now() + self.options.drain_timeout;
-            while cleanup_process_matches(&candidate) && Instant::now() < deadline {
-                thread::sleep(Duration::from_millis(10));
-            }
-            if cleanup_process_matches(&candidate) {
-                signal(pid, ProcessSignal::Force)?;
-            }
-        }
         first_error.map_or(Ok(()), Err)
     }
 
@@ -1345,6 +880,10 @@ impl WorkerSupervisor {
     }
 
     /// Compatibility name for exact-image generation replacement used by promotion orchestration.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the image is absent, altered, or worker startup fails.
     pub fn restart_with_image(
         &mut self,
         root_tree_id: &RootTreeId,
@@ -1549,81 +1088,6 @@ enum ProcessSignal {
     Force,
 }
 
-fn cleanup_identity_matches(
-    state_dir: &Path,
-    candidate: &AdoptedCleanupCandidate,
-) -> Result<bool, SupervisorError> {
-    let path = registration_path(state_dir, &candidate.registration.root_tree_id);
-    let Ok(registration) = read_registration(&path) else {
-        return Ok(false);
-    };
-    let executable_digest = fs::read(&candidate.executable)
-        .ok()
-        .map(|bytes| format!("{:x}", Sha256::digest(bytes)));
-    Ok(registration.pid == candidate.registration.pid
-        && registration.worker_id == candidate.registration.worker_id
-        && registration.generation == candidate.registration.generation
-        && registration.image_id == candidate.registration.image_id
-        && registration.image_manifest_sha256 == candidate.registration.image_manifest_sha256
-        && registration.source_manifest_sha256 == candidate.registration.source_manifest_sha256
-        && executable_digest.as_deref() == Some(candidate.executable_sha256.as_str())
-        && process_executable_matches(candidate)
-        && cleanup_process_matches(candidate))
-}
-
-fn cleanup_process_matches(candidate: &AdoptedCleanupCandidate) -> bool {
-    process_is_alive(candidate.registration.pid)
-        && process_start_identity(candidate.registration.pid) == candidate.process_start_identity
-}
-
-#[cfg(unix)]
-fn process_executable_matches(candidate: &AdoptedCleanupCandidate) -> bool {
-    fs::read_link(format!("/proc/{}/exe", candidate.registration.pid))
-        .ok()
-        .and_then(|path| fs::canonicalize(path).ok())
-        == fs::canonicalize(&candidate.executable).ok()
-}
-
-#[cfg(windows)]
-fn process_executable_matches(_candidate: &AdoptedCleanupCandidate) -> bool {
-    true
-}
-
-#[cfg(not(any(unix, windows)))]
-fn process_executable_matches(_candidate: &AdoptedCleanupCandidate) -> bool {
-    false
-}
-
-#[cfg(unix)]
-fn process_start_identity(pid: u32) -> Option<String> {
-    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-    let (_, fields) = stat.rsplit_once(") ")?;
-    fields.split_whitespace().nth(19).map(str::to_owned)
-}
-
-#[cfg(windows)]
-fn process_start_identity(pid: u32) -> Option<String> {
-    let output = Command::new("wmic")
-        .args([
-            "process",
-            "where",
-            &format!("ProcessId={pid}"),
-            "get",
-            "CreationDate",
-            "/value",
-        ])
-        .output()
-        .ok()?;
-    String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .find_map(|line| line.strip_prefix("CreationDate=").map(str::to_owned))
-}
-
-#[cfg(not(any(unix, windows)))]
-fn process_start_identity(_pid: u32) -> Option<String> {
-    None
-}
-
 #[cfg(unix)]
 fn signal(pid: u32, signal: ProcessSignal) -> Result<(), SupervisorError> {
     let raw_pid = i32::try_from(pid)
@@ -1712,29 +1176,20 @@ fn process_is_zombie(_pid: u32) -> bool {
     false
 }
 
-fn status_for(worker: &ManagedWorker, state_dir: &Path, stale_heartbeat: Duration) -> WorkerStatus {
-    let path = registration_path(state_dir, &worker.registration.root_tree_id);
-    if let Ok(durable) = read_registration(&path)
-        && registration_status_identity_matches(&worker.registration, &durable)
-    {
-        let mut cached = worker.status_registration.borrow_mut();
-        cached.heartbeat_at = durable.heartbeat_at;
-        cached.state = durable.state;
-    }
-    let cached = worker.status_registration.borrow();
+fn status_for(worker: &ManagedWorker, stale_heartbeat: Duration) -> WorkerStatus {
     let heartbeat_age = UtcTimestamp::now()
         .ok()
         .and_then(|now| {
             now.unix_millis()
-                .checked_sub(cached.heartbeat_at.unix_millis())
+                .checked_sub(worker.registration.heartbeat_at.unix_millis())
         })
         .and_then(|millis| u64::try_from(millis).ok())
         .map_or(Duration::ZERO, Duration::from_millis);
     let health = if !process_is_alive(worker.registration.pid) {
         WorkerHealth::Exited
-    } else if worker.draining || cached.state == WorkerRunState::Draining {
+    } else if worker.draining || worker.registration.state == WorkerRunState::Draining {
         WorkerHealth::Draining
-    } else if cached.state == WorkerRunState::Starting {
+    } else if worker.registration.state == WorkerRunState::Starting {
         WorkerHealth::Starting
     } else if heartbeat_age > stale_heartbeat {
         WorkerHealth::Unresponsive
@@ -1750,23 +1205,10 @@ fn status_for(worker: &ManagedWorker, state_dir: &Path, stale_heartbeat: Duratio
         source_manifest_sha256: worker.registration.source_manifest_sha256.clone(),
         pid: worker.registration.pid,
         health,
-        heartbeat_at: cached.heartbeat_at,
+        heartbeat_at: worker.registration.heartbeat_at,
         idle_for: worker.last_activity.elapsed(),
         resources: read_resources(worker.registration.pid),
     }
-}
-
-fn registration_status_identity_matches(
-    owned: &WorkerRegistration,
-    durable: &WorkerRegistration,
-) -> bool {
-    durable.root_tree_id == owned.root_tree_id
-        && durable.worker_id == owned.worker_id
-        && durable.generation == owned.generation
-        && durable.pid == owned.pid
-        && durable.image_id == owned.image_id
-        && durable.image_manifest_sha256 == owned.image_manifest_sha256
-        && durable.source_manifest_sha256 == owned.source_manifest_sha256
 }
 
 #[cfg(target_os = "linux")]
@@ -1797,7 +1239,8 @@ fn read_resources(pid: u32) -> WorkerResourceState {
     else {
         return WorkerResourceState::default();
     };
-    let mut values = String::from_utf8_lossy(&output.stdout)
+    let output = String::from_utf8_lossy(&output.stdout);
+    let mut values = output
         .split_whitespace()
         .filter_map(|value| value.parse::<u64>().ok())
         .map(|value| value.saturating_mul(1024));
@@ -1874,10 +1317,16 @@ mod tests {
     #[test]
     fn missing_registration_directory_is_an_empty_adoption_set() {
         let directory = tempfile::tempdir().unwrap();
-        let executable = std::env::current_exe().unwrap();
-        let mut supervisor =
-            WorkerSupervisor::open(directory.path(), executable, SupervisorOptions::default())
-                .unwrap();
+        // The registry bootstraps by hashing the worker executable, so it must exist.
+        // This worker is never started; only the empty adoption set is under test.
+        let executable = directory.path().join("agent-worker");
+        std::fs::write(&executable, b"not started by this test").unwrap();
+        let mut supervisor = WorkerSupervisor::open(
+            directory.path().join("state"),
+            &executable,
+            SupervisorOptions::default(),
+        )
+        .unwrap();
         assert!(supervisor.adopt_existing().unwrap().is_empty());
     }
 }

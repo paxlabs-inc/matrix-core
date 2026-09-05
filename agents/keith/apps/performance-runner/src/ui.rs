@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use keith_agent_tui::{Accessibility, TuiApp, render};
 use keith_agent_types::{MessageId, Revision, Sequence};
+use keith_agent_web::bootstrap_payload;
 use keith_protocol::{
     DaemonEvent, EventEnvelope, MessageProjection, MessageRole, SessionSnapshot, WireMessage,
 };
@@ -69,7 +70,6 @@ pub fn benchmark(snapshot: &SessionSnapshot, iterations: usize) -> Result<Measur
         workspace_id: keith_agent_types::WorkspaceId::new(),
         display_name: "Performance profile".into(),
         enabled: true,
-        background: None,
     }];
     let sessions = (0..1_000)
         .map(|index| {
@@ -80,21 +80,13 @@ pub fn benchmark(snapshot: &SessionSnapshot, iterations: usize) -> Result<Measur
         .collect::<Vec<_>>();
     for _ in 0..iterations {
         let started = Instant::now();
-        let bootstrap = serde_json::to_vec(&serde_json::json!({
-            "protocol": keith_agent_types::CURRENT_PROTOCOL_VERSION,
-            "csrf": "performance-csrf",
-            "roster": [],
-            "profiles": profiles,
-            "sessions": sessions,
-            "conversations": [],
-            "profile_conversations": [],
-        }))
-        .map_err(|error| error.to_string())?;
-        if bootstrap.is_empty() {
-            return Err("web bootstrap serialization produced an empty payload".into());
+        let mut catalog = sessions.clone();
+        let payload = bootstrap_payload("performance-csrf", &profiles, &mut catalog, None);
+        if payload["sessions"].as_array().map_or(0, Vec::len) != sessions.len() {
+            return Err("web bootstrap projection dropped sessions".into());
         }
         measurements.record(
-            "web_shell_render_1000_sessions",
+            "web_bootstrap_render_1000_sessions",
             u64::try_from(started.elapsed().as_micros()).unwrap_or(u64::MAX),
         );
     }

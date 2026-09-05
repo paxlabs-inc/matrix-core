@@ -11,15 +11,13 @@ use keith_action_store::{
     ActionLimits, ActionPayload, ActionPriority, ActionRecord, ActionSource, DeliveryPolicy,
     PersistentActionInbox, SessionAction,
 };
-use keith_agent_types::{ActionId, ProfileId, Revision, SessionId, UtcTimestamp};
+use keith_agent_types::{ActionId, ProfileId, SessionId, UtcTimestamp};
 use keith_initiative::{CandidateError, InitiativeCandidate};
 use keith_state_store_core::ActionRepository;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 const LEDGER_FILE: &str = "attention.json";
-const DELETION_MARKER_FILE: &str = "attention.deleted.json";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -105,211 +103,9 @@ pub struct DecisionRecord {
 #[serde(deny_unknown_fields)]
 struct AttentionLedger {
     profile_id: ProfileId,
-    #[serde(default)]
-    revision: Revision,
     candidates: Vec<InitiativeCandidate>,
     decisions: Vec<DecisionRecord>,
     notification_counts: BTreeMap<String, u32>,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum AttentionDeletionClassification {
-    DeletePrivate,
-    RetainImmutableAudit,
-    ExternalRemnant,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AttentionDeletionRecord {
-    pub stable_key: String,
-    pub relative_path: PathBuf,
-    pub revision: Revision,
-    pub digest_sha256: String,
-    pub classification: AttentionDeletionClassification,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProfileAttentionDeletionInventory {
-    pub profile_id: ProfileId,
-    pub stable_key: String,
-    pub records: Vec<AttentionDeletionRecord>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ProfileAttentionEraseReport {
-    pub profile_id: ProfileId,
-    pub deleted_private_records: usize,
-    pub duplicate: bool,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ProfileAttentionLeakScan {
-    pub profile_id: ProfileId,
-    pub private_leaks: Vec<AttentionDeletionRecord>,
-    pub retained_immutable: Vec<AttentionDeletionRecord>,
-    pub external_remnants: Vec<AttentionDeletionRecord>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct AttentionDeletionMarker {
-    profile_id: ProfileId,
-    inventory_stable_key: String,
-    ledger_digest_sha256: Option<String>,
-}
-
-pub struct AttentionDeletionManager {
-    root: PathBuf,
-}
-
-impl AttentionDeletionManager {
-    /// Opens the exact attention data root without creating profile state.
-    /// # Errors
-    /// Returns an error when the root cannot be created or canonicalized.
-    pub fn new(root: impl AsRef<Path>) -> Result<Self, AttentionError> {
-        fs::create_dir_all(root.as_ref())?;
-        Ok(Self {
-            root: fs::canonicalize(root.as_ref())?,
-        })
-    }
-
-    /// Enumerates the revisioned profile-private ledger and retained deletion proof.
-    /// # Errors
-    /// Rejects malformed state or state belonging to another profile.
-    pub fn enumerate_profile_deletion_inventory(
-        &self,
-        profile_id: &ProfileId,
-    ) -> Result<ProfileAttentionDeletionInventory, AttentionError> {
-        let mut records = Vec::new();
-        if let Some((ledger, bytes)) = read_ledger(&self.root)? {
-            if &ledger.profile_id != profile_id {
-                return Err(AttentionError::ProfileMismatch);
-            }
-            let digest_sha256 = hex_digest(&bytes);
-            records.push(AttentionDeletionRecord {
-                stable_key: format!("attention:ledger:{profile_id}:{}", ledger.revision.get()),
-                relative_path: PathBuf::from(LEDGER_FILE),
-                revision: ledger.revision,
-                digest_sha256,
-                classification: AttentionDeletionClassification::DeletePrivate,
-            });
-        }
-        if let Some((marker, bytes)) = read_marker(&self.root)? {
-            if &marker.profile_id != profile_id {
-                return Err(AttentionError::ProfileMismatch);
-            }
-            records.push(AttentionDeletionRecord {
-                stable_key: format!("attention:deletion-proof:{profile_id}"),
-                relative_path: PathBuf::from(DELETION_MARKER_FILE),
-                revision: Revision::ZERO,
-                digest_sha256: hex_digest(&bytes),
-                classification: AttentionDeletionClassification::RetainImmutableAudit,
-            });
-        }
-        records.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
-        let stable_key = inventory_key(profile_id, &records)?;
-        Ok(ProfileAttentionDeletionInventory {
-            profile_id: profile_id.clone(),
-            stable_key,
-            records,
-        })
-    }
-
-    /// Erases only the exact revision and digest-bound private ledger.
-    /// # Errors
-    /// Rejects stale inventories, profile mismatches, or persistence failures.
-    pub fn erase_profile_deletion_inventory(
-        &self,
-        inventory: &ProfileAttentionDeletionInventory,
-    ) -> Result<ProfileAttentionEraseReport, AttentionError> {
-        let current = self.enumerate_profile_deletion_inventory(&inventory.profile_id)?;
-        let private = inventory
-            .records
-            .iter()
-            .find(|record| record.classification == AttentionDeletionClassification::DeletePrivate);
-        let current_private = current
-            .records
-            .iter()
-            .find(|record| record.classification == AttentionDeletionClassification::DeletePrivate);
-        if let Some((marker, _)) = read_marker(&self.root)?
-            && marker.inventory_stable_key == inventory.stable_key
-            && current_private == private
-            && private.is_some()
-        {
-            fs::remove_file(self.root.join(LEDGER_FILE))?;
-            return Ok(ProfileAttentionEraseReport {
-                profile_id: inventory.profile_id.clone(),
-                deleted_private_records: 1,
-                duplicate: true,
-            });
-        }
-        if current_private.is_none() {
-            if let Some((marker, _)) = read_marker(&self.root)?
-                && marker.inventory_stable_key == inventory.stable_key
-            {
-                return Ok(ProfileAttentionEraseReport {
-                    profile_id: inventory.profile_id.clone(),
-                    deleted_private_records: 0,
-                    duplicate: true,
-                });
-            }
-            if private.is_none() && current == *inventory {
-                return Ok(ProfileAttentionEraseReport {
-                    profile_id: inventory.profile_id.clone(),
-                    deleted_private_records: 0,
-                    duplicate: true,
-                });
-            }
-            return Err(AttentionError::StaleDeletionInventory);
-        }
-        if current != *inventory {
-            return Err(AttentionError::StaleDeletionInventory);
-        }
-        let private = private.ok_or(AttentionError::StaleDeletionInventory)?;
-        let marker = AttentionDeletionMarker {
-            profile_id: inventory.profile_id.clone(),
-            inventory_stable_key: inventory.stable_key.clone(),
-            ledger_digest_sha256: Some(private.digest_sha256.clone()),
-        };
-        persist_json(&self.root, DELETION_MARKER_FILE, &marker)?;
-        fs::remove_file(self.root.join(LEDGER_FILE))?;
-        Ok(ProfileAttentionEraseReport {
-            profile_id: inventory.profile_id.clone(),
-            deleted_private_records: 1,
-            duplicate: false,
-        })
-    }
-
-    /// Classifies all remaining attention-domain records after deletion.
-    /// # Errors
-    /// Rejects malformed or cross-profile durable state.
-    pub fn scan_profile_deletion_leaks(
-        &self,
-        profile_id: &ProfileId,
-    ) -> Result<ProfileAttentionLeakScan, AttentionError> {
-        let inventory = self.enumerate_profile_deletion_inventory(profile_id)?;
-        let mut private_leaks = Vec::new();
-        let mut retained_immutable = Vec::new();
-        let mut external_remnants = Vec::new();
-        for record in inventory.records {
-            match record.classification {
-                AttentionDeletionClassification::DeletePrivate => private_leaks.push(record),
-                AttentionDeletionClassification::RetainImmutableAudit => {
-                    retained_immutable.push(record);
-                }
-                AttentionDeletionClassification::ExternalRemnant => external_remnants.push(record),
-            }
-        }
-        Ok(ProfileAttentionLeakScan {
-            profile_id: profile_id.clone(),
-            private_leaks,
-            retained_immutable,
-            external_remnants,
-        })
-    }
 }
 
 #[derive(Debug, Error)]
@@ -326,10 +122,6 @@ pub enum AttentionError {
     Io(#[from] std::io::Error),
     #[error("attention state JSON failed: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("attention data was deleted for this profile")]
-    Deleted,
-    #[error("attention deletion inventory is stale")]
-    StaleDeletionInventory,
 }
 
 pub struct AttentionService<R> {
@@ -361,9 +153,6 @@ where
         let quiet_zone = validate_config(&config)?;
         fs::create_dir_all(root.as_ref())?;
         let root = fs::canonicalize(root.as_ref())?;
-        if root.join(DELETION_MARKER_FILE).exists() {
-            return Err(AttentionError::Deleted);
-        }
         let path = root.join(LEDGER_FILE);
         let ledger = if path.exists() {
             let ledger: AttentionLedger = serde_json::from_slice(&fs::read(path)?)?;
@@ -374,7 +163,6 @@ where
         } else {
             AttentionLedger {
                 profile_id: profile_id.clone(),
-                revision: Revision::ZERO,
                 candidates: Vec::new(),
                 decisions: Vec::new(),
                 notification_counts: BTreeMap::new(),
@@ -596,63 +384,12 @@ where
             >= *limit
     }
 
-    fn persist(&mut self) -> Result<(), AttentionError> {
-        self.ledger.revision = self
-            .ledger
-            .revision
-            .checked_next()
-            .ok_or(AttentionError::StaleDeletionInventory)?;
-        persist_json(&self.root, LEDGER_FILE, &self.ledger)
+    fn persist(&self) -> Result<(), AttentionError> {
+        let temporary = self.root.join(format!(".{LEDGER_FILE}.tmp"));
+        fs::write(&temporary, serde_json::to_vec_pretty(&self.ledger)?)?;
+        keith_platform::replace_file(&temporary, &self.root.join(LEDGER_FILE))?;
+        Ok(())
     }
-}
-
-fn persist_json<T: Serialize>(root: &Path, name: &str, value: &T) -> Result<(), AttentionError> {
-    let temporary = root.join(format!(".{name}.tmp"));
-    fs::write(&temporary, serde_json::to_vec_pretty(value)?)?;
-    keith_platform::replace_file(&temporary, &root.join(name))?;
-    Ok(())
-}
-
-fn read_ledger(root: &Path) -> Result<Option<(AttentionLedger, Vec<u8>)>, AttentionError> {
-    let path = root.join(LEDGER_FILE);
-    if !path.exists() {
-        return Ok(None);
-    }
-    let bytes = fs::read(path)?;
-    let ledger = serde_json::from_slice(&bytes)?;
-    Ok(Some((ledger, bytes)))
-}
-
-fn read_marker(root: &Path) -> Result<Option<(AttentionDeletionMarker, Vec<u8>)>, AttentionError> {
-    let path = root.join(DELETION_MARKER_FILE);
-    if !path.exists() {
-        return Ok(None);
-    }
-    let bytes = fs::read(path)?;
-    let marker = serde_json::from_slice(&bytes)?;
-    Ok(Some((marker, bytes)))
-}
-
-fn inventory_key(
-    profile_id: &ProfileId,
-    records: &[AttentionDeletionRecord],
-) -> Result<String, AttentionError> {
-    let bytes = serde_json::to_vec(&(profile_id, records))?;
-    Ok(format!(
-        "attention:inventory:{}:{}",
-        profile_id,
-        hex_digest(&bytes)
-    ))
-}
-
-fn hex_digest(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let mut encoded = String::with_capacity(digest.len() * 2);
-    for byte in digest {
-        use std::fmt::Write as _;
-        let _ = write!(encoded, "{byte:02x}");
-    }
-    encoded
 }
 
 fn validate_config(config: &AttentionConfig) -> Result<Option<Tz>, AttentionError> {
@@ -944,124 +681,6 @@ mod tests {
         assert_eq!(
             score_decision(900, AutonomyMode::Bounded),
             AttentionDecision::Notify
-        );
-    }
-
-    #[test]
-    fn deletion_inventory_rejects_stale_state_and_replay_survives_restart() {
-        let root = TempDir::new().expect("root");
-        let profile = ProfileId::new();
-        let session = SessionId::new();
-        let mut attention = service(root.path(), profile.clone(), AttentionConfig::default());
-        attention
-            .evaluate(
-                vec![candidate(&profile, &session, "first", signals(400), 1)],
-                AutonomyMode::RememberOnly,
-                Workload::Idle,
-                UtcTimestamp::from_unix_millis(1),
-            )
-            .expect("first decision");
-        let manager = AttentionDeletionManager::new(root.path()).expect("manager");
-        let stale = manager
-            .enumerate_profile_deletion_inventory(&profile)
-            .expect("inventory");
-        assert_eq!(stale.records.len(), 1);
-        assert_eq!(
-            stale.records[0].classification,
-            AttentionDeletionClassification::DeletePrivate
-        );
-        assert_eq!(stale.records[0].revision, Revision::new(1));
-        attention
-            .evaluate(
-                vec![candidate(&profile, &session, "second", signals(400), 2)],
-                AutonomyMode::RememberOnly,
-                Workload::Idle,
-                UtcTimestamp::from_unix_millis(2),
-            )
-            .expect("second decision");
-        assert!(matches!(
-            manager.erase_profile_deletion_inventory(&stale),
-            Err(AttentionError::StaleDeletionInventory)
-        ));
-        let current = manager
-            .enumerate_profile_deletion_inventory(&profile)
-            .expect("fresh inventory");
-        let erased = manager
-            .erase_profile_deletion_inventory(&current)
-            .expect("erase");
-        assert_eq!(erased.deleted_private_records, 1);
-        assert!(!erased.duplicate);
-        drop(attention);
-
-        let restarted = AttentionDeletionManager::new(root.path()).expect("restart manager");
-        let duplicate = restarted
-            .erase_profile_deletion_inventory(&current)
-            .expect("replay erase");
-        assert!(duplicate.duplicate);
-        let scan = restarted
-            .scan_profile_deletion_leaks(&profile)
-            .expect("leak scan");
-        assert!(scan.private_leaks.is_empty());
-        assert_eq!(scan.retained_immutable.len(), 1);
-        assert!(scan.external_remnants.is_empty());
-        let inbox = PersistentActionInbox::new(
-            EmbeddedStore::open_in_memory().expect("store"),
-            ActionInboxConfig::default(),
-        )
-        .expect("inbox");
-        assert!(matches!(
-            AttentionService::open(
-                root.path(),
-                profile,
-                AttentionConfig::default(),
-                inbox,
-                UtcTimestamp::from_unix_millis(3)
-            ),
-            Err(AttentionError::Deleted)
-        ));
-    }
-
-    #[test]
-    fn interrupted_erase_resumes_from_matching_durable_marker() {
-        let root = TempDir::new().expect("root");
-        let profile = ProfileId::new();
-        let session = SessionId::new();
-        let mut attention = service(root.path(), profile.clone(), AttentionConfig::default());
-        attention
-            .evaluate(
-                vec![candidate(&profile, &session, "work", signals(400), 1)],
-                AutonomyMode::RememberOnly,
-                Workload::Idle,
-                UtcTimestamp::from_unix_millis(1),
-            )
-            .expect("decision");
-        let manager = AttentionDeletionManager::new(root.path()).expect("manager");
-        let inventory = manager
-            .enumerate_profile_deletion_inventory(&profile)
-            .expect("inventory");
-        let private = inventory.records.first().expect("private record");
-        persist_json(
-            root.path(),
-            DELETION_MARKER_FILE,
-            &AttentionDeletionMarker {
-                profile_id: profile.clone(),
-                inventory_stable_key: inventory.stable_key.clone(),
-                ledger_digest_sha256: Some(private.digest_sha256.clone()),
-            },
-        )
-        .expect("interrupted marker");
-        drop(attention);
-        let resumed = manager
-            .erase_profile_deletion_inventory(&inventory)
-            .expect("resume");
-        assert!(resumed.duplicate);
-        assert!(!root.path().join(LEDGER_FILE).exists());
-        assert!(
-            manager
-                .scan_profile_deletion_leaks(&profile)
-                .expect("scan")
-                .private_leaks
-                .is_empty()
         );
     }
 }

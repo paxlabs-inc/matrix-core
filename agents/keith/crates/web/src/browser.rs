@@ -1,9 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt::{self, Debug};
-use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Mutex;
-use std::time::Duration;
 
 use keith_agent_types::{EntityId, ProfileId};
 use keith_provider_core::CancellationToken;
@@ -29,104 +27,6 @@ impl Default for BrowserPolicy {
             max_semantic_items: 512,
             max_cookies_per_profile: 256,
         }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BrowserControlBounds {
-    pub max_request_bytes: usize,
-    pub max_response_bytes: usize,
-    pub max_script_bytes: usize,
-    pub max_url_bytes: usize,
-    pub startup_timeout: Duration,
-    pub command_timeout: Duration,
-}
-
-impl Default for BrowserControlBounds {
-    fn default() -> Self {
-        Self {
-            max_request_bytes: 256 * 1_024,
-            max_response_bytes: 4 * 1_024 * 1_024,
-            max_script_bytes: 128 * 1_024,
-            max_url_bytes: 16 * 1_024,
-            startup_timeout: Duration::from_secs(20),
-            command_timeout: Duration::from_secs(30),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct HeadedBrowserLaunch {
-    chromium_executable: PathBuf,
-    profile_id: ProfileId,
-    user_data_directory: PathBuf,
-    display: String,
-    control_endpoint: SocketAddr,
-    bounds: BrowserControlBounds,
-}
-
-impl HeadedBrowserLaunch {
-    /// Constructs a browser launch only from an absolute executable, an absolute persistent
-    /// profile directory, a local X display, and a loopback-only control endpoint.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when a path is relative, the display can target a remote X server, the
-    /// control endpoint is non-loopback, or a protocol bound is zero.
-    pub fn new(
-        chromium_executable: PathBuf,
-        profile_id: ProfileId,
-        user_data_directory: PathBuf,
-        display: String,
-        control_endpoint: SocketAddr,
-        bounds: BrowserControlBounds,
-    ) -> Result<Self, BrowserError> {
-        if !chromium_executable.is_absolute()
-            || !user_data_directory.is_absolute()
-            || !local_x_display(&display)
-            || !control_endpoint.ip().is_loopback()
-            || control_endpoint.port() == 0
-            || bounds.max_request_bytes == 0
-            || bounds.max_response_bytes == 0
-            || bounds.max_script_bytes == 0
-            || bounds.max_url_bytes == 0
-            || bounds.startup_timeout.is_zero()
-            || bounds.command_timeout.is_zero()
-        {
-            return Err(BrowserError::InvalidLaunchConfiguration);
-        }
-        Ok(Self {
-            chromium_executable,
-            profile_id,
-            user_data_directory,
-            display,
-            control_endpoint,
-            bounds,
-        })
-    }
-
-    pub fn chromium_executable(&self) -> &Path {
-        &self.chromium_executable
-    }
-
-    pub const fn profile_id(&self) -> &ProfileId {
-        &self.profile_id
-    }
-
-    pub fn user_data_directory(&self) -> &Path {
-        &self.user_data_directory
-    }
-
-    pub fn display(&self) -> &str {
-        &self.display
-    }
-
-    pub const fn control_endpoint(&self) -> SocketAddr {
-        self.control_endpoint
-    }
-
-    pub const fn bounds(&self) -> &BrowserControlBounds {
-        &self.bounds
     }
 }
 
@@ -255,34 +155,10 @@ pub enum BrowserError {
     InvalidDestination,
     #[error("browser profile cookie limit exceeded")]
     CookieLimit,
-    #[error("headed browser launch configuration is invalid")]
-    InvalidLaunchConfiguration,
-    #[error("headed browser control protocol exceeded a configured bound")]
-    ControlProtocolBound,
-    #[error("headed browser process is unavailable")]
-    BrowserUnavailable,
-    #[error("headed browser control operation failed safely")]
-    BrowserControl,
     #[error("safe web operation failed: {0}")]
     Web(#[from] WebError),
     #[error("restricted download persistence failed: {0}")]
     Workspace(#[from] WorkspaceError),
-}
-
-fn local_x_display(display: &str) -> bool {
-    let Some(value) = display.strip_prefix(':') else {
-        return false;
-    };
-    let mut sections = value.split('.');
-    let Some(server) = sections.next() else {
-        return false;
-    };
-    !server.is_empty()
-        && server.bytes().all(|byte| byte.is_ascii_digit())
-        && sections.next().is_none_or(|screen| {
-            !screen.is_empty() && screen.bytes().all(|byte| byte.is_ascii_digit())
-        })
-        && sections.next().is_none()
 }
 
 pub struct BrowserRunner<R> {
@@ -944,52 +820,6 @@ mod tests {
             SafeWebClient::new(WebPolicy::default(), SystemResolver),
             BrowserPolicy::default(),
         )
-    }
-
-    #[test]
-    fn headed_launch_requires_absolute_profile_local_display_and_loopback_control() {
-        let bounds = BrowserControlBounds::default();
-        let profile = ProfileId::new();
-        assert!(
-            HeadedBrowserLaunch::new(
-                "/usr/bin/chromium".into(),
-                profile.clone(),
-                "/var/lib/keith/profiles/browser".into(),
-                ":91".into(),
-                "127.0.0.1:9222".parse().unwrap(),
-                bounds.clone(),
-            )
-            .is_ok()
-        );
-        for (data_root, display, endpoint) in [
-            (
-                PathBuf::from("relative"),
-                ":91".to_owned(),
-                "127.0.0.1:9222".parse().unwrap(),
-            ),
-            (
-                PathBuf::from("/var/lib/keith/profile"),
-                "remote:91".to_owned(),
-                "127.0.0.1:9222".parse().unwrap(),
-            ),
-            (
-                PathBuf::from("/var/lib/keith/profile"),
-                ":91".to_owned(),
-                "203.0.113.2:9222".parse().unwrap(),
-            ),
-        ] {
-            assert!(
-                HeadedBrowserLaunch::new(
-                    "/usr/bin/chromium".into(),
-                    profile.clone(),
-                    data_root,
-                    display,
-                    endpoint,
-                    bounds.clone(),
-                )
-                .is_err()
-            );
-        }
     }
 
     #[test]

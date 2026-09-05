@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use keith_agent_types::{ArtifactId, EntityId, ProfileId, Revision, UtcTimestamp};
+use keith_agent_types::{ArtifactId, EntityId, ProfileId, UtcTimestamp};
 use keith_workspace::{
     EditOutcome, PersonalWorkspace, PersonalWorkspaceError, PersonalWorkspaceLimits, WorkspaceActor,
 };
@@ -152,52 +152,6 @@ pub enum IngestOutcome {
     Duplicate(AwarenessEvent),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum AwarenessDeletionClassification {
-    ProfilePrivate,
-    RetainedShared,
-    ImmutableAudit,
-    ExternallyControlled,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ProfileAwarenessDeletionEntry {
-    pub stable_key: String,
-    pub relative_path: String,
-    pub classification: AwarenessDeletionClassification,
-    pub bytes: u64,
-    pub digest_sha256: String,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ProfileAwarenessDeletionInventory {
-    pub profile_id: ProfileId,
-    pub revision: Revision,
-    pub ledger_digest_sha256: Option<String>,
-    pub stable_key: String,
-    pub private: Vec<ProfileAwarenessDeletionEntry>,
-    pub retained_shared: Vec<ProfileAwarenessDeletionEntry>,
-    pub immutable_audit: Vec<ProfileAwarenessDeletionEntry>,
-    pub externally_controlled: Vec<ProfileAwarenessDeletionEntry>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ProfileAwarenessEraseReport {
-    pub profile_id: ProfileId,
-    pub inventory_stable_key: String,
-    pub ledger_removed: bool,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ProfileAwarenessLeakScan {
-    pub profile_id: ProfileId,
-    pub inventory_stable_key: String,
-    pub unexpected_private: Vec<ProfileAwarenessDeletionEntry>,
-    pub retained_shared: Vec<ProfileAwarenessDeletionEntry>,
-    pub immutable_audit: Vec<ProfileAwarenessDeletionEntry>,
-    pub externally_controlled: Vec<ProfileAwarenessDeletionEntry>,
-}
-
 #[derive(Debug, Error)]
 pub enum AwarenessError {
     #[error("awareness persistence failed: {0}")]
@@ -218,16 +172,12 @@ pub enum AwarenessError {
     WatcherUnavailable,
     #[error("workspace state changed concurrently")]
     Conflict,
-    #[error("awareness deletion inventory is stale or belongs to another profile")]
-    StaleDeletionInventory,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Ledger {
     profile_id: ProfileId,
-    #[serde(default)]
-    revision: Revision,
     events: Vec<AwarenessEvent>,
     seen_fingerprints: Vec<SeenFingerprint>,
     watchers: BTreeMap<String, WatcherRegistration>,
@@ -272,7 +222,6 @@ impl AwarenessService {
         } else {
             Ledger {
                 profile_id,
-                revision: Revision::ZERO,
                 events: Vec::new(),
                 seen_fingerprints: Vec::new(),
                 watchers: BTreeMap::new(),
@@ -499,11 +448,6 @@ impl AwarenessService {
     }
 
     fn persist(&mut self, now: UtcTimestamp) -> Result<(), AwarenessError> {
-        self.ledger.revision = self
-            .ledger
-            .revision
-            .checked_next()
-            .ok_or(AwarenessError::InvalidEvent)?;
         let bytes = serde_json::to_vec_pretty(&self.ledger)?;
         let token = self.workspace.token(LEDGER_PATH)?;
         match self
@@ -514,127 +458,6 @@ impl AwarenessService {
             EditOutcome::Conflict(_) => Err(AwarenessError::Conflict),
         }
     }
-}
-
-/// Inventories the complete awareness-owned durable surface for one profile.
-///
-/// Awareness owns one profile-private ledger and no retained-shared, immutable-audit, or
-/// externally-controlled records. An absent ledger is represented by a revision-zero empty
-/// inventory, making never-provisioned and already-erased profiles explicit and replay-safe.
-///
-/// # Errors
-///
-/// Rejects corrupt state, a ledger owned by another profile, and files too large to inventory.
-pub fn inventory_profile_awareness_deletion(
-    workspace_root: impl AsRef<Path>,
-    profile_id: &ProfileId,
-) -> Result<ProfileAwarenessDeletionInventory, AwarenessError> {
-    let ledger_path = workspace_root.as_ref().join(LEDGER_PATH);
-    let (revision, ledger_digest_sha256, private) = if ledger_path.exists() {
-        let bytes = fs::read(&ledger_path)?;
-        let ledger: Ledger = serde_json::from_slice(&bytes)?;
-        if &ledger.profile_id != profile_id {
-            return Err(AwarenessError::ProfileMismatch);
-        }
-        let digest = hex_digest(&bytes);
-        let entry = ProfileAwarenessDeletionEntry {
-            stable_key: format!("awareness-ledger:{profile_id}:{digest}"),
-            relative_path: LEDGER_PATH.to_owned(),
-            classification: AwarenessDeletionClassification::ProfilePrivate,
-            bytes: u64::try_from(bytes.len()).map_err(|_| AwarenessError::InvalidEvent)?,
-            digest_sha256: digest.clone(),
-        };
-        (ledger.revision, Some(digest), vec![entry])
-    } else {
-        (Revision::ZERO, None, Vec::new())
-    };
-    let digest_component = ledger_digest_sha256.as_deref().unwrap_or("absent");
-    let stable_key = format!(
-        "awareness-delete:{}:{}:{}",
-        profile_id,
-        revision.get(),
-        digest_parts(&[
-            profile_id.to_string().as_str(),
-            &revision.get().to_string(),
-            digest_component
-        ])
-    );
-    Ok(ProfileAwarenessDeletionInventory {
-        profile_id: profile_id.clone(),
-        revision,
-        ledger_digest_sha256,
-        stable_key,
-        private,
-        retained_shared: Vec::new(),
-        immutable_audit: Vec::new(),
-        externally_controlled: Vec::new(),
-    })
-}
-
-/// Erases the awareness ledger only if its current revision and digest still match the inventory.
-/// Replaying an already successful erase returns a no-op report.
-///
-/// # Errors
-///
-/// Rejects a mismatched profile, forged classification, stale inventory, or I/O failure.
-pub fn erase_profile_awareness_inventory(
-    workspace_root: impl AsRef<Path>,
-    profile_id: &ProfileId,
-    inventory: &ProfileAwarenessDeletionInventory,
-) -> Result<ProfileAwarenessEraseReport, AwarenessError> {
-    if &inventory.profile_id != profile_id
-        || !inventory.retained_shared.is_empty()
-        || !inventory.immutable_audit.is_empty()
-        || !inventory.externally_controlled.is_empty()
-        || inventory
-            .private
-            .iter()
-            .any(|entry| entry.classification != AwarenessDeletionClassification::ProfilePrivate)
-    {
-        return Err(AwarenessError::StaleDeletionInventory);
-    }
-    let ledger_path = workspace_root.as_ref().join(LEDGER_PATH);
-    if !ledger_path.exists() {
-        return Ok(ProfileAwarenessEraseReport {
-            profile_id: profile_id.clone(),
-            inventory_stable_key: inventory.stable_key.clone(),
-            ledger_removed: false,
-        });
-    }
-    let current = inventory_profile_awareness_deletion(workspace_root.as_ref(), profile_id)?;
-    if &current != inventory {
-        return Err(AwarenessError::StaleDeletionInventory);
-    }
-    fs::remove_file(ledger_path)?;
-    Ok(ProfileAwarenessEraseReport {
-        profile_id: profile_id.clone(),
-        inventory_stable_key: inventory.stable_key.clone(),
-        ledger_removed: true,
-    })
-}
-
-/// Scans the complete awareness schema surface after erasure.
-///
-/// # Errors
-///
-/// Rejects corrupt or cross-profile surviving state.
-pub fn scan_profile_awareness_leaks(
-    workspace_root: impl AsRef<Path>,
-    profile_id: &ProfileId,
-    inventory: &ProfileAwarenessDeletionInventory,
-) -> Result<ProfileAwarenessLeakScan, AwarenessError> {
-    if &inventory.profile_id != profile_id {
-        return Err(AwarenessError::StaleDeletionInventory);
-    }
-    let current = inventory_profile_awareness_deletion(workspace_root, profile_id)?;
-    Ok(ProfileAwarenessLeakScan {
-        profile_id: profile_id.clone(),
-        inventory_stable_key: inventory.stable_key.clone(),
-        unexpected_private: current.private,
-        retained_shared: current.retained_shared,
-        immutable_audit: current.immutable_audit,
-        externally_controlled: current.externally_controlled,
-    })
 }
 
 impl CurrentState {
@@ -758,10 +581,6 @@ fn digest_parts(parts: &[&str]) -> String {
         digest.update([0]);
     }
     format!("{:x}", digest.finalize())
-}
-
-fn hex_digest(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }
 
 const fn source_name(source: AwarenessSource) -> &'static str {
@@ -1090,108 +909,5 @@ mod tests {
         assert!(service.current_state().projects.is_empty());
         assert!(!root.path().join(".keith/credentials/provider").exists());
         assert!(!root.path().join("state/routing.json").exists());
-    }
-
-    #[test]
-    fn deletion_inventory_binds_profile_revision_digest_and_schema_classification() {
-        let root = TempDir::new().expect("temporary workspace");
-        let profile_id = profile("01ARZ3NDEKTSV4RRFFQ69G5FB0");
-        let empty = inventory_profile_awareness_deletion(root.path(), &profile_id)
-            .expect("empty inventory");
-        assert_eq!(empty.revision, Revision::ZERO);
-        assert!(empty.ledger_digest_sha256.is_none());
-        assert!(empty.private.is_empty());
-
-        let mut service = AwarenessService::open(
-            root.path(),
-            profile_id.clone(),
-            AwarenessLimits::default(),
-            UtcTimestamp::UNIX_EPOCH,
-        )
-        .expect("open awareness");
-        service
-            .ingest(event(
-                &profile_id,
-                AwarenessSource::User,
-                "owner",
-                "focus",
-                1,
-            ))
-            .expect("persist event");
-        drop(service);
-
-        let inventory = inventory_profile_awareness_deletion(root.path(), &profile_id)
-            .expect("durable inventory");
-        assert_eq!(inventory.revision, Revision::new(1));
-        assert!(inventory.ledger_digest_sha256.is_some());
-        assert_eq!(inventory.private.len(), 1);
-        assert_eq!(
-            inventory.private[0].classification,
-            AwarenessDeletionClassification::ProfilePrivate
-        );
-        assert!(inventory.retained_shared.is_empty());
-        assert!(inventory.immutable_audit.is_empty());
-        assert!(inventory.externally_controlled.is_empty());
-
-        let another = profile("01ARZ3NDEKTSV4RRFFQ69G5FB1");
-        assert!(matches!(
-            inventory_profile_awareness_deletion(root.path(), &another),
-            Err(AwarenessError::ProfileMismatch)
-        ));
-    }
-
-    #[test]
-    fn deletion_rejects_stale_inventory_and_replays_safely_after_restart() {
-        let root = TempDir::new().expect("temporary workspace");
-        let profile_id = profile("01ARZ3NDEKTSV4RRFFQ69G5FB2");
-        let mut service = AwarenessService::open(
-            root.path(),
-            profile_id.clone(),
-            AwarenessLimits::default(),
-            UtcTimestamp::UNIX_EPOCH,
-        )
-        .expect("open awareness");
-        service
-            .ingest(event(
-                &profile_id,
-                AwarenessSource::User,
-                "owner",
-                "first",
-                1,
-            ))
-            .expect("first event");
-        let stale = inventory_profile_awareness_deletion(root.path(), &profile_id)
-            .expect("first inventory");
-        service
-            .ingest(event(
-                &profile_id,
-                AwarenessSource::User,
-                "owner",
-                "second",
-                2,
-            ))
-            .expect("second event");
-        drop(service);
-        assert!(matches!(
-            erase_profile_awareness_inventory(root.path(), &profile_id, &stale),
-            Err(AwarenessError::StaleDeletionInventory)
-        ));
-
-        let current = inventory_profile_awareness_deletion(root.path(), &profile_id)
-            .expect("current inventory");
-        let erased = erase_profile_awareness_inventory(root.path(), &profile_id, &current)
-            .expect("erase current inventory");
-        assert!(erased.ledger_removed);
-        assert!(
-            scan_profile_awareness_leaks(root.path(), &profile_id, &current)
-                .expect("clean scan")
-                .unexpected_private
-                .is_empty()
-        );
-
-        let replay = erase_profile_awareness_inventory(root.path(), &profile_id, &current)
-            .expect("replay erase after restart boundary");
-        assert!(!replay.ledger_removed);
-        assert_eq!(replay.inventory_stable_key, current.stable_key);
     }
 }

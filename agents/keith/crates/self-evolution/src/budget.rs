@@ -9,8 +9,11 @@ use fs2::FileExt;
 use keith_agent_types::{ActionId, EntityId, UtcTimestamp, canonical_json_bytes};
 use keith_resource_governor::{ExhaustionBehavior, ResourceCeiling, ResourceKind, ResourceScope};
 use keith_sandbox::{configure_owned_process, terminate_owned_process_tree};
+#[cfg(unix)]
 use nix::errno::Errno;
+#[cfg(unix)]
 use nix::sys::signal::{Signal, killpg};
+#[cfg(unix)]
 use nix::unistd::Pid;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -406,12 +409,6 @@ pub struct EvolutionBudget {
     state: Mutex<DurableBudgetState>,
     children: Mutex<BTreeMap<EntityId, Child>>,
     _lock: File,
-}
-
-impl Drop for EvolutionBudget {
-    fn drop(&mut self) {
-        let _ = FileExt::unlock(&self._lock);
-    }
 }
 
 impl EvolutionBudget {
@@ -937,16 +934,18 @@ fn remove_owned(root: &Path, relative: &Path) -> Result<(), BudgetError> {
     }
 }
 
+#[cfg(unix)]
 fn terminate_recovered_process(pid: u32, expected_start: Option<u64>) -> Result<(), BudgetError> {
     let raw = i32::try_from(pid)
         .map_err(|_| BudgetError::Cleanup("owned process identity is invalid".into()))?;
-    if let Some(expected) = expected_start {
-        match process_start_ticks(pid) {
-            Ok(actual) if actual != expected => return Ok(()),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-            Err(error) => return Err(BudgetError::Cleanup(error.to_string())),
-            Ok(_) => {}
-        }
+    let expected = expected_start.ok_or_else(|| {
+        BudgetError::Cleanup("owned process has no durable start identity".into())
+    })?;
+    match process_start_ticks(pid) {
+        Ok(actual) if actual != expected => return Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(BudgetError::Cleanup(error.to_string())),
+        Ok(_) => {}
     }
     match killpg(Pid::from_raw(raw), Signal::SIGKILL) {
         Ok(()) | Err(Errno::ESRCH) => Ok(()),
@@ -954,6 +953,43 @@ fn terminate_recovered_process(pid: u32, expected_start: Option<u64>) -> Result<
     }
 }
 
+#[cfg(windows)]
+fn terminate_recovered_process(pid: u32, expected_start: Option<u64>) -> Result<(), BudgetError> {
+    let expected = expected_start.ok_or_else(|| {
+        BudgetError::Cleanup("owned process has no durable start identity".into())
+    })?;
+    match process_start_ticks(pid) {
+        Ok(actual) if actual != expected => return Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(BudgetError::Cleanup(error.to_string())),
+        Ok(_) => {}
+    }
+    let status = Command::new("taskkill")
+        .args(["/PID", &pid.to_string(), "/T", "/F"])
+        .status()
+        .map_err(|error| BudgetError::Cleanup(error.to_string()))?;
+    if status.success()
+        || matches!(
+            process_start_ticks(pid),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound
+        )
+    {
+        Ok(())
+    } else {
+        Err(BudgetError::Cleanup(format!(
+            "taskkill failed for the owned process with {status}"
+        )))
+    }
+}
+
+#[cfg(not(any(unix, windows)))]
+fn terminate_recovered_process(_pid: u32, _expected_start: Option<u64>) -> Result<(), BudgetError> {
+    Err(BudgetError::Cleanup(
+        "this platform cannot safely reclaim an owned process".into(),
+    ))
+}
+
+#[cfg(target_os = "linux")]
 fn process_start_ticks(pid: u32) -> Result<u64, std::io::Error> {
     let stat = fs::read_to_string(format!("/proc/{pid}/stat"))?;
     let end = stat
@@ -964,6 +1000,66 @@ fn process_start_ticks(pid: u32) -> Result<u64, std::io::Error> {
         .ok_or_else(|| std::io::Error::other("process stat has no start time"))?
         .parse()
         .map_err(|_| std::io::Error::other("process start time is invalid"))
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+fn process_start_ticks(pid: u32) -> Result<u64, std::io::Error> {
+    let output = Command::new("ps")
+        .args(["-o", "lstart=", "-p", &pid.to_string()])
+        .output()?;
+    let identity = output.stdout;
+    if !output.status.success() || identity.iter().all(u8::is_ascii_whitespace) {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "owned process is unavailable",
+        ));
+    }
+    Ok(identity
+        .into_iter()
+        .fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+            (hash ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3)
+        }))
+}
+
+#[cfg(windows)]
+fn process_start_ticks(pid: u32) -> Result<u64, std::io::Error> {
+    let script = format!(
+        "$p = Get-Process -Id {pid} -ErrorAction SilentlyContinue; \
+         if ($null -eq $p) {{ exit 3 }}; \
+         [Console]::Out.Write($p.StartTime.ToUniversalTime().Ticks)"
+    );
+    let output = Command::new("powershell.exe")
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            &script,
+        ])
+        .output()?;
+    if output.status.code() == Some(3) {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "owned process is unavailable",
+        ));
+    }
+    if !output.status.success() {
+        return Err(std::io::Error::other(
+            "owned process start identity query failed",
+        ));
+    }
+    String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .parse()
+        .map_err(|_| std::io::Error::other("owned process start identity is invalid"))
+}
+
+#[cfg(not(any(unix, windows)))]
+fn process_start_ticks(_pid: u32) -> Result<u64, std::io::Error> {
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "process start identity is unsupported",
+    ))
 }
 
 fn load_state(path: &Path) -> Result<DurableBudgetState, BudgetError> {
@@ -1377,6 +1473,27 @@ mod tests {
                 Some(STATE_FILE | LOCK_FILE)
             )
         }));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn recovered_process_cleanup_requires_a_matching_durable_identity() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "while :; do sleep 1; done"]);
+        configure_owned_process(&mut command);
+        let mut child = command.spawn().unwrap();
+        let pid = child.id();
+        let identity = process_start_ticks(pid).unwrap();
+
+        assert!(matches!(
+            terminate_recovered_process(pid, None),
+            Err(BudgetError::Cleanup(reason)) if reason.contains("start identity")
+        ));
+        assert!(child.try_wait().unwrap().is_none());
+        terminate_recovered_process(pid, Some(identity.wrapping_add(1))).unwrap();
+        assert!(child.try_wait().unwrap().is_none());
+
+        terminate_owned_process_tree(&mut child).unwrap();
     }
 
     #[test]

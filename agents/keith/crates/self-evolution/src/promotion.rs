@@ -482,9 +482,10 @@ impl PromotionTransaction {
                 .active_workers()
                 .into_iter()
                 .find(|status| status.root_tree_id == roll.root_tree_id);
-            if current.as_ref().is_some_and(|status| {
-                status.image_id == roll.prior_image_id && status.health == WorkerHealth::Healthy
-            }) {
+            if current
+                .as_ref()
+                .is_some_and(|status| status.image_id == roll.prior_image_id)
+            {
                 journal.rolls[index].restored_generation = current.map(|status| status.generation);
                 continue;
             }

@@ -255,12 +255,6 @@ pub struct RevertWatchdog {
     _lock: File,
 }
 
-impl Drop for RevertWatchdog {
-    fn drop(&mut self) {
-        let _ = FileExt::unlock(&self._lock);
-    }
-}
-
 impl RevertWatchdog {
     pub fn open(root: impl Into<PathBuf>) -> Result<Self, WatchdogError> {
         let root = root.into();

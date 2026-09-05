@@ -13,7 +13,6 @@ use keith_release::{
     verify_release as verify_signed_release,
 };
 use ring::signature::{Ed25519KeyPair, KeyPair};
-use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -37,22 +36,13 @@ fn main() -> ExitCode {
             &workspace_root(),
             matches!(env::args().nth(2).as_deref(), Some("--write")),
         ),
+        Some("security-probes") => security::run_source(&workspace_root()),
         Some("security-gate") => security::run(&workspace_root()),
-        Some("teammates-security-gate") => security::run_teammates(&workspace_root()),
-        Some("teammates-release-qualify") => teammates_release_qualify(&workspace_root()),
         Some("platform-gate") => platform::run(&workspace_root()),
         Some("release") => release(&workspace_root()),
         Some("verify-release") => verify_release_command(),
-        Some("compatibility") => compatibility_command(),
-        Some("install") => install_command(false),
-        Some("upgrade") => install_command(true),
-        Some("backup") => backup_command(),
-        Some("restore") => restore_command(),
-        Some("rollback") => rollback_command(),
-        Some("resource-report") => resource_report_command(),
-        Some("uninstall") => uninstall_command(),
         _ => Err(
-            "usage: cargo xtask <ci|clean-checkout|dependency-policy|schema-doc [--write]|protocol-doc [--write]|provider-metadata [--write]|security-gate|teammates-security-gate|teammates-release-qualify RELEASE PUBLIC_KEY INSTALL_ROOT DATA_ROOT BACKUP_ROOT RESTORE_ROOT PROVIDER_BINARY MODEL_CONFIG RESOURCE_LIMITS EVIDENCE_ROOT|platform-gate|release [OUTPUT]|verify-release RELEASE PUBLIC_KEY|compatibility RELEASE PUBLIC_KEY DATA_ROOT|install RELEASE PUBLIC_KEY INSTALL_ROOT DATA_ROOT|upgrade RELEASE PUBLIC_KEY INSTALL_ROOT DATA_ROOT BACKUP_ROOT|backup DATA_ROOT BACKUP_ROOT|restore BACKUP_ROOT DATA_ROOT|rollback BACKUP_ROOT INSTALL_ROOT DATA_ROOT|resource-report INSTALL_ROOT DATA_ROOT|uninstall INSTALL_ROOT [--erase-data DATA_ROOT]>".into(),
+            "usage: cargo xtask <ci|clean-checkout|dependency-policy|schema-doc [--write]|protocol-doc [--write]|provider-metadata [--write]|security-probes|security-gate|platform-gate|release [OUTPUT]|verify-release PATH EXPECTED_PUBLIC_KEY_HEX>".into(),
         ),
     };
 
@@ -63,1149 +53,6 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "snake_case")]
-enum LifecycleOutcome {
-    Compatible,
-    Installed,
-    Upgraded,
-    BackedUp,
-    Restored,
-    RolledBack,
-    Reported,
-    Uninstalled,
-}
-
-#[derive(Serialize)]
-#[serde(deny_unknown_fields)]
-struct LifecycleReport {
-    schema_version: u16,
-    outcome: LifecycleOutcome,
-    install_root: Option<String>,
-    data_root: Option<String>,
-    backup_root: Option<String>,
-    release_build_id: Option<String>,
-    storage_schema: String,
-    protocol_version: String,
-    details: BTreeMap<String, Value>,
-}
-
-fn print_report(report: &LifecycleReport) -> Result<(), String> {
-    println!(
-        "{}",
-        serde_json::to_string(report).map_err(|error| error.to_string())?
-    );
-    Ok(())
-}
-
-fn required_path(index: usize, name: &str) -> Result<PathBuf, String> {
-    env::args_os()
-        .nth(index)
-        .map(PathBuf::from)
-        .ok_or_else(|| format!("missing required {name}"))
-}
-
-fn trusted_release(
-    index: usize,
-    key_index: usize,
-) -> Result<keith_release::VerifiedRelease, String> {
-    let release = required_path(index, "release directory")?;
-    let encoded = env::args()
-        .nth(key_index)
-        .ok_or_else(|| "missing trusted public key".to_owned())?;
-    let key = decode_public_key(&encoded).map_err(|error| error.to_string())?;
-    let verified = verify_signed_release(&release, &key).map_err(|error| error.to_string())?;
-    verify_packaged_build_reports(&release, &verified.manifest)
-        .map_err(|error| error.to_string())?;
-    Ok(verified)
-}
-
-fn compatibility_command() -> Result<(), String> {
-    let verified = trusted_release(2, 3)?;
-    let data_root = required_path(4, "data root")?;
-    let host_target = format!("{}-{}", env::consts::ARCH, env::consts::OS);
-    if verified.manifest.target != host_target {
-        return Err("release target is incompatible with this host".to_owned());
-    }
-    let current_schema = keith_agent_types::CURRENT_SCHEMA_VERSION.to_string();
-    let existing_schema = installed_schema(&data_root)?.unwrap_or_else(|| current_schema.clone());
-    if schema_number(&existing_schema)? > schema_number(&verified.manifest.storage_schema)? {
-        return Err("release cannot open a newer teammate storage schema".to_owned());
-    }
-    print_report(&LifecycleReport {
-        schema_version: 1,
-        outcome: LifecycleOutcome::Compatible,
-        install_root: None,
-        data_root: Some(safe_path(&data_root)?),
-        backup_root: None,
-        release_build_id: Some(verified.manifest.build_id),
-        storage_schema: verified.manifest.storage_schema,
-        protocol_version: verified.manifest.protocol_version,
-        details: BTreeMap::from([
-            ("existing_storage_schema".into(), json!(existing_schema)),
-            ("offline_installation".into(), json!(true)),
-        ]),
-    })
-}
-
-fn install_command(upgrade: bool) -> Result<(), String> {
-    let release_root = required_path(2, "release directory")?;
-    let verified = trusted_release(2, 3)?;
-    let install_root = required_path(4, "install root")?;
-    let data_root = required_path(5, "data root")?;
-    reject_dangerous_root(&install_root)?;
-    reject_dangerous_root(&data_root)?;
-    let backup_root = if upgrade {
-        Some(required_path(6, "backup root")?)
-    } else {
-        None
-    };
-    let existing_schema = installed_schema(&data_root)?;
-    if let Some(schema) = &existing_schema
-        && schema_number(schema)? > schema_number(&verified.manifest.storage_schema)?
-    {
-        return Err("upgrade would downgrade teammate storage".to_owned());
-    }
-    if upgrade {
-        let backup = backup_root.as_ref().expect("upgrade backup is present");
-        portable_backup(&data_root, backup)?;
-        if install_root.exists() {
-            copy_tree_strict(&install_root, &backup.join("installation"))?;
-        }
-    } else if install_root.exists() {
-        return Err("install root already exists; use upgrade".to_owned());
-    }
-    let parent = install_root.parent().unwrap_or_else(|| Path::new("."));
-    fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-    let staging = parent.join(format!(".keith-install-{}.tmp", EntityId::new()));
-    copy_tree_strict(&release_root, &staging)?;
-    write_install_metadata(&staging, &data_root, &verified.manifest)?;
-    if install_root.exists() {
-        let retired = parent.join(format!(".keith-retired-{}", EntityId::new()));
-        fs::rename(&install_root, &retired).map_err(|error| error.to_string())?;
-        if let Err(error) = fs::rename(&staging, &install_root) {
-            fs::rename(&retired, &install_root).map_err(|rollback| {
-                format!("upgrade promotion failed: {error}; rollback failed: {rollback}")
-            })?;
-            return Err(format!("upgrade promotion failed: {error}"));
-        }
-        fs::remove_dir_all(retired).map_err(|error| error.to_string())?;
-    } else {
-        fs::rename(&staging, &install_root).map_err(|error| error.to_string())?;
-    }
-    fs::create_dir_all(&data_root).map_err(|error| error.to_string())?;
-    fs::write(
-        data_root.join("storage-schema"),
-        &verified.manifest.storage_schema,
-    )
-    .map_err(|error| error.to_string())?;
-    print_report(&LifecycleReport {
-        schema_version: 1,
-        outcome: if upgrade {
-            LifecycleOutcome::Upgraded
-        } else {
-            LifecycleOutcome::Installed
-        },
-        install_root: Some(safe_path(&install_root)?),
-        data_root: Some(safe_path(&data_root)?),
-        backup_root: backup_root
-            .as_ref()
-            .map(|path| safe_path(path))
-            .transpose()?,
-        release_build_id: Some(verified.manifest.build_id),
-        storage_schema: verified.manifest.storage_schema,
-        protocol_version: verified.manifest.protocol_version,
-        details: BTreeMap::from([
-            ("agentd_supervision".into(), json!(true)),
-            ("browser_runner".into(), json!(true)),
-            ("xvfb_chromium_supervision".into(), json!(true)),
-            (
-                "migration_required".into(),
-                json!(existing_schema.is_some()),
-            ),
-        ]),
-    })
-}
-
-fn backup_command() -> Result<(), String> {
-    let data_root = required_path(2, "data root")?;
-    let backup_root = required_path(3, "backup root")?;
-    portable_backup(&data_root, &backup_root)?;
-    print_simple_lifecycle(
-        LifecycleOutcome::BackedUp,
-        None,
-        Some(&data_root),
-        Some(&backup_root),
-    )
-}
-
-fn restore_command() -> Result<(), String> {
-    let backup_root = required_path(2, "backup root")?;
-    let data_root = required_path(3, "data root")?;
-    reject_dangerous_root(&data_root)?;
-    if data_root.exists()
-        && fs::read_dir(&data_root)
-            .map_err(|error| error.to_string())?
-            .next()
-            .is_some()
-    {
-        return Err("restore data root must be absent or empty".to_owned());
-    }
-    copy_tree_strict(&backup_root.join("data"), &data_root)?;
-    print_simple_lifecycle(
-        LifecycleOutcome::Restored,
-        None,
-        Some(&data_root),
-        Some(&backup_root),
-    )
-}
-
-fn rollback_command() -> Result<(), String> {
-    let backup_root = required_path(2, "backup root")?;
-    let install_root = required_path(3, "install root")?;
-    let data_root = required_path(4, "data root")?;
-    reject_dangerous_root(&install_root)?;
-    reject_dangerous_root(&data_root)?;
-    if install_root.exists() || data_root.exists() {
-        return Err("rollback targets must be removed explicitly before restoration".to_owned());
-    }
-    copy_tree_strict(&backup_root.join("installation"), &install_root)?;
-    copy_tree_strict(&backup_root.join("data"), &data_root)?;
-    print_simple_lifecycle(
-        LifecycleOutcome::RolledBack,
-        Some(&install_root),
-        Some(&data_root),
-        Some(&backup_root),
-    )
-}
-
-fn resource_report_command() -> Result<(), String> {
-    let install_root = required_path(2, "install root")?;
-    let data_root = required_path(3, "data root")?;
-    let mut details = BTreeMap::new();
-    details.insert(
-        "installation_bytes".into(),
-        json!(tree_bytes(&install_root)?),
-    );
-    details.insert("data_bytes".into(), json!(tree_bytes(&data_root)?));
-    details.insert(
-        "agentd_present".into(),
-        json!(install_root.join("bin/agentd").is_file()),
-    );
-    details.insert(
-        "browser_runner_present".into(),
-        json!(install_root.join("bin/browser-runner").is_file()),
-    );
-    details.insert(
-        "chromium_available".into(),
-        json!(find_on_path("chromium") || find_on_path("chromium-browser")),
-    );
-    details.insert("xvfb_available".into(), json!(find_on_path("Xvfb")));
-    print_report(&LifecycleReport {
-        schema_version: 1,
-        outcome: LifecycleOutcome::Reported,
-        install_root: Some(safe_path(&install_root)?),
-        data_root: Some(safe_path(&data_root)?),
-        backup_root: None,
-        release_build_id: None,
-        storage_schema: installed_schema(&data_root)?.unwrap_or_else(|| "unknown".into()),
-        protocol_version: keith_agent_types::CURRENT_PROTOCOL_VERSION.to_string(),
-        details,
-    })
-}
-
-fn uninstall_command() -> Result<(), String> {
-    let install_root = required_path(2, "install root")?;
-    reject_dangerous_root(&install_root)?;
-    if install_root.exists() {
-        fs::remove_dir_all(&install_root).map_err(|error| error.to_string())?;
-    }
-    let data_root = match (env::args().nth(3).as_deref(), env::args_os().nth(4)) {
-        (Some("--erase-data"), Some(path)) => {
-            let path = PathBuf::from(path);
-            reject_dangerous_root(&path)?;
-            if path.exists() {
-                fs::remove_dir_all(&path).map_err(|error| error.to_string())?;
-            }
-            Some(path)
-        }
-        (None, None) => None,
-        _ => return Err("uninstall accepts only --erase-data DATA_ROOT".to_owned()),
-    };
-    print_simple_lifecycle(
-        LifecycleOutcome::Uninstalled,
-        Some(&install_root),
-        data_root.as_deref(),
-        None,
-    )
-}
-
-fn print_simple_lifecycle(
-    outcome: LifecycleOutcome,
-    install_root: Option<&Path>,
-    data_root: Option<&Path>,
-    backup_root: Option<&Path>,
-) -> Result<(), String> {
-    print_report(&LifecycleReport {
-        schema_version: 1,
-        outcome,
-        install_root: install_root.map(safe_path).transpose()?,
-        data_root: data_root.map(safe_path).transpose()?,
-        backup_root: backup_root.map(safe_path).transpose()?,
-        release_build_id: None,
-        storage_schema: data_root
-            .map(installed_schema)
-            .transpose()?
-            .flatten()
-            .unwrap_or_else(|| "unknown".into()),
-        protocol_version: keith_agent_types::CURRENT_PROTOCOL_VERSION.to_string(),
-        details: BTreeMap::new(),
-    })
-}
-
-fn schema_number(value: &str) -> Result<u64, String> {
-    value
-        .split('.')
-        .next()
-        .unwrap_or_default()
-        .parse()
-        .map_err(|_| "storage schema is malformed".to_owned())
-}
-
-fn installed_schema(data_root: &Path) -> Result<Option<String>, String> {
-    let path = data_root.join("storage-schema");
-    match fs::read_to_string(path) {
-        Ok(value) if value.len() <= 64 => Ok(Some(value.trim().to_owned())),
-        Ok(_) => Err("installed storage schema marker is oversized".to_owned()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(error.to_string()),
-    }
-}
-
-fn safe_path(path: &Path) -> Result<String, String> {
-    path.to_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "lifecycle paths must be UTF-8".to_owned())
-}
-
-fn reject_dangerous_root(path: &Path) -> Result<(), String> {
-    if !path.is_absolute()
-        || path == Path::new("/")
-        || path.components().any(|component| {
-            matches!(
-                component,
-                std::path::Component::ParentDir | std::path::Component::CurDir
-            )
-        })
-        || path.components().count() < 3
-    {
-        return Err(
-            "lifecycle target must be a specific absolute path below a parent directory".to_owned(),
-        );
-    }
-    Ok(())
-}
-
-fn portable_backup(data_root: &Path, backup_root: &Path) -> Result<(), String> {
-    reject_dangerous_root(data_root)?;
-    reject_dangerous_root(backup_root)?;
-    if !data_root.is_dir() {
-        return Err("backup data root does not exist".to_owned());
-    }
-    if backup_root.exists() {
-        return Err("backup root already exists".to_owned());
-    }
-    let parent = backup_root.parent().unwrap_or_else(|| Path::new("."));
-    fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-    let staging = parent.join(format!(".keith-backup-{}.tmp", EntityId::new()));
-    copy_tree_strict(data_root, &staging.join("data"))?;
-    let files = release_files(&staging.join("data"))?;
-    fs::write(
-        staging.join("backup.json"),
-        serde_json::to_vec_pretty(&json!({
-            "format": "keith-portable-backup-v1",
-            "storage_schema": installed_schema(data_root)?,
-            "protocol_version": keith_agent_types::CURRENT_PROTOCOL_VERSION.to_string(),
-            "files": files,
-        }))
-        .map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-    fs::rename(staging, backup_root).map_err(|error| error.to_string())?;
-    Ok(())
-}
-
-fn copy_tree_strict(source: &Path, destination: &Path) -> Result<(), String> {
-    let metadata = fs::symlink_metadata(source).map_err(|error| error.to_string())?;
-    if metadata.file_type().is_symlink() || !metadata.is_dir() {
-        return Err("portable copy source must be a real directory".to_owned());
-    }
-    fs::create_dir_all(destination).map_err(|error| error.to_string())?;
-    for entry in fs::read_dir(source).map_err(|error| error.to_string())? {
-        let entry = entry.map_err(|error| error.to_string())?;
-        let file_type = entry.file_type().map_err(|error| error.to_string())?;
-        let target = destination.join(entry.file_name());
-        if file_type.is_dir() {
-            copy_tree_strict(&entry.path(), &target)?;
-        } else if file_type.is_file() {
-            fs::copy(entry.path(), target).map_err(|error| error.to_string())?;
-        } else {
-            return Err("portable copy refuses links and special files".to_owned());
-        }
-    }
-    Ok(())
-}
-
-fn write_install_metadata(
-    install_root: &Path,
-    data_root: &Path,
-    manifest: &ReleaseManifest,
-) -> Result<(), String> {
-    let services = install_root.join("services");
-    let migrations = install_root.join("migrations");
-    fs::create_dir_all(&services).map_err(|error| error.to_string())?;
-    fs::create_dir_all(&migrations).map_err(|error| error.to_string())?;
-    let executable = install_root.join("bin/agentd");
-    let browser_runner = install_root.join("bin/browser-runner");
-    fs::write(
-        services.join("keith-agentd.service"),
-        format!(
-            "[Unit]\nDescription=Keith Agent Daemon\nAfter=network.target\n[Service]\nType=simple\nExecStart={} --data-root {}\nRestart=on-failure\nNoNewPrivileges=true\n[Install]\nWantedBy=default.target\n",
-            executable.display(),
-            data_root.display()
-        ),
-    )
-    .map_err(|error| error.to_string())?;
-    fs::write(
-        services.join("keith-browser-runner.service.template"),
-        format!(
-            "[Unit]\nDescription=Keith headed browser %i\n[Service]\nType=simple\nExecStart={} --profile %i\nRestart=on-failure\nNoNewPrivileges=true\n",
-            browser_runner.display()
-        ),
-    )
-    .map_err(|error| error.to_string())?;
-    fs::write(
-        migrations.join("teammate-schema.json"),
-        serde_json::to_vec_pretty(&json!({
-            "format": "keith-teammate-migration-v1",
-            "target_storage_schema": manifest.storage_schema,
-            "components": ["profiles", "conversations", "coordination", "sessions", "artifacts", "channel_bindings", "computers"],
-            "rollback_requires_backup": true,
-        }))
-        .map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-    Ok(())
-}
-
-fn tree_bytes(root: &Path) -> Result<u64, String> {
-    if !root.exists() {
-        return Ok(0);
-    }
-    let mut total = 0_u64;
-    for entry in fs::read_dir(root).map_err(|error| error.to_string())? {
-        let entry = entry.map_err(|error| error.to_string())?;
-        let kind = entry.file_type().map_err(|error| error.to_string())?;
-        if kind.is_dir() {
-            total = total
-                .checked_add(tree_bytes(&entry.path())?)
-                .ok_or_else(|| "resource byte count overflow".to_owned())?;
-        } else if kind.is_file() {
-            total = total
-                .checked_add(entry.metadata().map_err(|error| error.to_string())?.len())
-                .ok_or_else(|| "resource byte count overflow".to_owned())?;
-        } else {
-            return Err("resource report refuses links and special files".to_owned());
-        }
-    }
-    Ok(total)
-}
-
-fn find_on_path(binary: &str) -> bool {
-    env::var_os("PATH")
-        .is_some_and(|paths| env::split_paths(&paths).any(|path| path.join(binary).is_file()))
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-struct QualificationModelConfig {
-    provider_boundary: String,
-    model: String,
-    endpoint: Option<String>,
-    credential_environment: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(deny_unknown_fields)]
-struct QualificationCommandEvidence {
-    program: String,
-    arguments: Vec<String>,
-    environment_keys: Vec<String>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(deny_unknown_fields)]
-struct TeammatesReleaseQualificationPlan {
-    schema_version: u16,
-    release_build_id: String,
-    release_manifest_sha256: String,
-    host_target: String,
-    host_name: Option<String>,
-    provider_binary: String,
-    provider_binary_sha256: String,
-    provider_boundary: String,
-    model: String,
-    model_configuration_sha256: String,
-    resource_limits: Value,
-    resource_limits_sha256: String,
-    install_root: String,
-    data_root: String,
-    backup_root: String,
-    restore_root: String,
-    evidence_root: String,
-    exact_commands: Vec<QualificationCommandEvidence>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-struct QualificationProfileEvidence {
-    profile_id: String,
-    permanent_human_dm_id: String,
-    enabled: bool,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-struct QualificationBrowserEvidence {
-    headed_chromium: bool,
-    xvfb_display: bool,
-    authenticated_stream: bool,
-    takeover_authorized: bool,
-    unauthorized_input_denied: bool,
-    handback_completed: bool,
-    audit_correlations: Vec<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-struct TeammatesDriverEvidence {
-    schema_version: u16,
-    release_build_id: String,
-    host_target: String,
-    provider_binary_sha256: String,
-    model_configuration_sha256: String,
-    resource_limits_sha256: String,
-    used_mock_or_fake: bool,
-    profiles: Vec<QualificationProfileEvidence>,
-    agent_agent_dm_id: String,
-    group_conversation_id: String,
-    assignment_id: String,
-    handoff_id: String,
-    review_event_id: String,
-    completion_event_id: String,
-    daemon_killed_after_final_before_publication: bool,
-    daemon_restarted: bool,
-    final_publication_count: u64,
-    reload_projection_matches: bool,
-    due_routine_dm_event_id: String,
-    browser: QualificationBrowserEvidence,
-    resource_limits_enforced: bool,
-    cross_profile_access_denied: bool,
-    all_processes_stopped: bool,
-    secret_scan_matches: usize,
-}
-
-#[derive(Serialize)]
-#[serde(deny_unknown_fields)]
-struct TeammatesReleaseQualificationReport {
-    schema_version: u16,
-    completed: bool,
-    release_build_id: String,
-    host_target: String,
-    provider_binary_sha256: String,
-    model_configuration_sha256: String,
-    resource_limits_sha256: String,
-    original_data_inventory_sha256: String,
-    restored_data_inventory_sha256: String,
-    adversarial_gate_evidence_sha256: String,
-    codify_trace_evidence_sha256: String,
-    driver_evidence: TeammatesDriverEvidence,
-    exact_commands: Vec<QualificationCommandEvidence>,
-}
-
-#[allow(clippy::too_many_lines)]
-fn teammates_release_qualify(root: &Path) -> Result<(), String> {
-    let release_root = required_path(2, "signed release directory")?;
-    let encoded_key = env::args()
-        .nth(3)
-        .ok_or_else(|| "missing trusted public key".to_owned())?;
-    let install_root = required_path(4, "fresh install root")?;
-    let data_root = required_path(5, "fresh data root")?;
-    let backup_root = required_path(6, "fresh backup root")?;
-    let restore_root = required_path(7, "fresh restore root")?;
-    let provider_binary = required_path(8, "real provider binary")?;
-    let model_configuration = required_path(9, "model configuration")?;
-    let resource_limits_path = required_path(10, "resource limits")?;
-    let evidence_root = required_path(11, "fresh evidence root")?;
-
-    let key = decode_public_key(&encoded_key).map_err(|error| error.to_string())?;
-    let verified = verify_signed_release(&release_root, &key).map_err(|error| error.to_string())?;
-    verify_packaged_build_reports(&release_root, &verified.manifest)
-        .map_err(|error| error.to_string())?;
-    let host_target = format!("{}-{}", env::consts::ARCH, env::consts::OS);
-    if verified.manifest.target != host_target {
-        return Err("signed teammate release does not target this qualification host".into());
-    }
-    if verified.manifest.build_id.trim().is_empty()
-        || verified.manifest.build_id.ends_with("+development")
-    {
-        return Err("qualification requires a non-development signed build".into());
-    }
-
-    let fresh_roots = [
-        &install_root,
-        &data_root,
-        &backup_root,
-        &restore_root,
-        &evidence_root,
-    ];
-    validate_fresh_qualification_roots(&fresh_roots)?;
-    reject_overlapping_qualification_paths(
-        &fresh_roots,
-        &[
-            &release_root,
-            &provider_binary,
-            &model_configuration,
-            &resource_limits_path,
-        ],
-    )?;
-    let provider_binary = validate_real_provider_binary(&provider_binary)?;
-    let model_bytes = fs::read(&model_configuration)
-        .map_err(|error| format!("model configuration is unavailable: {error}"))?;
-    let model: QualificationModelConfig = serde_json::from_slice(&model_bytes)
-        .map_err(|error| format!("model configuration is invalid: {error}"))?;
-    validate_model_configuration(&model)?;
-    let resource_limit_bytes = fs::read(&resource_limits_path)
-        .map_err(|error| format!("resource limit document is unavailable: {error}"))?;
-    let resource_limits: Value = serde_json::from_slice(&resource_limit_bytes)
-        .map_err(|error| format!("resource limit document is invalid: {error}"))?;
-    if !matches!(resource_limits.as_object(), Some(limits) if !limits.is_empty()) {
-        return Err("resource limit document must be a non-empty object".into());
-    }
-
-    fs::create_dir(&evidence_root)
-        .map_err(|error| format!("cannot create fresh evidence root: {error}"))?;
-    let current_executable = env::current_exe()
-        .map_err(|error| format!("cannot resolve qualification orchestrator: {error}"))?;
-    let packaged_driver = release_root
-        .join("bin")
-        .join(format!("agentd{}", env::consts::EXE_SUFFIX));
-    if !packaged_driver.is_file() {
-        return Err("signed release is missing its agentd qualification driver".into());
-    }
-    let driver = install_root
-        .join("bin")
-        .join(format!("agentd{}", env::consts::EXE_SUFFIX));
-    let driver_evidence_path = evidence_root.join("driver-evidence.json");
-    let adversarial_evidence_root = evidence_root.join("adversarial");
-    let commands = qualification_commands(
-        &current_executable,
-        &driver,
-        &release_root,
-        &encoded_key,
-        &install_root,
-        &data_root,
-        &backup_root,
-        &restore_root,
-        &provider_binary,
-        &model_configuration,
-        &resource_limits_path,
-        &driver_evidence_path,
-        &adversarial_evidence_root,
-    );
-    let provider_sha256 = file_sha256(&provider_binary)?;
-    let model_sha256 = hex_encode(&Sha256::digest(&model_bytes));
-    let resource_limits_sha256 = hex_encode(&Sha256::digest(&resource_limit_bytes));
-    let plan = TeammatesReleaseQualificationPlan {
-        schema_version: 1,
-        release_build_id: verified.manifest.build_id.clone(),
-        release_manifest_sha256: verified.manifest_sha256.clone(),
-        host_target: host_target.clone(),
-        host_name: env::var("HOSTNAME")
-            .ok()
-            .filter(|value| !value.trim().is_empty()),
-        provider_binary: safe_path(&provider_binary)?,
-        provider_binary_sha256: provider_sha256.clone(),
-        provider_boundary: model.provider_boundary.clone(),
-        model: model.model.clone(),
-        model_configuration_sha256: model_sha256.clone(),
-        resource_limits,
-        resource_limits_sha256: resource_limits_sha256.clone(),
-        install_root: safe_path(&install_root)?,
-        data_root: safe_path(&data_root)?,
-        backup_root: safe_path(&backup_root)?,
-        restore_root: safe_path(&restore_root)?,
-        evidence_root: safe_path(&evidence_root)?,
-        exact_commands: commands.clone(),
-    };
-    fs::write(
-        evidence_root.join("qualification-plan.json"),
-        serde_json::to_vec_pretty(&plan).map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-
-    run_qualification_process(root, &commands[0], &[], &evidence_root, 0)?;
-    run_qualification_process(root, &commands[1], &[], &evidence_root, 1)?;
-    let driver_evidence = read_and_validate_driver_evidence(
-        &driver_evidence_path,
-        &verified.manifest.build_id,
-        &host_target,
-        &provider_sha256,
-        &model_sha256,
-        &resource_limits_sha256,
-    )?;
-    run_qualification_process(root, &commands[2], &[], &evidence_root, 2)?;
-    run_qualification_process(root, &commands[3], &[], &evidence_root, 3)?;
-    let original_inventory = data_inventory_digest(&data_root)?;
-    let restored_inventory = data_inventory_digest(&restore_root)?;
-    if original_inventory != restored_inventory {
-        return Err("portable backup and clean restore inventories differ".into());
-    }
-    run_qualification_process(root, &commands[4], &[], &evidence_root, 4)?;
-    run_qualification_process(root, &commands[5], &[], &evidence_root, 5)?;
-    let security_environment = [
-        ("KEITH_SECURITY_RELEASE_PATH", safe_path(&release_root)?),
-        ("KEITH_SECURITY_TRUSTED_PUBLIC_KEY", encoded_key),
-        (
-            "KEITH_TEAMMATES_EVIDENCE_ROOT",
-            safe_path(&adversarial_evidence_root)?,
-        ),
-        (
-            "KEITH_TEAMMATES_PROVIDER_COMMAND",
-            safe_path(&provider_binary)?,
-        ),
-        (
-            "KEITH_TEAMMATES_PROVIDER_BOUNDARY",
-            model.provider_boundary.clone(),
-        ),
-    ];
-    run_qualification_process(root, &commands[6], &security_environment, &evidence_root, 6)?;
-    run_qualification_process(root, &commands[7], &[], &evidence_root, 7)?;
-
-    let adversarial_digest =
-        file_sha256(&adversarial_evidence_root.join("teammates-security-gate.json"))?;
-    let codify_trace_path = evidence_root.join("07-spec.stdout.log");
-    validate_codify_trace(&codify_trace_path)?;
-    let codify_trace_digest = file_sha256(&codify_trace_path)?;
-    let report = TeammatesReleaseQualificationReport {
-        schema_version: 1,
-        completed: true,
-        release_build_id: verified.manifest.build_id,
-        host_target,
-        provider_binary_sha256: provider_sha256,
-        model_configuration_sha256: model_sha256,
-        resource_limits_sha256,
-        original_data_inventory_sha256: original_inventory,
-        restored_data_inventory_sha256: restored_inventory,
-        adversarial_gate_evidence_sha256: adversarial_digest,
-        codify_trace_evidence_sha256: codify_trace_digest,
-        driver_evidence,
-        exact_commands: commands,
-    };
-    fs::write(
-        evidence_root.join("teammates-release-qualification.json"),
-        serde_json::to_vec_pretty(&report).map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-    println!(
-        "teammates release qualification passed; evidence={}",
-        evidence_root.display()
-    );
-    Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
-fn qualification_commands(
-    orchestrator: &Path,
-    driver: &Path,
-    release_root: &Path,
-    encoded_key: &str,
-    install_root: &Path,
-    data_root: &Path,
-    backup_root: &Path,
-    restore_root: &Path,
-    provider_binary: &Path,
-    model_configuration: &Path,
-    resource_limits: &Path,
-    driver_evidence: &Path,
-    adversarial_evidence_root: &Path,
-) -> Vec<QualificationCommandEvidence> {
-    let command = |program: &Path, arguments: Vec<String>, environment_keys: &[&str]| {
-        QualificationCommandEvidence {
-            program: program.display().to_string(),
-            arguments,
-            environment_keys: environment_keys
-                .iter()
-                .map(|value| (*value).to_owned())
-                .collect(),
-        }
-    };
-    vec![
-        command(
-            orchestrator,
-            vec![
-                "install".into(),
-                release_root.display().to_string(),
-                encoded_key.to_owned(),
-                install_root.display().to_string(),
-                data_root.display().to_string(),
-            ],
-            &[],
-        ),
-        command(
-            driver,
-            vec![
-                "teammates-release-qualification".into(),
-                "--data-root".into(),
-                data_root.display().to_string(),
-                "--provider-binary".into(),
-                provider_binary.display().to_string(),
-                "--model-configuration".into(),
-                model_configuration.display().to_string(),
-                "--resource-limits".into(),
-                resource_limits.display().to_string(),
-                "--evidence".into(),
-                driver_evidence.display().to_string(),
-                "--profile-count".into(),
-                "4".into(),
-                "--scenario".into(),
-                "permanent-dm-a2a-group-assignment-handoff-review-completion".into(),
-                "--kill-point".into(),
-                "after-final-before-publication".into(),
-                "--require-exactly-once-reload".into(),
-                "--require-due-routine-dm".into(),
-                "--require-headed-browser-stream-takeover-handback-audit".into(),
-            ],
-            &[],
-        ),
-        command(
-            orchestrator,
-            vec![
-                "backup".into(),
-                data_root.display().to_string(),
-                backup_root.display().to_string(),
-            ],
-            &[],
-        ),
-        command(
-            orchestrator,
-            vec![
-                "restore".into(),
-                backup_root.display().to_string(),
-                restore_root.display().to_string(),
-            ],
-            &[],
-        ),
-        command(
-            orchestrator,
-            vec![
-                "resource-report".into(),
-                install_root.display().to_string(),
-                data_root.display().to_string(),
-            ],
-            &[],
-        ),
-        command(orchestrator, vec!["platform-gate".into()], &[]),
-        command(
-            orchestrator,
-            vec!["security-gate".into()],
-            &[
-                "KEITH_SECURITY_RELEASE_PATH",
-                "KEITH_SECURITY_TRUSTED_PUBLIC_KEY",
-                "KEITH_TEAMMATES_EVIDENCE_ROOT",
-                "KEITH_TEAMMATES_PROVIDER_COMMAND",
-                "KEITH_TEAMMATES_PROVIDER_BOUNDARY",
-            ],
-        ),
-        QualificationCommandEvidence {
-            program: "cg".into(),
-            arguments: vec!["spec".into(), "trace".into(), "9.1".into(), "--json".into()],
-            environment_keys: Vec::new(),
-        },
-    ]
-}
-
-fn validate_fresh_qualification_roots(roots: &[&PathBuf]) -> Result<(), String> {
-    for root in roots {
-        reject_dangerous_root(root)?;
-        reject_symlinked_path(root)?;
-        if root.exists() {
-            return Err(format!(
-                "qualification root must not already exist: {}",
-                root.display()
-            ));
-        }
-    }
-    for (index, left) in roots.iter().enumerate() {
-        for right in roots.iter().skip(index + 1) {
-            if left.starts_with(right) || right.starts_with(left) {
-                return Err("qualification roots must be disjoint and non-nested".into());
-            }
-        }
-    }
-    Ok(())
-}
-
-fn reject_overlapping_qualification_paths(
-    roots: &[&PathBuf],
-    protected: &[&PathBuf],
-) -> Result<(), String> {
-    for path in protected {
-        if !path.is_absolute()
-            || path.components().any(|component| {
-                matches!(
-                    component,
-                    std::path::Component::ParentDir | std::path::Component::CurDir
-                )
-            })
-        {
-            return Err("qualification inputs must use normalized absolute paths".into());
-        }
-        reject_symlinked_path(path)?;
-    }
-    for root in roots {
-        for path in protected {
-            if root.starts_with(path) || path.starts_with(root) {
-                return Err("qualification roots overlap a signed or provider input".into());
-            }
-        }
-    }
-    Ok(())
-}
-
-fn reject_symlinked_path(path: &Path) -> Result<(), String> {
-    for ancestor in path.ancestors() {
-        match fs::symlink_metadata(ancestor) {
-            Ok(metadata) if metadata.file_type().is_symlink() => {
-                return Err(format!(
-                    "qualification path traverses a symbolic link: {}",
-                    ancestor.display()
-                ));
-            }
-            Ok(_) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(error.to_string()),
-        }
-    }
-    Ok(())
-}
-
-fn validate_real_provider_binary(path: &Path) -> Result<PathBuf, String> {
-    let path = fs::canonicalize(path)
-        .map_err(|error| format!("real provider binary is unavailable: {error}"))?;
-    if !path.is_file() {
-        return Err("provider command must be a real executable file".into());
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if fs::metadata(&path)
-            .map_err(|error| error.to_string())?
-            .permissions()
-            .mode()
-            & 0o111
-            == 0
-        {
-            return Err("provider command is not executable".into());
-        }
-    }
-    reject_mock_or_fake(path.to_string_lossy().as_ref(), "provider binary")?;
-    Ok(path)
-}
-
-fn validate_model_configuration(model: &QualificationModelConfig) -> Result<(), String> {
-    if !matches!(model.provider_boundary.as_str(), "hosted" | "local_model") {
-        return Err("model provider boundary must be hosted or local_model".into());
-    }
-    if model.model.trim().is_empty() {
-        return Err("qualification model must be explicit".into());
-    }
-    reject_mock_or_fake(&model.model, "model")?;
-    if let Some(endpoint) = &model.endpoint {
-        reject_mock_or_fake(endpoint, "provider endpoint")?;
-        if model.provider_boundary == "hosted" && !endpoint.starts_with("https://") {
-            return Err("hosted provider qualification requires an HTTPS endpoint".into());
-        }
-    }
-    if let Some(name) = &model.credential_environment
-        && (name.trim().is_empty()
-            || name.contains('=')
-            || name.bytes().any(|byte| byte.is_ascii_whitespace()))
-    {
-        return Err("credential_environment must name an environment variable, not a value".into());
-    }
-    Ok(())
-}
-
-fn reject_mock_or_fake(value: &str, label: &str) -> Result<(), String> {
-    let normalized = value.to_ascii_lowercase();
-    if ["mock", "fake", "stub", "dummy"]
-        .iter()
-        .any(|marker| normalized.contains(marker))
-    {
-        Err(format!("{label} is a mock, fake, stub, or dummy"))
-    } else {
-        Ok(())
-    }
-}
-
-fn run_qualification_process(
-    root: &Path,
-    command: &QualificationCommandEvidence,
-    environment: &[(&str, String)],
-    evidence_root: &Path,
-    index: usize,
-) -> Result<(), String> {
-    let label = command
-        .arguments
-        .first()
-        .map_or("process", String::as_str)
-        .replace(|character: char| !character.is_ascii_alphanumeric(), "-");
-    let stdout_path = evidence_root.join(format!("{index:02}-{label}.stdout.log"));
-    let stderr_path = evidence_root.join(format!("{index:02}-{label}.stderr.log"));
-    let stdout = fs::File::create(&stdout_path).map_err(|error| error.to_string())?;
-    let stderr = fs::File::create(&stderr_path).map_err(|error| error.to_string())?;
-    let status = Command::new(&command.program)
-        .args(&command.arguments)
-        .envs(environment.iter().map(|(key, value)| (*key, value)))
-        .current_dir(root)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::from(stdout))
-        .stderr(std::process::Stdio::from(stderr))
-        .status()
-        .map_err(|error| format!("qualification step {index} could not start: {error}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!(
-            "qualification step {index} failed with {status}; inspect {} and {}",
-            stdout_path.display(),
-            stderr_path.display()
-        ))
-    }
-}
-
-fn read_and_validate_driver_evidence(
-    path: &Path,
-    build_id: &str,
-    host_target: &str,
-    provider_sha256: &str,
-    model_sha256: &str,
-    resource_limits_sha256: &str,
-) -> Result<TeammatesDriverEvidence, String> {
-    let bytes = fs::read(path)
-        .map_err(|error| format!("packaged driver evidence is unavailable: {error}"))?;
-    let evidence: TeammatesDriverEvidence = serde_json::from_slice(&bytes)
-        .map_err(|error| format!("packaged driver evidence is invalid: {error}"))?;
-    if evidence.schema_version != 1
-        || evidence.release_build_id != build_id
-        || evidence.host_target != host_target
-        || evidence.provider_binary_sha256 != provider_sha256
-        || evidence.model_configuration_sha256 != model_sha256
-        || evidence.resource_limits_sha256 != resource_limits_sha256
-    {
-        return Err("packaged driver evidence does not bind the qualification plan".into());
-    }
-    if evidence.used_mock_or_fake || evidence.secret_scan_matches != 0 {
-        return Err("packaged driver used fake infrastructure or exposed secret material".into());
-    }
-    let profiles = evidence
-        .profiles
-        .iter()
-        .map(|profile| profile.profile_id.as_str())
-        .collect::<BTreeSet<_>>();
-    let permanent_dms = evidence
-        .profiles
-        .iter()
-        .map(|profile| profile.permanent_human_dm_id.as_str())
-        .collect::<BTreeSet<_>>();
-    if evidence.profiles.len() != 4
-        || profiles.len() != 4
-        || permanent_dms.len() != 4
-        || evidence.profiles.iter().any(|profile| !profile.enabled)
-        || profiles.iter().any(|value| value.trim().is_empty())
-        || permanent_dms.iter().any(|value| value.trim().is_empty())
-    {
-        return Err("qualification did not create four distinct profiles and permanent DMs".into());
-    }
-    for (label, value) in [
-        ("agent-to-agent DM", evidence.agent_agent_dm_id.as_str()),
-        ("group", evidence.group_conversation_id.as_str()),
-        ("assignment", evidence.assignment_id.as_str()),
-        ("handoff", evidence.handoff_id.as_str()),
-        ("review", evidence.review_event_id.as_str()),
-        ("completion", evidence.completion_event_id.as_str()),
-        ("due routine DM", evidence.due_routine_dm_event_id.as_str()),
-    ] {
-        if value.trim().is_empty() {
-            return Err(format!("qualification evidence is missing {label}"));
-        }
-    }
-    if !evidence.daemon_killed_after_final_before_publication
-        || !evidence.daemon_restarted
-        || evidence.final_publication_count != 1
-        || !evidence.reload_projection_matches
-        || !evidence.resource_limits_enforced
-        || !evidence.cross_profile_access_denied
-        || !evidence.all_processes_stopped
-    {
-        return Err("daemon recovery, exactly-once, reload, isolation, or limits failed".into());
-    }
-    if !evidence.browser.headed_chromium
-        || !evidence.browser.xvfb_display
-        || !evidence.browser.authenticated_stream
-        || !evidence.browser.takeover_authorized
-        || !evidence.browser.unauthorized_input_denied
-        || !evidence.browser.handback_completed
-        || evidence.browser.audit_correlations.is_empty()
-        || evidence
-            .browser
-            .audit_correlations
-            .iter()
-            .any(|value| value.trim().is_empty())
-    {
-        return Err("headed browser stream, takeover, handback, or audit proof failed".into());
-    }
-    Ok(evidence)
-}
-
-fn file_sha256(path: &Path) -> Result<String, String> {
-    let bytes =
-        fs::read(path).map_err(|error| format!("cannot hash {}: {error}", path.display()))?;
-    if bytes.is_empty() {
-        return Err(format!("required evidence is empty: {}", path.display()));
-    }
-    Ok(hex_encode(&Sha256::digest(bytes)))
-}
-
-fn data_inventory_digest(root: &Path) -> Result<String, String> {
-    let inventory = release_files(root)?;
-    let bytes = serde_json::to_vec(&inventory).map_err(|error| error.to_string())?;
-    Ok(hex_encode(&Sha256::digest(bytes)))
-}
-
-fn validate_codify_trace(path: &Path) -> Result<(), String> {
-    let trace = fs::read_to_string(path)
-        .map_err(|error| format!("Codify trace evidence is unavailable: {error}"))?;
-    if !trace.contains("9.1")
-        || !trace.contains("teammates_release_qualify")
-        || !trace.contains("apps/xtask/src/main.rs")
-    {
-        return Err("Codify trace does not bind task 9.1 to its declared symbol and file".into());
-    }
-    Ok(())
 }
 
 fn verify_release_command() -> Result<(), String> {
@@ -1282,21 +129,6 @@ fn release(root: &Path) -> Result<(), String> {
         "cargo",
         &["build", "--workspace", "--bins", "--release", "--locked"],
     )?;
-    run(
-        root,
-        "cargo",
-        &[
-            "build",
-            "-p",
-            "keith-agent-web",
-            "--lib",
-            "--target",
-            "wasm32-unknown-unknown",
-            "--release",
-            "--locked",
-        ],
-    )?;
-
     let parent = destination
         .parent()
         .filter(|path| !path.as_os_str().is_empty())
@@ -1337,14 +169,10 @@ fn assemble_release(
     let web = destination.join("web");
     let schemas = destination.join("schemas");
     let provenance = destination.join("provenance");
-    let services = destination.join("services");
-    let migrations = destination.join("migrations");
     fs::create_dir_all(&bin).map_err(|error| error.to_string())?;
     fs::create_dir_all(&web).map_err(|error| error.to_string())?;
     fs::create_dir_all(&schemas).map_err(|error| error.to_string())?;
     fs::create_dir_all(&provenance).map_err(|error| error.to_string())?;
-    fs::create_dir_all(&services).map_err(|error| error.to_string())?;
-    fs::create_dir_all(&migrations).map_err(|error| error.to_string())?;
     let release_root = target_directory(root).join("release");
     for binary in [
         "agentd",
@@ -1357,6 +185,10 @@ fn assemble_release(
         "kernel-runner",
         "agent-web",
         "agent-desktop",
+        "keith-agent-acp",
+        "keith-composio-mcp",
+        "keith-cua-runner",
+        "keith-performance-runner",
     ] {
         let filename = format!("{binary}{}", env::consts::EXE_SUFFIX);
         let source = release_root.join(&filename);
@@ -1364,17 +196,6 @@ fn assemble_release(
             return Err(format!("release binary is missing: {}", source.display()));
         }
         fs::copy(&source, bin.join(filename)).map_err(|error| error.to_string())?;
-    }
-    let wasm = target_directory(root).join("wasm32-unknown-unknown/release/keith_agent_web.wasm");
-    let status = Command::new("wasm-bindgen")
-        .args(["--target", "web", "--out-name", "agent_web", "--out-dir"])
-        .arg(&web)
-        .arg(&wasm)
-        .current_dir(root)
-        .status()
-        .map_err(|error| format!("failed to run wasm-bindgen: {error}"))?;
-    if !status.success() {
-        return Err(format!("wasm-bindgen failed with {status}"));
     }
     copy_tree(&root.join("apps/agent-web/static/ui"), &web.join("ui"))?;
     copy_tree(
@@ -1425,42 +246,8 @@ fn assemble_release(
         keith_agent_types::schema_markdown().map_err(|error| error.to_string())?,
     )
     .map_err(|error| error.to_string())?;
-    fs::write(
-        schemas.join("teammate-runtime.json"),
-        serde_json::to_vec_pretty(&json!({
-            "format": "keith-teammate-runtime-v1",
-            "storage_schema": keith_agent_types::CURRENT_SCHEMA_VERSION.to_string(),
-            "protocol_version": keith_agent_types::CURRENT_PROTOCOL_VERSION.to_string(),
-            "durable_domains": ["profiles", "conversations", "coordination", "sessions", "artifacts", "channel_bindings", "computers"],
-            "clients": ["agent-cli", "agent-tui", "agent-web", "agent-desktop"],
-            "supervised_processes": ["agentd", "agent-worker", "browser-runner", "Xvfb", "Chromium"],
-            "hosted_control_plane_required": false,
-        }))
-        .map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-    fs::write(
-        migrations.join("README.json"),
-        serde_json::to_vec_pretty(&json!({
-            "format": "keith-migration-index-v1",
-            "target_storage_schema": keith_agent_types::CURRENT_SCHEMA_VERSION.to_string(),
-            "backup_required": true,
-            "rollback": "restore the exact portable backup before starting the prior agentd",
-        }))
-        .map_err(|error| error.to_string())?,
-    )
-    .map_err(|error| error.to_string())?;
-    fs::write(
-        services.join("keith-agentd.service.template"),
-        "[Unit]\nDescription=Keith Agent Daemon\nAfter=network.target\n[Service]\nType=simple\nExecStart={{INSTALL_ROOT}}/bin/agentd --data-root {{DATA_ROOT}}\nRestart=on-failure\nNoNewPrivileges=true\n[Install]\nWantedBy=default.target\n",
-    )
-    .map_err(|error| error.to_string())?;
-    fs::write(
-        services.join("keith-headed-browser.service.template"),
-        "[Unit]\nDescription=Keith headed browser %i\n[Service]\nType=simple\nExecStart={{INSTALL_ROOT}}/bin/browser-runner --profile %i\nRestart=on-failure\nNoNewPrivileges=true\n",
-    )
-    .map_err(|error| error.to_string())?;
     write_dependency_reports(root, destination)?;
+    harden_release_permissions(destination)?;
 
     let files = release_files(destination)?;
     let daemon = daemon_report();
@@ -1593,8 +380,7 @@ fn write_dependency_reports(root: &Path, destination: &Path) -> Result<(), Strin
 fn release_files(root: &Path) -> Result<Vec<ReleaseFile>, String> {
     let mut paths = Vec::new();
     collect_files(root, root, &mut paths)?;
-    paths.sort();
-    paths
+    let mut files = paths
         .into_iter()
         .filter(|path| {
             path != Path::new(MANIFEST_FILE)
@@ -1610,7 +396,12 @@ fn release_files(root: &Path) -> Result<Vec<ReleaseFile>, String> {
                 sha256: hex_encode(&Sha256::digest(bytes)),
             })
         })
-        .collect()
+        .collect::<Result<Vec<_>, String>>()?;
+    files.sort_by(|left, right| left.path.cmp(&right.path));
+    if files.windows(2).any(|pair| pair[0].path == pair[1].path) {
+        return Err("release contains duplicate normalized paths".into());
+    }
+    Ok(files)
 }
 
 fn collect_files(root: &Path, directory: &Path, files: &mut Vec<PathBuf>) -> Result<(), String> {
@@ -1633,6 +424,49 @@ fn collect_files(root: &Path, directory: &Path, files: &mut Vec<PathBuf>) -> Res
             ));
         }
     }
+    Ok(())
+}
+
+#[cfg(unix)]
+fn harden_release_permissions(root: &Path) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    fn harden(root: &Path, path: &Path) -> Result<(), String> {
+        let metadata = fs::symlink_metadata(path).map_err(|error| error.to_string())?;
+        if metadata.file_type().is_symlink() {
+            return Err(format!(
+                "release contains a symbolic link: {}",
+                path.display()
+            ));
+        }
+        if metadata.is_dir() {
+            fs::set_permissions(path, fs::Permissions::from_mode(0o755))
+                .map_err(|error| error.to_string())?;
+            for entry in fs::read_dir(path).map_err(|error| error.to_string())? {
+                harden(root, &entry.map_err(|error| error.to_string())?.path())?;
+            }
+            return Ok(());
+        }
+        if !metadata.is_file() {
+            return Err(format!(
+                "release contains an unsupported entry: {}",
+                path.display()
+            ));
+        }
+        let mode = if path.starts_with(root.join("bin")) {
+            0o755
+        } else {
+            0o644
+        };
+        fs::set_permissions(path, fs::Permissions::from_mode(mode))
+            .map_err(|error| error.to_string())
+    }
+
+    harden(root, root)
+}
+
+#[cfg(not(unix))]
+const fn harden_release_permissions(_root: &Path) -> Result<(), String> {
     Ok(())
 }
 
@@ -1671,7 +505,7 @@ fn ci() -> Result<(), String> {
     schema_document(&root, false)?;
     protocol_document(&root, false)?;
     provider_metadata_document(&root, false)?;
-    security::run(&root)?;
+    security::run_source(&root)?;
     run(
         &root,
         "cargo",
@@ -1778,6 +612,7 @@ fn copy_tree(source: &Path, destination: &Path) -> Result<(), String> {
 
 fn dependency_policy(root: &Path) -> Result<(), String> {
     let manifests = manifests(root)?;
+    require_private_packages(&manifests)?;
     let graph = dependency_graph(&manifests)?;
     let forbidden_layers = BTreeSet::from([
         "keith-daemon-core",
@@ -1829,15 +664,18 @@ fn dependency_policy(root: &Path) -> Result<(), String> {
             "keith-worker-runtime",
         ]),
     )?;
-    reject_reachable(
+    reject_reachable_except_via(
         &graph,
         "keith-daemon-core",
-        &BTreeSet::from([
-            "keith-agent-loop",
-            "keith-provider-adapters",
-            "keith-tool-runner-core",
-            "keith-sandbox",
-            "keith-plugin-host",
+        &BTreeMap::from([
+            ("keith-agent-loop", BTreeSet::new()),
+            ("keith-provider-adapters", BTreeSet::new()),
+            (
+                "keith-tool-runner-core",
+                BTreeSet::from(["keith-self-evolution"]),
+            ),
+            ("keith-sandbox", BTreeSet::from(["keith-self-evolution"])),
+            ("keith-plugin-host", BTreeSet::new()),
         ]),
     )?;
 
@@ -1851,17 +689,58 @@ fn dependency_policy(root: &Path) -> Result<(), String> {
 fn manifests(root: &Path) -> Result<Vec<PathBuf>, String> {
     let mut result = Vec::new();
     for parent in [root.join("crates"), root.join("apps")] {
-        for entry in fs::read_dir(parent).map_err(|error| error.to_string())? {
-            let path = entry
-                .map_err(|error| error.to_string())?
-                .path()
-                .join("Cargo.toml");
-            if path.is_file() {
-                result.push(path);
+        collect_manifests(&parent, &mut result)?;
+    }
+    result.sort();
+    Ok(result)
+}
+
+fn collect_manifests(directory: &Path, manifests: &mut Vec<PathBuf>) -> Result<(), String> {
+    for entry in fs::read_dir(directory).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        let path = entry.path();
+        if entry
+            .file_type()
+            .map_err(|error| error.to_string())?
+            .is_dir()
+        {
+            if path.file_name().is_some_and(|name| name == "target") {
+                continue;
             }
+            collect_manifests(&path, manifests)?;
+        } else if path.file_name().is_some_and(|name| name == "Cargo.toml") {
+            manifests.push(path);
         }
     }
-    Ok(result)
+    Ok(())
+}
+
+fn require_private_packages(manifests: &[PathBuf]) -> Result<(), String> {
+    for manifest in manifests {
+        let content = fs::read_to_string(manifest).map_err(|error| error.to_string())?;
+        if !package_publish_is_disabled(&content) {
+            return Err(format!(
+                "workspace package {} must set publish = false",
+                manifest.display()
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn package_publish_is_disabled(content: &str) -> bool {
+    let mut in_package = false;
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') {
+            in_package = trimmed == "[package]";
+        } else if in_package && trimmed.starts_with("publish") {
+            return trimmed
+                .split_once('=')
+                .is_some_and(|(_, value)| value.trim() == "false");
+        }
+    }
+    false
 }
 
 fn dependency_graph(manifests: &[PathBuf]) -> Result<BTreeMap<String, BTreeSet<String>>, String> {
@@ -1968,6 +847,36 @@ fn reject_reachable(
     Ok(())
 }
 
+fn reject_reachable_except_via(
+    graph: &BTreeMap<String, BTreeSet<String>>,
+    start: &str,
+    forbidden: &BTreeMap<&str, BTreeSet<&str>>,
+) -> Result<(), String> {
+    let mut pending = graph
+        .get(start)
+        .into_iter()
+        .flatten()
+        .map(|dependency| (dependency.as_str(), dependency.as_str()))
+        .collect::<VecDeque<_>>();
+    let mut visited = BTreeSet::new();
+    while let Some((package, first_hop)) = pending.pop_front() {
+        if !visited.insert((package, first_hop)) {
+            continue;
+        }
+        if let Some(approved_bridges) = forbidden.get(package)
+            && !approved_bridges.contains(first_hop)
+        {
+            return Err(format!(
+                "prohibited dependency path: {start} reaches {package} via {first_hop}"
+            ));
+        }
+        for dependency in graph.get(package).into_iter().flatten() {
+            pending.push_back((dependency, first_hop));
+        }
+    }
+    Ok(())
+}
+
 fn run(root: &Path, program: &str, args: &[&str]) -> Result<(), String> {
     let status = Command::new(program)
         .args(args)
@@ -2019,5 +928,66 @@ mod tests {
             .filter_map(dependency_name)
             .collect::<Vec<_>>();
         assert_eq!(dependencies, ["keith-runtime", "keith-windows"]);
+    }
+
+    #[test]
+    fn dependency_policy_requires_private_workspace_packages() {
+        assert!(package_publish_is_disabled(
+            "[package]\nname = \"private\"\npublish = false\n"
+        ));
+        assert!(!package_publish_is_disabled(
+            "[package]\nname = \"public\"\npublish = true\n"
+        ));
+        assert!(!package_publish_is_disabled(
+            "[package]\nname = \"implicit-public\"\n"
+        ));
+    }
+
+    #[test]
+    fn daemon_executor_access_requires_the_self_evolution_bridge() {
+        let allowed = BTreeMap::from([
+            (
+                "keith-daemon-core".into(),
+                BTreeSet::from(["keith-self-evolution".into()]),
+            ),
+            (
+                "keith-self-evolution".into(),
+                BTreeSet::from(["keith-sandbox".into(), "keith-tool-runner-core".into()]),
+            ),
+            ("keith-sandbox".into(), BTreeSet::new()),
+            ("keith-tool-runner-core".into(), BTreeSet::new()),
+        ]);
+        let forbidden = BTreeMap::from([
+            ("keith-sandbox", BTreeSet::from(["keith-self-evolution"])),
+            (
+                "keith-tool-runner-core",
+                BTreeSet::from(["keith-self-evolution"]),
+            ),
+        ]);
+        reject_reachable_except_via(&allowed, "keith-daemon-core", &forbidden).unwrap();
+
+        let direct = BTreeMap::from([
+            (
+                "keith-daemon-core".into(),
+                BTreeSet::from(["keith-sandbox".into()]),
+            ),
+            ("keith-sandbox".into(), BTreeSet::new()),
+        ]);
+        assert!(reject_reachable_except_via(&direct, "keith-daemon-core", &forbidden).is_err());
+
+        let wrong_bridge = BTreeMap::from([
+            (
+                "keith-daemon-core".into(),
+                BTreeSet::from(["keith-runtime-api".into()]),
+            ),
+            (
+                "keith-runtime-api".into(),
+                BTreeSet::from(["keith-sandbox".into()]),
+            ),
+            ("keith-sandbox".into(), BTreeSet::new()),
+        ]);
+        assert!(
+            reject_reachable_except_via(&wrong_bridge, "keith-daemon-core", &forbidden).is_err()
+        );
     }
 }

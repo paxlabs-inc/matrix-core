@@ -1,0 +1,3163 @@
+{
+  "schema_version": 1,
+  "task": "1.4",
+  "observed_on": "2026-09-05",
+  "scope": "source_inventory_only",
+  "runtime_qualified": false,
+  "meaning_of_cheap": "engineering effort: useful behavior per integration boundary changed",
+  "sources": {
+    "core": {
+      "path": "/root/Gideon/Gideon-ai",
+      "environment_override": "KEITH_GIDEON_CORE_SOURCE",
+      "git_head": "70b043fb8f9b653a25b4e268fdea3cb8047c0ba2",
+      "provenance": "Git revision plus selected file hashes; unrelated dirty paths are not donors"
+    },
+    "apps": {
+      "path": "/root/Gideon/Gideon-ai-apps",
+      "environment_override": "KEITH_GIDEON_APPS_SOURCE",
+      "git_head": null,
+      "git_resolution_root": "/root/Gideon",
+      "provenance": "No independent resolvable HEAD; immutable per-file SHA-256 snapshot"
+    }
+  },
+  "collections": [
+    {
+      "id": "native_apps",
+      "root": "core",
+      "pattern": "src/gideon/apps/native/*/app.json",
+      "count": 30
+    },
+    {
+      "id": "external_apps",
+      "root": "apps",
+      "pattern": "*/app.json",
+      "count": 52
+    },
+    {
+      "id": "skills",
+      "root": "core",
+      "pattern": "src/gideon/skills/bundled/*/SKILL.md",
+      "count": 17
+    },
+    {
+      "id": "workflows",
+      "root": "core",
+      "pattern": "src/gideon/workflows/bundled/*/workflow.json",
+      "count": 29
+    },
+    {
+      "id": "recipes",
+      "root": "core",
+      "pattern": "src/gideon/knowledge/sources/recipes/*.json",
+      "count": 7
+    },
+    {
+      "id": "documents",
+      "root": "core",
+      "pattern": "src/gideon/documents/**/*.py",
+      "count": 17
+    }
+  ],
+  "families": {
+    "native-actions": {
+      "coupling": "io_adapter",
+      "disposition": "existing_equivalent",
+      "keith_owner": [
+        "crates/tool-core",
+        "crates/local-runtime",
+        "crates/scheduler"
+      ],
+      "existing_equivalent": "Keith filesystem, bash, web, children, scheduled actions and delivery",
+      "missing_behavior": "Compare action-specific arguments and receipts before claiming parity",
+      "dependencies": [
+        "Gideon action-provider SDK; replace with Keith contracts"
+      ],
+      "platforms": "Keith supported host platforms",
+      "proof_required": "Real action admission, cancellation, outcome and restart per selected operation",
+      "next_task": "follow-on-adapter-review",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "native-state": {
+      "coupling": "stateful_controller",
+      "disposition": "existing_equivalent",
+      "keith_owner": [
+        "crates/memory",
+        "crates/profile",
+        "crates/skills",
+        "crates/planner"
+      ],
+      "existing_equivalent": "Keith durable memory, profiles, skills and task planning",
+      "missing_behavior": "No donor store import; inspect user-path gaps individually",
+      "dependencies": [
+        "Gideon state providers, stores and lifecycle"
+      ],
+      "platforms": "Keith supported host platforms",
+      "proof_required": "Keith-owned state exercised across restart; source similarity is insufficient",
+      "next_task": "existing-owner-review",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    },
+    "native-tools": {
+      "coupling": "stateful_controller",
+      "disposition": "existing_equivalent",
+      "keith_owner": [
+        "crates/local-runtime",
+        "crates/artifacts",
+        "crates/cua",
+        "crates/task-recipe"
+      ],
+      "existing_equivalent": "Keith tools, artifacts, CUA, skills, child sessions and recipes",
+      "missing_behavior": "Translate useful tool behavior without donor product state or controller",
+      "dependencies": [
+        "Gideon SDK tool registries and underlying domain services"
+      ],
+      "platforms": "Keith supported host platforms",
+      "proof_required": "Real existing tool path and missing-behavior review for each selected bundle",
+      "next_task": "existing-owner-review",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    },
+    "filesystem-inbox": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/tool-runner",
+        "crates/scheduler",
+        "crates/artifacts"
+      ],
+      "existing_equivalent": "Keith workspace access, scheduling and artifacts",
+      "missing_behavior": "Directory observation, source cursor and ingest lifecycle need mapping",
+      "dependencies": [
+        "Filesystem metadata and Gideon inbox SDK"
+      ],
+      "platforms": "Filesystem-capable hosts; watcher behavior needs OS proof",
+      "proof_required": "New file, modification, deletion, restart and profile confinement",
+      "next_task": "follow-on-filesystem-ingress",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "model-adapters": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/provider-adapters",
+        "crates/provider-core",
+        "crates/credentials"
+      ],
+      "existing_equivalent": "Keith provider-neutral contracts and concrete adapters",
+      "missing_behavior": "Review each vendor against existing transport/auth/model support before port",
+      "dependencies": [
+        "Per-manifest SDK dependencies; replace Gideon SDK/config/credential access"
+      ],
+      "platforms": "Network-capable Keith hosts; provider SDK platform availability",
+      "proof_required": "Real authenticated provider request, streaming, cancellation and failure behavior",
+      "next_task": "follow-on-provider-review",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "search": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/web",
+        "crates/credentials",
+        "crates/local-runtime"
+      ],
+      "existing_equivalent": "SafeWebClient and web_fetch; no inspected general search provider contract",
+      "missing_behavior": "Bounded normalized search results, credential references and readiness",
+      "dependencies": [
+        "Gideon SDK search/net; replace with Keith web-owned contract and transport"
+      ],
+      "platforms": "Network-capable Keith hosts",
+      "proof_required": "Real provider query, source readback, malformed/limited results and revoked credentials",
+      "next_task": "5.6",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "tool-adapters": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/web",
+        "crates/provider-adapters",
+        "crates/tool-core"
+      ],
+      "existing_equivalent": "Keith web, provider and tool boundaries",
+      "missing_behavior": "Select specific missing extraction or provider-tool behavior",
+      "dependencies": [
+        "Gideon SDK tool/net/model contracts"
+      ],
+      "platforms": "Network-capable Keith hosts",
+      "proof_required": "Actual user request through admitted Keith tool with provider-specific limitations",
+      "next_task": "5.6",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "cli-agents": {
+      "coupling": "stateful_controller",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/subagents",
+        "crates/local-runtime",
+        "apps/agent-acp"
+      ],
+      "existing_equivalent": "Keith child execution and ACP surfaces",
+      "missing_behavior": "Review process protocol support without importing a second orchestration authority",
+      "dependencies": [
+        "External CLI binary/login; Gideon agent SDK"
+      ],
+      "platforms": "Provider CLI supported platforms only",
+      "proof_required": "Real child/ACP lifecycle, cancellation, credentials, restart and final delivery",
+      "next_task": "follow-on-cli-adapter",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    },
+    "a2a": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/channel-core",
+        "crates/tool-core",
+        "crates/credentials"
+      ],
+      "existing_equivalent": "Keith typed external principal and tool boundaries",
+      "missing_behavior": "A2A transport/auth protocol needs explicit adapter ownership",
+      "dependencies": [
+        "Gideon SDK action/net; remote A2A service"
+      ],
+      "platforms": "Network-capable hosts",
+      "proof_required": "Authenticated disposable remote action with effect reconciliation",
+      "next_task": "follow-on-a2a",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "images": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/provider-adapters",
+        "crates/artifacts"
+      ],
+      "existing_equivalent": "Keith providers and binary artifacts",
+      "missing_behavior": "Image provider interface and user-visible artifact delivery",
+      "dependencies": [
+        "fal-image provider networking and credentials"
+      ],
+      "platforms": "Network-capable hosts",
+      "proof_required": "Real generated image artifact through normal user delivery",
+      "next_task": "follow-on-image-provider",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "speech": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/kernel-broker",
+        "crates/artifacts",
+        "crates/local-runtime"
+      ],
+      "existing_equivalent": "Keith bounded process and artifact facilities; no speech owner found in inspected path",
+      "missing_behavior": "Audio provider contracts, readiness, model lifecycle and transcription/synthesis user flow",
+      "dependencies": [
+        "Per-manifest native/model dependencies; model licenses must be pinned separately"
+      ],
+      "platforms": "Model/native-wheel dependent; support is unqualified until packaged proof",
+      "proof_required": "Real audio transcription/synthesis, unavailable model, cancellation, restart and cleanup",
+      "next_task": "6.4",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "embedding": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/provider-core",
+        "crates/provider-adapters",
+        "crates/retrieval",
+        "crates/memory"
+      ],
+      "existing_equivalent": "Keith embedding and memory owners",
+      "missing_behavior": "Only trained encoder transport is a candidate; do not import FAISS or memory store",
+      "dependencies": [
+        "sentence-transformers and faiss-cpu declared by donor; FAISS is not required for encoder extraction"
+      ],
+      "platforms": "Selected encoder/native-wheel platforms",
+      "proof_required": "Real encoder query/document compatibility and actual memory activation",
+      "next_task": "3.1",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "sync": {
+      "coupling": "stateful_controller",
+      "disposition": "stateful_product_migration",
+      "keith_owner": [
+        "crates/data-control",
+        "crates/credentials",
+        "crates/profile"
+      ],
+      "existing_equivalent": "Keith data-control and profile ownership",
+      "missing_behavior": "Sync conflict, deletion, credential and lifecycle design is separate from document reuse",
+      "dependencies": [
+        "Transport-specific filesystem/Git/rsync/S3 dependencies"
+      ],
+      "platforms": "Transport-specific OS and filesystem capabilities",
+      "proof_required": "Bidirectional change/conflict/deletion/restart and profile isolation",
+      "next_task": "deferred-sync-product",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    },
+    "channel": {
+      "coupling": "io_adapter",
+      "disposition": "existing_equivalent",
+      "keith_owner": [
+        "crates/channel-adapters",
+        "crates/channel-core",
+        "crates/delivery"
+      ],
+      "existing_equivalent": "Keith Discord, Slack, Telegram and provider email adapters already exist",
+      "missing_behavior": "Review missing behavior; IMAP/MIME may add value; avoid duplicate delivery controllers",
+      "dependencies": [
+        "Gideon SDK channel/net; selected provider SDK dependencies"
+      ],
+      "platforms": "Network hosts; protocol-specific dependencies",
+      "proof_required": "Real account ingress, reply, threading, restart and unknown-effect handling",
+      "next_task": "6.5",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "inbox": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/channel-adapters",
+        "crates/channel-core",
+        "crates/delivery",
+        "crates/artifacts"
+      ],
+      "existing_equivalent": "Keith email provider API/webhook adapter and delivery state",
+      "missing_behavior": "IMAP/MIME mailbox reading and body/attachment extraction are meaningful gaps",
+      "dependencies": [
+        "Python email/IMAP/SMTP stdlib; replace Gideon SDK extraction and mailbox store"
+      ],
+      "platforms": "Network hosts with approved mailbox credentials",
+      "proof_required": "Actual read and authorized disposable reply with profile, cursor and lost-ack proof",
+      "next_task": "6.5",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "mcp": {
+      "coupling": "io_adapter",
+      "disposition": "existing_equivalent",
+      "keith_owner": [
+        "crates/mcp",
+        "crates/local-runtime"
+      ],
+      "existing_equivalent": "Keith MCP manager and tool admission",
+      "missing_behavior": "General operator configuration/setup is not automatically present",
+      "dependencies": [
+        "MCP transport and Gideon SDK wrapper"
+      ],
+      "platforms": "Configured Keith-supported transports",
+      "proof_required": "Real configured MCP tool path and restart; no new manager",
+      "next_task": "follow-on-mcp-setup",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "skill-distribution": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/skills",
+        "crates/plugin-host"
+      ],
+      "existing_equivalent": "Keith built-in/project/profile skill discovery",
+      "missing_behavior": "Remote distribution and provenance lifecycle; not needed for curated local skills",
+      "dependencies": [
+        "Remote source and Gideon SDK installer integration"
+      ],
+      "platforms": "Network hosts",
+      "proof_required": "Actual install, digest, readiness, disable and revocation path",
+      "next_task": "deferred-skill-distribution",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "automation": {
+      "coupling": "stateful_controller",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/scheduler",
+        "crates/task-recipe"
+      ],
+      "existing_equivalent": "Keith scheduler and recipes",
+      "missing_behavior": "Translate shared automation content without donor state/controller",
+      "dependencies": [
+        "Gideon SDK storage and automation registry"
+      ],
+      "platforms": "Keith scheduler platforms",
+      "proof_required": "One real durable scheduled workflow with deduplication and cancellation",
+      "next_task": "5.7",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    },
+    "webhook": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/web",
+        "crates/tool-core",
+        "crates/credentials"
+      ],
+      "existing_equivalent": "Keith web/tool admission",
+      "missing_behavior": "Typed webhook payload, endpoint authority and effect receipt mapping",
+      "dependencies": [
+        "Gideon SDK actions/net"
+      ],
+      "platforms": "Network-capable hosts",
+      "proof_required": "Authorized disposable HTTP effect including lost acknowledgement",
+      "next_task": "follow-on-webhook",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "stateful-apps": {
+      "coupling": "stateful_controller",
+      "disposition": "stateful_product_migration",
+      "keith_owner": [
+        "crates/artifacts",
+        "crates/memory",
+        "crates/planner",
+        "apps/agent-web"
+      ],
+      "existing_equivalent": "Keith records and clients; no product parity established",
+      "missing_behavior": "Minutes/Growth UI, APIs and lifecycle must be redesigned over Keith-owned records",
+      "dependencies": [
+        "Gideon app APIs, knowledge/projects/tasks stores and app backend"
+      ],
+      "platforms": "Product/platform support requires independent integration",
+      "proof_required": "Complete real product journeys over daemon-owned data; not writer prerequisite",
+      "next_task": "deferred-minutes-growth-products",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    },
+    "device": {
+      "coupling": "stateful_controller",
+      "disposition": "stateful_product_migration",
+      "keith_owner": [
+        "apps/agent-desktop",
+        "crates/ui-model",
+        "crates/platform-contracts"
+      ],
+      "existing_equivalent": "Keith desktop/client and daemon projections",
+      "missing_behavior": "Device companion UI and connection lifecycle need deliberate adaptation",
+      "dependencies": [
+        "Device OS APIs and Gideon loops/approvals/WebSocket APIs"
+      ],
+      "platforms": "OS-specific device companion",
+      "proof_required": "Real device connection, approvals, reconnect and daemon state consistency",
+      "next_task": "deferred-device-product",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    },
+    "curated-skills": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/skills",
+        "crates/profile",
+        "crates/local-runtime",
+        "packaging/builtins/skills"
+      ],
+      "existing_equivalent": "Keith SkillRegistry and ordinary-turn injection",
+      "missing_behavior": "TOML manifest conversion, real tool mapping, scaffold and profile-selection repair",
+      "dependencies": [
+        "Content only; no Gideon runtime dependency"
+      ],
+      "platforms": "Keith platforms where declared tools are ready",
+      "proof_required": "Real ordinary-turn selection, disabled/malformed/unavailable rejection",
+      "next_task": "3.5",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "skill-content": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/skills",
+        "packaging/builtins/skills"
+      ],
+      "existing_equivalent": "Keith skill registry",
+      "missing_behavior": "Tool/reference conversion and capability-specific readiness",
+      "dependencies": [
+        "Content; optional rendering/browser capabilities vary"
+      ],
+      "platforms": "Only platforms with required tools",
+      "proof_required": "Actual selected skill and relevant user journey",
+      "next_task": "follow-on-skill-content",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "skill-lifecycle": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/skills",
+        "crates/task-recipe",
+        "crates/subagents",
+        "crates/memory"
+      ],
+      "existing_equivalent": "Keith procedures, children and memory policies",
+      "missing_behavior": "Translate procedure without importing donor lifecycle/authority rules",
+      "dependencies": [
+        "Content and existing Keith owners"
+      ],
+      "platforms": "Only platforms with required tools",
+      "proof_required": "Actual lifecycle path; no inferred authority from skill text",
+      "next_task": "follow-on-skill-lifecycle",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "skill-product-docs": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "docs",
+        "crates/skills"
+      ],
+      "existing_equivalent": "Keith product documentation",
+      "missing_behavior": "Replace Gideon product/API descriptions with actual Keith behavior",
+      "dependencies": [
+        "Content only"
+      ],
+      "platforms": "All supported clients",
+      "proof_required": "Document claims match actual Keith user paths",
+      "next_task": "follow-on-keith-documentation",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "workflow-content": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/task-recipe",
+        "crates/scheduler",
+        "crates/planner"
+      ],
+      "existing_equivalent": "Keith recipes/planning/scheduling",
+      "missing_behavior": "Translate node/tool names; full workflow editor is a separate product migration",
+      "dependencies": [
+        "Gideon workflow JSON and tool/controller references"
+      ],
+      "platforms": "Selected operations supported by Keith",
+      "proof_required": "One real translated workflow with durable outcomes and cancellation",
+      "next_task": "5.7",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "recipes": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/scheduler",
+        "crates/web",
+        "crates/memory"
+      ],
+      "existing_equivalent": "Keith scheduler, SafeWebClient and memory",
+      "missing_behavior": "Durable item cursor, seeded initial poll, duplicate suppression and source provenance",
+      "dependencies": [
+        "Source URL/feed extraction; no trigger-controller import"
+      ],
+      "platforms": "Network-capable scheduler hosts",
+      "proof_required": "Scheduled real source observation across restart and source changes",
+      "next_task": "5.7",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "documents": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/kernel-broker",
+        "crates/kernel-protocol",
+        "crates/artifacts",
+        "crates/local-runtime",
+        "packaging"
+      ],
+      "existing_equivalent": "Keith Python kernel and ArtifactService",
+      "missing_behavior": "Binary bridge, interpreter/package readiness and ordinary artifact download; readers need structured source/loss reporting",
+      "dependencies": [
+        "Model/codecs are stdlib; format-specific dependencies from uv.lock"
+      ],
+      "platforms": "Selected Python 3.12+ wheels; packaged OS proof required",
+      "proof_required": "Real render/download/reopen/restart plus malformed input and cancellation",
+      "next_task": "3.4",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "document-io": {
+      "coupling": "io_adapter",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/kernel-broker",
+        "crates/artifacts",
+        "crates/tool-runner",
+        "crates/memory"
+      ],
+      "existing_equivalent": "Keith scoped artifacts/workspace; text/JSON attachment expansion",
+      "missing_behavior": "Replace path/sensitive-file guards and emit source coordinates/loss reporting",
+      "dependencies": [
+        "Document libraries, Gideon security/web extraction; remove internal policy imports"
+      ],
+      "platforms": "Format-library supported platforms",
+      "proof_required": "Actual uploaded document extraction, malformed/bomb input, loss report and source provenance",
+      "next_task": "5.5",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Replace gideon.sdk contracts and ambient credential/path/net access with the recorded Keith host/domain contracts"
+      ]
+    },
+    "projection": {
+      "coupling": "content_or_pure_function",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/artifacts",
+        "crates/tool-core",
+        "crates/local-runtime"
+      ],
+      "existing_equivalent": "Keith raw output spill with UTF-8 prefix/hex preview",
+      "missing_behavior": "Preserve middle-of-log errors and exact raw retrieval; module has IO helpers to exclude",
+      "dependencies": [
+        "Selected stdlib shaping functions plus bounded truncation helper"
+      ],
+      "platforms": "All supported hosts",
+      "proof_required": "Real large tool output with hidden middle errors and complete raw artifact retrieval",
+      "next_task": "4.7",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Convert Gideon tool/API references or package-local imports to the recorded Keith owner; required tools do not grant authority"
+      ]
+    },
+    "monitor-controller": {
+      "coupling": "stateful_controller",
+      "disposition": "follow_on_adapter",
+      "keith_owner": [
+        "crates/scheduler",
+        "crates/web",
+        "crates/memory"
+      ],
+      "existing_equivalent": "Keith scheduler and durable memory",
+      "missing_behavior": "Reuse seeded/item identity ideas; never import donor watch-state/controller",
+      "dependencies": [
+        "Gideon web/security/trigger machinery"
+      ],
+      "platforms": "Network hosts",
+      "proof_required": "Actual monitored source transition and restart without duplicate events",
+      "next_task": "5.7",
+      "readiness": "source_review_only",
+      "runtime_qualified": false,
+      "changed_imports": [
+        "Do not import the controller or its stores; reuse selected content/algorithms over Keith-owned state"
+      ]
+    }
+  },
+  "files": [
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/bash-action/app.json",
+      "sha256": "8bf5c5db6bb546320793a3d01800de6e690d904a9de471d5af166e06136cb7e2",
+      "bytes": 1329,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/browse-action/app.json",
+      "sha256": "10c135c42c8af54435f012dbd5594073af718d42ae85000099af052464162f68",
+      "bytes": 2188,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/create-task-action/app.json",
+      "sha256": "a411d213cf5be18e537941725c24165455b6531bbc7e363c9dc02b2bcf58c36d",
+      "bytes": 2825,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/filesystem-inbox/app.json",
+      "sha256": "cc25134b2eabd58a2eef497318aa6250cb1e9b8c10247ecd8f4423cf709fa9d0",
+      "bytes": 570,
+      "family": "filesystem-inbox",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-artifacts/app.json",
+      "sha256": "8c7aa5692ca3184398ab67a26f6735083736bbdd26d8e61546ee850e1e4253e0",
+      "bytes": 529,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-automation-tools/app.json",
+      "sha256": "9f8d1d7cd955ffa89b3202111a9ba09f96a3df72c8712c0b5f5cbe51b5e5b284",
+      "bytes": 577,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-code-map/app.json",
+      "sha256": "ee56212e7d0af2c7f61fdebf6b22a07acee26e9aae63005f6a6cd3b5e26e23cd",
+      "bytes": 579,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-computer-use-tools/app.json",
+      "sha256": "5e1f7fdfe6ec8236130cab5ba65727bb65a65da04fcf61ab5c3072a68566cd56",
+      "bytes": 750,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-inbox-tools/app.json",
+      "sha256": "9535859f7929000c7bb4dc2b92166a330a8601f6232b17dbbefb820568279227",
+      "bytes": 526,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-knowledge-tools/app.json",
+      "sha256": "088ae93295aca17fc2de10950407ff61b4dda8f311a7fe90b3257fb4c57828f1",
+      "bytes": 524,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-memory/app.json",
+      "sha256": "cfc3a4a0b9394980aa77267a05aee3efa02522818e56be30505816a5e660ae7a",
+      "bytes": 498,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-project-tools/app.json",
+      "sha256": "88d3b94c1c8f3a9ab6fe5d27aab6c00f05aaae89357d3342532dcebcc19008cb",
+      "bytes": 597,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-prompts/app.json",
+      "sha256": "7614430e9ae559c6f62ca84c3ec3b3912eba011c463e639ebc6614fc1c7978cb",
+      "bytes": 516,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-subagents/app.json",
+      "sha256": "4332e4bd3b968d82642d76db61df734eb8d4efeb0c1021722fda4b4ad591636d",
+      "bytes": 550,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-tasks-tools/app.json",
+      "sha256": "b7ccdb42fb70acc8570c4446158c9822c1a9598c654d1481d57ff545f5969289",
+      "bytes": 507,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-tools/app.json",
+      "sha256": "a31bb64cafb38f87f563b000a03eb64b39f7d0070afaa905cac057010e34955e",
+      "bytes": 1367,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-ui-docs/app.json",
+      "sha256": "1401be50a3ece33289519dbacbb2ebee5187fbfb6c32db73fac5e2b6ea77e5d1",
+      "bytes": 523,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/gideon-workflows/app.json",
+      "sha256": "b5212f28ecb7e322c14600af5f0a333224d5558b1619b02e9ffcfbceacf46aaf",
+      "bytes": 557,
+      "family": "native-tools",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/inbox-op-action/app.json",
+      "sha256": "e0069536d0e6e434a8956ccf1e82de13d228960c495a995c234fc45de62ef1a0",
+      "bytes": 1868,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/invoke-agent-action/app.json",
+      "sha256": "d041668ec94d9d58be35960db94c3c786d5973d6acee22d72ad77dcdc0dc0e75",
+      "bytes": 2704,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/native-agents/app.json",
+      "sha256": "ef94d58d28366e096573e17336c609ce92f452cc1431a92d7cbeae03f586e1f3",
+      "bytes": 550,
+      "family": "native-state",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/native-knowledge/app.json",
+      "sha256": "06627151b77bdc47f507e73a328eacfb73991ca30a7a88ec63ccc5cc55ed3003",
+      "bytes": 853,
+      "family": "native-state",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/native-prompts/app.json",
+      "sha256": "9b80f0166a4d9117f451a5829d8a41278613a7670e5e0bd17d39cb0f423b03a5",
+      "bytes": 638,
+      "family": "native-state",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/native-skills/app.json",
+      "sha256": "6f13925915077a3c6e4d3a4ac2b83d063bdee33ece0f2d589f9154f55ef6ff9d",
+      "bytes": 1114,
+      "family": "native-state",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/native-tasks/app.json",
+      "sha256": "3e6685c2f0eb6a5bb48338e6b557e32e61ea531e1ea75e755ea544188bdb3fea",
+      "bytes": 920,
+      "family": "native-state",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/native-vector-memory/app.json",
+      "sha256": "9fe92f999f089342215fd5d0d6464df2fad4c3e31ec39fb3c0ce949ef3c12a8d",
+      "bytes": 987,
+      "family": "native-state",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/notify-action/app.json",
+      "sha256": "b014bb52c34d80383c3e988307a92119a936a6bf603d56dd79a469ce931f4316",
+      "bytes": 1440,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/run-prompt-action/app.json",
+      "sha256": "95a537819a1e01fe81307bb43d7d83061423f95ea4b1a4e1abea541304f5530c",
+      "bytes": 3592,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/run-script-action/app.json",
+      "sha256": "482719da546e7b62f5b140c7456609f4bcfd828e9d266376178cbf1d359989e5",
+      "bytes": 1160,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/apps/native/send-message-action/app.json",
+      "sha256": "01fd577150a35dea853ed88b5160d43f5fac6dc5589823d2bacc69133e1ad52f",
+      "bytes": 1728,
+      "family": "native-actions",
+      "collection": "native_apps",
+      "manifest_version": "1.0.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "a2a-action/app.json",
+      "sha256": "66cd7075cb1ed0679b54c92c5d193f9eb702e54b3a58a3035d23cb3c69e87ab1",
+      "bytes": 2266,
+      "family": "a2a",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "network": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "alibaba-models/app.json",
+      "sha256": "959b40bde4b09fe19d3e929fea1ed219d53e441585b0dfd9709d8bc22f814d92",
+      "bytes": 1745,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "anthropic-compatible/app.json",
+      "sha256": "e95af128bf5aa073e5e00dcbc3f3332a00fd11ce27ae43c0b05f744949a40dc3",
+      "bytes": 1544,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "anthropic>=0.20"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "anthropic-models/app.json",
+      "sha256": "fe0e80fbae8cffc9d764512e1a59ceaeb9d7f387cfe681767b65c4f9ecac0844",
+      "bytes": 1637,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "anthropic>=0.20"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "bedrock-models/app.json",
+      "sha256": "ecfa71ec1adbeed397e0541fcea353e23aa93b22eb32a02d8e4757b2e6f3ad1d",
+      "bytes": 2764,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "boto3>=1.34"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "brave-search/app.json",
+      "sha256": "7d7a3486a74656628cc01256a9b8320608cec4dc812a62c55114243dbf892a6d",
+      "bytes": 1249,
+      "family": "search",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "claude-code-agent/app.json",
+      "sha256": "6be5301f6a1a071119e30ee90d75ecbb3ec67fd77f6de658c68627c86202eade",
+      "bytes": 1545,
+      "family": "cli-agents",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "claude-subscription/app.json",
+      "sha256": "c5dabb1c8d2a4d742c1cf9466c22606f2b0b288002db6f8988e85ee05e84bf61",
+      "bytes": 1431,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "anthropic>=0.20"
+        ]
+      },
+      "manifest_permissions": {
+        "network": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "codex-agent/app.json",
+      "sha256": "857e4f8aaaf09a3e4e162618421de29abccfdb9da1daf6283428d8b68d24d406",
+      "bytes": 1388,
+      "family": "cli-agents",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "deepseek-models/app.json",
+      "sha256": "959549f80cc8d6ce776fd8465fc110aabdecb95b20537603f9fe4ac809c1c864",
+      "bytes": 1515,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "diarization-onnx/app.json",
+      "sha256": "aad0f107c2469a7b8a06f15a3545c049050b9135f27ca315ea602266b4c5ebd0",
+      "bytes": 1071,
+      "family": "speech",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "onnxruntime>=1.16",
+          "sherpa-onnx>=1.10",
+          "soundfile>=0.12",
+          "numpy>=1.24"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "diarization-pyannote/app.json",
+      "sha256": "85bb698ab7318d02fa4f29678ef38bc3079ae8ee88f6d3d2d0bec32c76ed1659",
+      "bytes": 1118,
+      "family": "speech",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "pyannote.audio>=3.1",
+          "torch>=2.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "dir-sync/app.json",
+      "sha256": "ac4d376fbc303e441d61660ac1f473525a676fb239797f3e87558c78ce1751f2",
+      "bytes": 1100,
+      "family": "sync",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "discord-channel/app.json",
+      "sha256": "a67d65791c69c1e5f1553f007294132201cb85b5abbdacd86fc1a05621833c02",
+      "bytes": 1709,
+      "family": "channel",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "duckduckgo-search/app.json",
+      "sha256": "09b8c7ecf45c5b7732d61a123ed3c44eec26fa0b8ef7d156366111ccc0945132",
+      "bytes": 954,
+      "family": "search",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "email-channel/app.json",
+      "sha256": "caf39af3e08733fad327977c8d032a843dd651dc68789c3d65392994a7de1567",
+      "bytes": 4071,
+      "family": "channel",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "storage": true,
+        "network": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "exa-search/app.json",
+      "sha256": "02fe656fc4c7753f994c42e32eb0b78c3eea877bffdeed319134ec595041edf4",
+      "bytes": 1221,
+      "family": "search",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "fal-image/app.json",
+      "sha256": "49307b4a26fac3fe6f6d5e1f1570d5b9b6a23820b5e361038ad2c9dba6061303",
+      "bytes": 998,
+      "family": "images",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "faster-whisper/app.json",
+      "sha256": "780186b14c5cb94c03e34bda25bec9f1941ce4057b3f8f3c3a75c05a6def7b1e",
+      "bytes": 1400,
+      "family": "speech",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "faster-whisper>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "gemini-cli-agent/app.json",
+      "sha256": "b7233bfb2447d7255cddcdbd81d4091581b01784933fda3c0425b91e5021bd7a",
+      "bytes": 1432,
+      "family": "cli-agents",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "git-sync/app.json",
+      "sha256": "5ca91eed8067035a2946f593d53c781ee1940f1bc53945e6925c5e2a2aeb527a",
+      "bytes": 1757,
+      "family": "sync",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "google-models/app.json",
+      "sha256": "8472dc6c206ac8adba994d19305c885f392b7512ce77d8ecc409cda867a364ea",
+      "bytes": 1850,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "groq-models/app.json",
+      "sha256": "5acdea606c60d49ca8d1ecdfe9b49d0a4fe149bc90f04b6f79a1cab0adcff556",
+      "bytes": 1489,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "growth/app.json",
+      "sha256": "51aa57a9be36bf0c1edec43cdc0cf3c70e70c25b64bd696cdfed8622d365d310",
+      "bytes": 5859,
+      "family": "stateful-apps",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "api": [
+          "/api/apps/growth",
+          "/api/projects",
+          "/api/tasks",
+          "/api/knowledge"
+        ],
+        "events": [
+          "refresh"
+        ],
+        "storage": true,
+        "network": false,
+        "agent": true,
+        "cron": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "kiro-cli-agent/app.json",
+      "sha256": "13ac2d258f3a3c5f9ad2c1e563aad5593ee0caf7e79be00c41603cf357b654e0",
+      "bytes": 1243,
+      "family": "cli-agents",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "mail-inbox/app.json",
+      "sha256": "323c8fcefb65dba66c0d755ce867266a5c33dfb4c09a77016610e716f7761b31",
+      "bytes": 6479,
+      "family": "inbox",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "storage": true,
+        "network": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "mcp-tools/app.json",
+      "sha256": "c8e5a42a88445179da12881c1dcd12e105d19d4cdb8fca3e730b551142ebd4af",
+      "bytes": 1456,
+      "family": "mcp",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "menu-bar-companion/app.json",
+      "sha256": "177e29a9bd1e0b57a23a21b233fc7219eadf22fd497a9d24ff9b7f32a96aceef",
+      "bytes": 1719,
+      "family": "device",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "api": [
+          "/api/loops",
+          "/api/approvals",
+          "/api/ws"
+        ],
+        "events": [
+          "approval",
+          "approval_resolved"
+        ]
+      }
+    },
+    {
+      "root": "apps",
+      "path": "meta-muse-spark/app.json",
+      "sha256": "fd0a3a9681093603c59a0b0a277f47d99a55d4cd030f62cb9cfb727d5600d266",
+      "bytes": 627,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "minutes/app.json",
+      "sha256": "af70ab24c6aab906c28161fc77a9842083d46f5aad82babfa1eb0514bc953143",
+      "bytes": 7057,
+      "family": "stateful-apps",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "api": [
+          "/api/knowledge",
+          "/api/lexicon",
+          "/api/apps/minutes",
+          "/api/projects",
+          "/api/task-lists",
+          "/api/tasks"
+        ],
+        "events": [
+          "knowledge",
+          "refresh"
+        ],
+        "storage": true,
+        "network": false,
+        "agent": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "mistral-models/app.json",
+      "sha256": "a1f0d4e79e56d48bbfca95a457a42e4e5f64883701206d3587d4060589e3403a",
+      "bytes": 1533,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "ollama-models/app.json",
+      "sha256": "5347fc1b2a6b9b1599c10789cf8194def39d30914249c438a18a8e51045b24b5",
+      "bytes": 4928,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "openai-compatible/app.json",
+      "sha256": "f68b5a29aa3aaac74e2fb432adc5e57adb8532f3ba5321443ba784bebb46ae3e",
+      "bytes": 1603,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "openai-models/app.json",
+      "sha256": "a0a2a0ebc2c259ab22d688996db17cee268a8bde4fd24084ae1f799caefaa4fd",
+      "bytes": 1594,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "openai-tools/app.json",
+      "sha256": "a96a1039d7511bb1e2bb8abd3bbee4d23195bc25b63d9787ee6c87fa3270e64a",
+      "bytes": 1220,
+      "family": "tool-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "openrouter-models/app.json",
+      "sha256": "312a9c0cf24956ed7c8f82f1ffe3eea186e5e41aa29201b522983ab1a817445a",
+      "bytes": 1901,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {
+        "network": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "perplexity-search/app.json",
+      "sha256": "70f41d237a34be7638ebe04d0db4c90008118cf603185fd6a9fbd5aa33ef51d7",
+      "bytes": 1317,
+      "family": "search",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "piper-tts/app.json",
+      "sha256": "6878cd84f34a437e335dcc2a799f63e9a3060d3de1c3905c82ac3a255daf8dfc",
+      "bytes": 601,
+      "family": "speech",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "piper-tts>=1.2",
+          "huggingface-hub>=0.23"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "rsync-sync/app.json",
+      "sha256": "404ea928128721ea07110716fea48574278e482e07ad1d291f1504c2687e2a20",
+      "bytes": 3078,
+      "family": "sync",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "s3-sync/app.json",
+      "sha256": "df42ec309a44f665c3f92418304cc47b711473b521c3fe1049967a09343f40b6",
+      "bytes": 3603,
+      "family": "sync",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "network": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "searxng-search/app.json",
+      "sha256": "a717beb642aeb19dc6fb3776441e3adfc3041baab39a5734216e4932dc643a32",
+      "bytes": 1179,
+      "family": "search",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "sentence-transformers/app.json",
+      "sha256": "f373358b92ca2927a500a265341179b31fc7048bca039c217a22d47c20dfb4f6",
+      "bytes": 750,
+      "family": "embedding",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "sentence-transformers>=3.0",
+          "faiss-cpu>=1.7"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "shared-automations/app.json",
+      "sha256": "03e6c9f5c03efdb354c1f62e598c265a2b0619e50a331b04256b5bc357adb882",
+      "bytes": 1404,
+      "family": "automation",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {
+        "storage": true
+      }
+    },
+    {
+      "root": "apps",
+      "path": "skills-sh/app.json",
+      "sha256": "c5ef0bd808849c7b01a688ffdeff64029ede3ba66f2a43d0dfa762e7867c194a",
+      "bytes": 933,
+      "family": "skill-distribution",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "slack-channel/app.json",
+      "sha256": "181011336f264063f2ff1054c76e986e6f8ebcec3993cf55c52a4e716a2ae73a",
+      "bytes": 4142,
+      "family": "channel",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "slack-sdk>=3.27,<4"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "tavily-search/app.json",
+      "sha256": "0d5367c9154c471888287b3eeec2c1e23d81aabcfcaf198f716dc7b3e03d9e23",
+      "bytes": 1209,
+      "family": "search",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "telegram-channel/app.json",
+      "sha256": "7d86d5d06399d88656d6b93ec7b995a53e576698c5f5707c89062a77e53032d3",
+      "bytes": 1314,
+      "family": "channel",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "together-models/app.json",
+      "sha256": "b546a6d0ed3141d1df7ac1f526b5a0479720a804415e64de115a757e85cb6c2b",
+      "bytes": 1547,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "vllm-models/app.json",
+      "sha256": "58f68e737fc0f2c8511ad780d3deaa702a1ff1f767ffbbe5a27b5e55881b57b5",
+      "bytes": 1238,
+      "family": "model-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {
+        "pythonDependencies": [
+          "openai>=1.0"
+        ]
+      },
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "web-tools/app.json",
+      "sha256": "fd2f2c93fb995001f0ac66017a1887b8d941fa03062851172a6de483db61b596",
+      "bytes": 643,
+      "family": "tool-adapters",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "webhook-action/app.json",
+      "sha256": "b87e0d7c6b8182ad7c6215afe8a9830d1accda549ed9c2679a9d26d859858710",
+      "bytes": 1700,
+      "family": "webhook",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "apps",
+      "path": "wikipedia-search/app.json",
+      "sha256": "22399432d1599a6ddb177969e1a6cc160c68b63a3cb7ec19fa984ae256f6a709",
+      "bytes": 1183,
+      "family": "search",
+      "collection": "external_apps",
+      "manifest_version": "0.1.0",
+      "manifest_dependencies": {},
+      "manifest_permissions": {}
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/artifacts/SKILL.md",
+      "sha256": "3f9c3b28e570fae85233e5ece5984cb3f344397c5b336dfa56faa683768d0d1b",
+      "bytes": 4785,
+      "family": "skill-content",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/best-of-n/SKILL.md",
+      "sha256": "fd8de1ac4fffff09d1bd6383092b35ccd521925ca311dd4214b8c9f5fd9005e0",
+      "bytes": 4894,
+      "family": "skill-lifecycle",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/check-work/SKILL.md",
+      "sha256": "9c5b3594776a44cdf80d80a2de955e582d0beafb3be8b4f4ff0107192e8edade",
+      "bytes": 5280,
+      "family": "curated-skills",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/delegation/SKILL.md",
+      "sha256": "f41d999a0bac80ce71cb4cfdcdf4b2bb47f9b33123eef81725407dfda214f220",
+      "bytes": 3861,
+      "family": "skill-lifecycle",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/document-authoring/SKILL.md",
+      "sha256": "801f1f8766b9e95343968c641b4122573157527215a1ab27288a603d880fbdc0",
+      "bytes": 3907,
+      "family": "curated-skills",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/editorial-document/SKILL.md",
+      "sha256": "574470b678f2891822e9e90f4d812d741c272c5e7f68a9d4f69e255d3704337b",
+      "bytes": 5323,
+      "family": "skill-content",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/gideon-api/SKILL.md",
+      "sha256": "82ebbb21f8eaa86295bb6109f6879b7c0b64d97a95e07708f1f30518f9b87ff0",
+      "bytes": 5563,
+      "family": "skill-product-docs",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/gideon-features/SKILL.md",
+      "sha256": "2f552a547e775e7ae39f85c4fb3a9b6fa0623525b194c7fd09fb92f62bf38c89",
+      "bytes": 5719,
+      "family": "skill-product-docs",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/grill/SKILL.md",
+      "sha256": "dca4cb7797bed2534ed83ddea04a7e211ec355387aaf45278e1db96438f95b74",
+      "bytes": 2261,
+      "family": "skill-content",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/infographic-syntax/SKILL.md",
+      "sha256": "2a2e0f4cfe355097d93d66bfd9a68e8d53d03cccf154702a046e666129f2fa7c",
+      "bytes": 4367,
+      "family": "skill-content",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/knowledge-grounding/SKILL.md",
+      "sha256": "21b48d98b3270f5ea14b14e972826fc0f03e3ab2be16e22e814a13de56a6ce36",
+      "bytes": 3404,
+      "family": "curated-skills",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/loop-worker/SKILL.md",
+      "sha256": "2ab9689bfbbe65c4cbf31632fb5055a239ce3cd2cb372f9647e0f1e6c8b30274",
+      "bytes": 8200,
+      "family": "skill-lifecycle",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/memory-discipline/SKILL.md",
+      "sha256": "d782857d27827210352bda8fd5950efef054b1130716cce01de6098fc6a4a6c1",
+      "bytes": 4282,
+      "family": "skill-lifecycle",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/research-campaign/SKILL.md",
+      "sha256": "4e26eb98ec97859eb27f4db78ee4680b2b5c9a920e122e6aa75e77746be8bf14",
+      "bytes": 5042,
+      "family": "curated-skills",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/task-and-project/SKILL.md",
+      "sha256": "a6a3e0dbcc8111e39ad0fce59397855eee6a7300ca7e975e60e5a3f84e925d63",
+      "bytes": 4546,
+      "family": "skill-lifecycle",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/visual-output/SKILL.md",
+      "sha256": "1a4536652d50bf4b04e03d659054eee8bb8ade4f68d45703057af4164e5479b9",
+      "bytes": 16951,
+      "family": "skill-content",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/skills/bundled/web-verify/SKILL.md",
+      "sha256": "19e0010587fe71429ebb933afd4a3f84de3cde73b58a3e863f76cf0ad6e08503",
+      "bytes": 4282,
+      "family": "skill-content",
+      "collection": "skills"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/audit-sweep/workflow.json",
+      "sha256": "2047cf812e050e049e5e0fbbae7edf0f30e766cc08e8ed67eaf1e86b7912978d",
+      "bytes": 5839,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/code-project/workflow.json",
+      "sha256": "a99048bdba729ea65920fdbc7518959b66a4ed6ce10c05aa0adf73f9eedcd9b0",
+      "bytes": 16561,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/contradiction-review/workflow.json",
+      "sha256": "d3fb2bf694f82997040da5c5e012eaca73224d2aa85f0ba5f6c530594a6de28b",
+      "bytes": 4091,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/decision-review/workflow.json",
+      "sha256": "8fbc3725916f898d9e95b777a372b394ff93a5208dea81cb87725d3e8b671a23",
+      "bytes": 3567,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/deep-research/workflow.json",
+      "sha256": "f8fce9f1fdd64c3fe2abbe35fe940c3bc60276a91c8e4f53103613419b8ec981",
+      "bytes": 5715,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/design-project/workflow.json",
+      "sha256": "428da5b77f645d86fc65de2878ba4dc46d074376b9b76f2f17f4913b0eb5684d",
+      "bytes": 8963,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/design-review/workflow.json",
+      "sha256": "08f1b872450389e16db5b7e9142bcd55b9c077ec5a65511da192f6218ec4beb4",
+      "bytes": 3194,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/diagnose-run/workflow.json",
+      "sha256": "68f42ecebc608c877aa7f944cac2077bfa496b831777a7f3e66e534c36c57503",
+      "bytes": 6978,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/dual-sink-watcher/workflow.json",
+      "sha256": "1573c91a7050cc7dc0a9edbc69c05ded95ccce3f5c94fc1c621079a2c60a46ea",
+      "bytes": 8428,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/gap-healing/workflow.json",
+      "sha256": "228ebd423a958071f7688634d04a42c81d2065405f2f8bd73d1f6570467bf5eb",
+      "bytes": 3947,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/general-project/workflow.json",
+      "sha256": "cd2934c6ea29ffbd20fed73885fd7eee4d79abd45556dc9d2b1f12e87bda9aff",
+      "bytes": 5718,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/goal-pursuit-monitor/workflow.json",
+      "sha256": "cb4be4755b6f8ec7a014850dc876e77eef6d2d9f70199cc5c8e1e0fba6479bfb",
+      "bytes": 7960,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/goal-pursuit-open-ended/workflow.json",
+      "sha256": "bcfb7ccfd96a253b3e43b5d342b248ee22cdd05fb312f7a33ceb189201db48f1",
+      "bytes": 9804,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/goal-pursuit-verifiable/workflow.json",
+      "sha256": "f604b6c20409677d24ea210aa019a1bd7b2d587d29e28a0dd23e21237f49091b",
+      "bytes": 7747,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/knowledge-health/workflow.json",
+      "sha256": "4e5a260ffbf801f0026b052105a77863fc3388f297039950cd12ff65e476169e",
+      "bytes": 2233,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/knowledge-lint/workflow.json",
+      "sha256": "986130791e869413e20db79e8cdef49acbbc638bf9e4eceb911a8a377f0642dd",
+      "bytes": 4963,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/knowledge-synthesis/workflow.json",
+      "sha256": "af3deba6aa39170f582440ee82aedf79053420e332535db0464e8e002bc66245",
+      "bytes": 4356,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/market-monitor/workflow.json",
+      "sha256": "cd40f12a9ec141bd35a21740c1d38932d5c11356aa1594dcc439c9528f20b293",
+      "bytes": 8971,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/morning-triage/workflow.json",
+      "sha256": "8785041ea93f691336efb7b328551775014dfdf24356affd3c432a3e6bb7577f",
+      "bytes": 2692,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/optimize-harness/workflow.json",
+      "sha256": "788f3224502a75b4fa697dd250274c1e358cffbc1fd3a171b721ba6414d72bd0",
+      "bytes": 12010,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/paper-ingest/workflow.json",
+      "sha256": "2b9ff61b6d5ee14381f75500247941617b346bfa3e914f62ece2ebdc4ccc7767",
+      "bytes": 10807,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/produce-and-audit/workflow.json",
+      "sha256": "c9b875e3f75211358eaf4cb0b90711ca98df102964ee01eb856fa4577049f6b3",
+      "bytes": 5214,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/project-planning/workflow.json",
+      "sha256": "54ad658d6e2464fa59aa25038fce47a944cbe55d67b952d17a97b9217315f9c3",
+      "bytes": 5925,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/publish-article/workflow.json",
+      "sha256": "7daba5717bf7d1180d352aaa5fd9922a1ff9008be1ca71e40ecbffe146dd7632",
+      "bytes": 8066,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/refine-template/workflow.json",
+      "sha256": "b1a970abc0b61b38dfc34127bac09c6ac96c1b61ba9a7ef8ed19f216d7b2a274",
+      "bytes": 3475,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/rich-ingest/workflow.json",
+      "sha256": "7304aae6f80c637cb70f4f996073e83e0d493e6bc5cacc264288f96b85069c02",
+      "bytes": 11989,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/self-qa/workflow.json",
+      "sha256": "b6b25d65ab826eee83226225905e041200699735de2b4ef6b60ebf2a6cf7fcc4",
+      "bytes": 14259,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/thesis-tracker/workflow.json",
+      "sha256": "7f807725fd2c6df71cc0afb41a766e0736d57439686e0ffc602a1a717d79defb",
+      "bytes": 4692,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/workflows/bundled/trending-repo-digest/workflow.json",
+      "sha256": "4f7a81e799d6e38056574b3644029787da85f888e52c54368b1a3931063c5241",
+      "bytes": 9367,
+      "family": "workflow-content",
+      "collection": "workflows"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/sources/recipes/changelog-page.json",
+      "sha256": "28fe2ef127f277c8562b6cde4ede5cdcdcf5811104208dcd5c42075851a1b2dc",
+      "bytes": 713,
+      "family": "recipes",
+      "collection": "recipes"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/sources/recipes/github-releases.json",
+      "sha256": "d06b420125a19027a9f3d69ea574bf997b65f428967d28b73c446c5c35edb2ef",
+      "bytes": 866,
+      "family": "recipes",
+      "collection": "recipes"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/sources/recipes/github-trending.json",
+      "sha256": "c4d8b537d0c49d5b1a02b486d114e7022c329b545acc3d2ec33c6b6f6473b8ce",
+      "bytes": 630,
+      "family": "recipes",
+      "collection": "recipes"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/sources/recipes/hacker-news.json",
+      "sha256": "59c1b1661c2ce6aa918edce2e842e79d0a3bd2acdb1293d3d62331c584df3c5b",
+      "bytes": 548,
+      "family": "recipes",
+      "collection": "recipes"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/sources/recipes/pypi-releases.json",
+      "sha256": "9477a702a6d0a01b3734ebfad6960732b6c48c2997833157a932161774c2570c",
+      "bytes": 590,
+      "family": "recipes",
+      "collection": "recipes"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/sources/recipes/reddit-subreddit.json",
+      "sha256": "4cd0b99e106e544db9f617606df25dd77a4e8dc431925d9ce06fbc72d5427f1a",
+      "bytes": 601,
+      "family": "recipes",
+      "collection": "recipes"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/sources/recipes/substack-newsletter.json",
+      "sha256": "ff5ef755114fa9b358367fd073ab86cfd6932e7c7862c2db88cb31ecd547dade",
+      "bytes": 603,
+      "family": "recipes",
+      "collection": "recipes"
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/__init__.py",
+      "sha256": "934d4c78d723c761e877fbae928840efd3b1b1db5b047b1cfb9d1938fc2aa795",
+      "bytes": 1500,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "gideon.documents.deck_json",
+        "gideon.documents.model",
+        "gideon.documents.model_json",
+        "gideon.documents.registry",
+        "gideon.documents.sheet_json"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/deck_json.py",
+      "sha256": "ec5d18ec14b884f806ee0e1658baa52cd2e544bd66ed8278309222d985292e6f",
+      "bytes": 4636,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "dataclasses",
+        "gideon.documents.model",
+        "gideon.documents.model_json",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/docx_parser.py",
+      "sha256": "f345171b45bda61119a3e4fba6d038a4919d38d78d05619d7c3cfbd058d78e8f",
+      "bytes": 53648,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "dataclasses",
+        "docx",
+        "docx.table",
+        "docx.text.hyperlink",
+        "docx.text.paragraph",
+        "gideon.documents.model",
+        "io",
+        "re",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/from_markup.py",
+      "sha256": "cda05931a0185dd6d25ce9c2e8238f55463bd140e8b0afa8028c94ee16ff6268",
+      "bytes": 13346,
+      "family": "document-io",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "dataclasses",
+        "gideon.documents.model",
+        "gideon.security",
+        "gideon.web.extract",
+        "html2text",
+        "re"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/model.py",
+      "sha256": "8c96a455448ace981bf02ee6893e176d5b49a0c2ddb0466013bd089b6035a88b",
+      "bytes": 18605,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "collections.abc",
+        "dataclasses"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/model_codec.py",
+      "sha256": "3fc3c94952a1b3eb9e3a4cd477fce7e0f8f50b170769885b9fd919504c749006",
+      "bytes": 3777,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "collections.abc",
+        "dataclasses",
+        "gideon.documents.deck_json",
+        "gideon.documents.docx_parser",
+        "gideon.documents.model_json",
+        "gideon.documents.pptx_parser",
+        "gideon.documents.sheet_json",
+        "gideon.documents.xlsx_parser",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/model_json.py",
+      "sha256": "acddefddff3d2d00552e60f011e6303959eb013597d997e6ce187a6727371338",
+      "bytes": 9186,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "collections.abc",
+        "dataclasses",
+        "gideon.documents.model",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/pptx_parser.py",
+      "sha256": "aec009077bfee23c705ebe618f3245f7c8bd268a60197c6f8500d09a1eccfff7",
+      "bytes": 11153,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "gideon.documents.docx_parser",
+        "gideon.documents.model",
+        "gideon.documents.pptx_shapes",
+        "io",
+        "pptx",
+        "pptx.enum.dml",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/pptx_shapes.py",
+      "sha256": "664e99085bae5cab47774e3b5604ba3e94267a5f86a77275a2444b6e1887a877",
+      "bytes": 1870,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/registry.py",
+      "sha256": "ec71b5f8608b3e90b8be918606f108be31d50add1fb2599f5ddec85a7e7aa90f",
+      "bytes": 2194,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "collections.abc",
+        "logging"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/sheet_json.py",
+      "sha256": "08ceff6ddb9efad649488a0b20b953cbd0fa55181809b19b50896b23557202dc",
+      "bytes": 4925,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "dataclasses",
+        "gideon.documents.model",
+        "gideon.documents.model_json",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/writers/__init__.py",
+      "sha256": "3885a124999e5f62a741d0f2e805c8dc24bf34423f6bf4007ce06ec6a2582de8",
+      "bytes": 90,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": []
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/writers/docx_writer.py",
+      "sha256": "32ea3e35b1a8ce375854db971b11e1bb4cb7da3205579d4fb413f92cf8c07073",
+      "bytes": 13146,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "docx",
+        "docx.enum.section",
+        "docx.enum.text",
+        "docx.opc.constants",
+        "docx.oxml",
+        "docx.oxml.ns",
+        "docx.shared",
+        "gideon.documents.model",
+        "gideon.documents.registry",
+        "io"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/writers/pdf_writer.py",
+      "sha256": "3d3f97fc579eebafcfd5a81ce5b1fea13d3e61e6c6547e0ee63036bce3ae0186",
+      "bytes": 6499,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "gideon.documents.model",
+        "gideon.documents.registry",
+        "io",
+        "reportlab.lib",
+        "reportlab.lib.enums",
+        "reportlab.lib.pagesizes",
+        "reportlab.lib.styles",
+        "reportlab.lib.units",
+        "reportlab.platypus"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/writers/pptx_writer.py",
+      "sha256": "c3b2a3f8cd65706f545613d777877d94afbf1a4cf771fa842970020b8cc3402e",
+      "bytes": 5102,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "gideon.documents.model",
+        "gideon.documents.pptx_shapes",
+        "gideon.documents.registry",
+        "io",
+        "pptx",
+        "pptx.util"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/writers/xlsx_writer.py",
+      "sha256": "8b741c631a197cf3829f06b07743b71a763116a517029879f5750742ff548bc3",
+      "bytes": 4877,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "gideon.documents.model",
+        "gideon.documents.registry",
+        "io",
+        "openpyxl",
+        "openpyxl.styles",
+        "openpyxl.utils",
+        "openpyxl.worksheet.worksheet",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/documents/xlsx_parser.py",
+      "sha256": "02918d52f50c4451184ad2dc8fa2b768601cb2ba4c979fd329156f56f9f55559",
+      "bytes": 11708,
+      "family": "documents",
+      "collection": "documents",
+      "python_imports": [
+        "__future__",
+        "datetime",
+        "decimal",
+        "gideon.documents.docx_parser",
+        "gideon.documents.model",
+        "io",
+        "openpyxl",
+        "openpyxl.utils",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/tool_providers/projection.py",
+      "sha256": "31895d8a3b2994aea41e172aed73cd2867d777448cc6aedd7ab79194afb226bb",
+      "bytes": 33234,
+      "family": "projection",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "ast",
+        "contextvars",
+        "dataclasses",
+        "datetime",
+        "gideon.tool_providers",
+        "gideon.tool_providers.base",
+        "json",
+        "logging",
+        "pathlib",
+        "re"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/tool_providers/base.py",
+      "sha256": "4e7eec57de616d741b00bb14e2f7b6b81927497f7a9b4ce00940b9489cba6199",
+      "bytes": 6332,
+      "family": "projection",
+      "collection": "selected_support",
+      "python_imports": [
+        "abc",
+        "dataclasses",
+        "enum",
+        "gideon.errors",
+        "typing"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/knowledge/readers.py",
+      "sha256": "5882604f6efb8590f07bef36c2a280c23f0215b061a68d1805b58564435c761e",
+      "bytes": 21818,
+      "family": "document-io",
+      "collection": "selected_support",
+      "python_imports": [
+        "csv",
+        "dataclasses",
+        "docx",
+        "gideon.knowledge.connectors.base",
+        "gideon.security",
+        "html2text",
+        "openpyxl",
+        "os",
+        "pathlib",
+        "pdfplumber",
+        "pptx",
+        "re"
+      ]
+    },
+    {
+      "root": "core",
+      "path": "src/gideon/triggers/web_poll.py",
+      "sha256": "1de45019a3a5aec41630dcc23c8899ebdc2e6631087d6590e8de41bcdf8c2931",
+      "bytes": 32272,
+      "family": "monitor-controller",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "asyncio",
+        "concurrent.futures",
+        "dataclasses",
+        "gideon.atomic_write",
+        "gideon.config.loader",
+        "gideon.guardrails.policy",
+        "gideon.knowledge",
+        "gideon.net",
+        "gideon.net.policy",
+        "gideon.security",
+        "gideon.triggers.provider",
+        "gideon.web.render",
+        "hashlib",
+        "json",
+        "logging",
+        "pathlib",
+        "re",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "brave-search/provider.py",
+      "sha256": "34ba29ef7d4715492a8f0c944b83a6ed93947d6979df0e2325a940553c67d16b",
+      "bytes": 5129,
+      "family": "search",
+      "collection": "selected_support",
+      "python_imports": [
+        "gideon.sdk.net",
+        "gideon.sdk.search",
+        "json",
+        "logging",
+        "os",
+        "typing",
+        "urllib.parse"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "tavily-search/provider.py",
+      "sha256": "c594c139dfe6dd5034333e9a5e5bdd41bb532704beef96b9f57eb286e1f5ab66",
+      "bytes": 7234,
+      "family": "search",
+      "collection": "selected_support",
+      "python_imports": [
+        "gideon.sdk.net",
+        "gideon.sdk.search",
+        "json",
+        "logging",
+        "os",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "faster-whisper/provider.py",
+      "sha256": "27911fd42142f0802696848fc28e424ae928dc32810e2d3f05a5030b3b5516af",
+      "bytes": 8978,
+      "family": "speech",
+      "collection": "selected_support",
+      "python_imports": [
+        "asyncio",
+        "faster_whisper",
+        "gideon.sdk.local_model",
+        "gideon.sdk.stt",
+        "inspect",
+        "os",
+        "pathlib",
+        "shutil",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "piper-tts/provider.py",
+      "sha256": "8f9d99520b944fdbb401d8e72e8e8c6e5ea5a58e49db67bc57639e0b650f21b6",
+      "bytes": 10504,
+      "family": "speech",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "asyncio",
+        "gideon.sdk.tts",
+        "gideon.sdk.util",
+        "huggingface_hub",
+        "logging",
+        "os",
+        "pathlib",
+        "shutil",
+        "sys",
+        "tempfile",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "email-channel/email_runtime/mime.py",
+      "sha256": "10150463a3bcf830ddeb3c001ea3ad446d0f2ed22a0643a5c44ba7f4096dff3f",
+      "bytes": 16687,
+      "family": "inbox",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "email.header",
+        "email.message",
+        "email.policy",
+        "email.utils",
+        "html.parser",
+        "logging",
+        "re"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "email-channel/email_runtime/imap_client.py",
+      "sha256": "5c60b701415a1cff22c304792c6caf0ff49077ac0e3158b504a613e69aa90fc2",
+      "bytes": 9144,
+      "family": "inbox",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "imaplib",
+        "logging",
+        "re",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "email-channel/email_runtime/smtp_client.py",
+      "sha256": "8c91926b33f9618bcc9218299743c1f7b83cc7de38c616156e13dbba0aec1813",
+      "bytes": 4684,
+      "family": "inbox",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "email.message",
+        "logging",
+        "smtplib",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "mail-inbox/mail_inbox_runtime/mime.py",
+      "sha256": "717e3c00fbba4037e7fe328863120e286daf70231e6443a5626682320c685ac5",
+      "bytes": 6095,
+      "family": "inbox",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "email.message",
+        "gideon.sdk.channel",
+        "html.parser",
+        "logging",
+        "os",
+        "tempfile"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "mail-inbox/mail_inbox_runtime/imap_client.py",
+      "sha256": "bc3b695d36dd806d8418c81b5ce3711491d62a43ea4648fdcfb6a5a644b29c59",
+      "bytes": 5191,
+      "family": "inbox",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "imaplib",
+        "logging",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "mail-inbox/mail_inbox_runtime/smtp_client.py",
+      "sha256": "cbd2f7a474b242fc1eabd50dfaadc7cebb6ac2136ac3f4abb09d73785f04f990",
+      "bytes": 6138,
+      "family": "inbox",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "email.message",
+        "logging",
+        "smtplib",
+        "typing"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "minutes/backend/server.py",
+      "sha256": "4343274c210760b0c14b0153065c88d9c8021f6e880371bfddc7ec31754fdb37",
+      "bytes": 26093,
+      "family": "stateful-apps",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "aiohttp",
+        "gideon.sdk.security",
+        "json",
+        "os",
+        "pathlib",
+        "re",
+        "sqlite3",
+        "time"
+      ]
+    },
+    {
+      "root": "apps",
+      "path": "growth/backend/server.py",
+      "sha256": "90db514560c6ce2b20a04d2a13f5c03b26e2fffc26f23cdf1b9634f44ce5fb57",
+      "bytes": 21613,
+      "family": "stateful-apps",
+      "collection": "selected_support",
+      "python_imports": [
+        "__future__",
+        "aiohttp",
+        "gideon.sdk.security",
+        "json",
+        "os",
+        "pathlib",
+        "re",
+        "sqlite3",
+        "time"
+      ]
+    }
+  ],
+  "licenses": [
+    {
+      "root": "core",
+      "path": "LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Copyright (c) 2026 Gideon contributors"
+    },
+    {
+      "root": "apps",
+      "path": "LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Copyright (c) 2026 Gideon contributors"
+    },
+    {
+      "root": "apps",
+      "path": "claude-subscription/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "brave-search/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "exa-search/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "perplexity-search/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "tavily-search/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "wikipedia-search/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "gemini-cli-agent/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "kiro-cli-agent/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "a2a-action/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "fal-image/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "dir-sync/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "git-sync/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "rsync-sync/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "s3-sync/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "discord-channel/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "email-channel/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "slack-channel/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "telegram-channel/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "mail-inbox/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "skills-sh/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "shared-automations/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    },
+    {
+      "root": "apps",
+      "path": "menu-bar-companion/LICENSE",
+      "sha256": "232a155d83967ee665d628a37d7dbf7a11d6b9fdaa98dd29574a8276ee8e4f4f",
+      "license": "MIT",
+      "notice": "Preserve the source notice verbatim when importing"
+    }
+  ],
+  "dependency_lock": {
+    "root": "core",
+    "path": "uv.lock",
+    "sha256": "82d38d68aaa750042d855565d69f7c44b16b59b9141a10a2976ddbaa6501f0d5",
+    "versions": {
+      "et-xmlfile": "2.0.0",
+      "lxml": "6.1.1",
+      "openpyxl": "3.1.5",
+      "pdfplumber": "0.11.10",
+      "pillow": "12.3.0",
+      "python-docx": "1.2.0",
+      "python-pptx": "1.0.2",
+      "reportlab": "4.5.1"
+    },
+    "license_status": "Dependency and model licenses require separate verification before packaging; root MIT does not relicense dependencies"
+  },
+  "first_slice": {
+    "skills": [
+      {
+        "id": "document-authoring",
+        "required_tools": [
+          "write"
+        ],
+        "source": "src/gideon/skills/bundled/document-authoring/SKILL.md"
+      },
+      {
+        "id": "knowledge-grounding",
+        "required_tools": [
+          "memory_search",
+          "memory_get"
+        ],
+        "source": "src/gideon/skills/bundled/knowledge-grounding/SKILL.md"
+      },
+      {
+        "id": "check-work",
+        "required_tools": [
+          "read",
+          "bash"
+        ],
+        "source": "src/gideon/skills/bundled/check-work/SKILL.md"
+      },
+      {
+        "id": "research-campaign",
+        "required_tools": [
+          "read",
+          "web_fetch"
+        ],
+        "source": "src/gideon/skills/bundled/research-campaign/SKILL.md"
+      }
+    ],
+    "writer": "xlsx",
+    "package_destination": "packaging/python/keith_documents",
+    "package_destination_status": "proposed_not_created",
+    "package_files": [
+      "src/gideon/documents/model.py",
+      "src/gideon/documents/model_json.py",
+      "src/gideon/documents/sheet_json.py",
+      "src/gideon/documents/registry.py",
+      "src/gideon/documents/writers/xlsx_writer.py"
+    ],
+    "dependencies": [
+      "openpyxl",
+      "et-xmlfile"
+    ],
+    "changed_imports": [
+      "Rename gideon.documents imports to the extracted package namespace",
+      "Use thin __init__.py; original package imports every model codec",
+      "Limit lazy writer registration to packaged formats; distinguish unavailable dependency from implementation error",
+      "Do not import model_codec.py/parsers, from_markup.py/security/web or any Gideon runtime store"
+    ],
+    "projection": "src/gideon/tool_providers/projection.py::_project_log",
+    "reader": "src/gideon/documents/docx_parser.py",
+    "search": "brave-search/provider.py",
+    "monitor": "src/gideon/knowledge/sources/recipes/github-releases.json",
+    "speech": [
+      "faster-whisper/provider.py",
+      "piper-tts/provider.py"
+    ],
+    "inbox": "mail-inbox/mail_inbox_runtime/mime.py",
+    "later_formats": [
+      "docx",
+      "pptx",
+      "pdf"
+    ],
+    "deferred_skill": "web-verify",
+    "deferred_skill_reason": "Current browser tool navigates and returns semantic observations; clicks, screenshots and console proof need an actually ready interaction tool",
+    "manifest_format": "TOML front matter delimited by +++",
+    "manifest_fields": [
+      "id",
+      "version",
+      "description",
+      "triggers",
+      "inputs",
+      "steps",
+      "required_tools",
+      "validation",
+      "known_failures",
+      "stop_conditions",
+      "platforms"
+    ]
+  },
+  "keith_entrypoints": [
+    {
+      "path": "crates/skills/src/lib.rs",
+      "anchors": [
+        "pub struct SkillManifest",
+        "pub struct SkillRegistry",
+        "pub fn select("
+      ]
+    },
+    {
+      "path": "crates/local-runtime/src/lib.rs",
+      "anchors": [
+        "fn tool_manager(",
+        "struct KernelTool",
+        "fn prompt_with_artifacts(",
+        "fn create_artifact("
+      ]
+    },
+    {
+      "path": "crates/kernel-broker/src/lib.rs",
+      "anchors": [
+        "pub struct KernelBroker",
+        "pub fn start(",
+        "pub fn execute(",
+        "pub fn interrupt("
+      ]
+    },
+    {
+      "path": "crates/kernel-protocol/src/lib.rs",
+      "anchors": [
+        "pub enum BridgeOperation",
+        "CreateArtifact {",
+        "pub enum BridgeCapability"
+      ]
+    },
+    {
+      "path": "crates/artifacts/src/lib.rs",
+      "anchors": [
+        "pub struct ArtifactService",
+        "pub fn create(",
+        "pub fn download(",
+        "fn preview("
+      ]
+    },
+    {
+      "path": "crates/channel-adapters/src/email.rs",
+      "anchors": [
+        "pub struct EmailAdapter",
+        "pub struct EmailConfig",
+        "pub struct EmailCursor"
+      ]
+    },
+    {
+      "path": "crates/channel-adapters/src/lib.rs",
+      "anchors": [
+        "pub enum ChannelAdapterKind"
+      ]
+    },
+    {
+      "path": "crates/scheduler/src/lib.rs",
+      "anchors": [
+        "pub struct Scheduler",
+        "pub fn create(",
+        "pub fn tick("
+      ]
+    },
+    {
+      "path": "crates/web/src/fetch.rs",
+      "anchors": [
+        "pub struct SafeWebClient",
+        "pub fn fetch("
+      ]
+    },
+    {
+      "path": "crates/credentials/src/lib.rs",
+      "anchors": [
+        "pub struct CredentialRef"
+      ]
+    },
+    {
+      "path": "apps/agent-web/ui/components/KeithApp.tsx",
+      "anchors": [
+        "Prepare export"
+      ]
+    }
+  ],
+  "out_of_scope": [
+    "Gideon gateway, memory/session stores, approvals, updater, shared-venv installer and independent agent loop",
+    "Minutes/Growth product state and UI, full workflow editor, sync and device companion migration",
+    "Runtime or packaged-capability qualification from source inventory"
+  ],
+  "unverified": [
+    "All imported-capability runtime journeys",
+    "Cross-platform package footprint and dependency/model license qualification",
+    "Live provider credentials and disposable channel recipients",
+    "Ordinary Web generated-document download and restart journey"
+  ]
+}

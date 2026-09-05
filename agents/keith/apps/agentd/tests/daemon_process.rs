@@ -1,16 +1,16 @@
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::{ErrorKind, Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{Mutex, MutexGuard, OnceLock};
+use std::sync::{Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use keith_agent_types::{
-    CURRENT_PROTOCOL_VERSION, CURRENT_SCHEMA_VERSION, ClientId, CommandId, EntityId, ProfileId,
-    RootTreeId, SessionId, StableKey, UtcTimestamp, WorkerId,
+    CURRENT_PROTOCOL_VERSION, CURRENT_SCHEMA_VERSION, ClientId, CommandId, EntityId, ErrorCode,
+    ProfileId, Revision, RootTreeId, SessionId, UtcTimestamp, WorkerId,
 };
 use keith_agent_web::{PlatformCompatibilityConfig, WebServer, WebServerConfig};
 use keith_connection::{
@@ -23,30 +23,34 @@ use keith_credentials::{
 };
 use keith_daemon_core::RootManifest;
 use keith_local_runtime::{LocalRuntimeLaunchConfig, RuntimeCredentialKeySource};
-use keith_protocol::{
-    AgentLifecycleCommand, AttachSession, ClientCommand, ClientHello, CommandEnvelope,
-    CommandResult, ConversationCommand, ConversationMembershipAction,
-    ConversationMembershipRequest, ConversationPageRequest, ConversationParticipantPrincipal,
-    ConversationParticipantRole, CreateGoal, CreateGroupCommand, DaemonEvent, DeliveryPolicy,
-    GoalLimits, GroupMentionModeCommand, ProfileRevisionCommand, ResponsePayload, SessionFilter,
-    SessionState, SubmitPrompt, TeammatesCommand, WireFormat, WireMessage,
+use keith_platform_contracts::{
+    ActionRisk, ApprovalEnvelope, ApprovalId, ApprovalState, AuditCorrelationId, CancellationId,
+    Capability, ExternalAction, ExternalEffect, ExternalPrincipalId, LifecycleState, RedactedText,
 };
+use keith_protocol::{
+    AttachSession, ClientCommand, ClientHello, CommandEnvelope, CommandResult, CreateGoal,
+    DaemonEvent, ForkSession, GoalLimits, IntegrationAvailabilityProjection, IntegrationCommand,
+    IntegrationMutation, IntegrationOperation, IntegrationService, ResponsePayload, SessionFilter,
+    SessionState, WireFormat, WireMessage,
+};
+use keith_runtime_api::{ActiveServiceOperation, ServiceControl, ServiceRegistration};
 use keith_self_evolution::{
     DaemonRestartConsent, DaemonStaging, DaemonStagingPhase, EvolutionGuard, GateKind, GateResult,
     StagingRequest, ToolchainIdentity, WorkerImage, WorkerImageManifest,
 };
+use keith_state_store::{EmbeddedStore, FileBackupHook};
+use keith_state_store_core::{
+    AtomicStateRepository, Collection, RecordMutation, VersionedRecord, WritePrecondition,
+};
 use keith_worker_runtime::{WorkerRunState, read_registration, registration_path};
 
-const DAEMON_COMMAND_TIMEOUT: Duration = Duration::from_secs(10);
+static DAEMON_PROCESS_TEST_LOCK: Mutex<()> = Mutex::new(());
 
-fn process_test_guard() -> MutexGuard<'static, ()> {
-    static PROCESS_TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    PROCESS_TEST_LOCK
-        .get_or_init(|| Mutex::new(()))
+fn serial_daemon_process_test() -> MutexGuard<'static, ()> {
+    DAEMON_PROCESS_TEST_LOCK
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
-
 #[cfg(unix)]
 use nix::sys::signal::{Signal, kill};
 #[cfg(unix)]
@@ -66,7 +70,6 @@ fn write_manifest(
         version: CURRENT_SCHEMA_VERSION,
         root_tree_id: root.clone(),
         root_session_id: session.clone(),
-        session_aliases: Vec::new(),
         profile_id: profile_id.clone(),
         title: Some(format!("root {root}")),
         state: SessionState::Dormant,
@@ -121,14 +124,41 @@ fn seed_provider_credential(launch: &LocalRuntimeLaunchConfig) {
 }
 
 fn start_daemon(data_root: &Path, socket: &Path) -> Child {
-    start_daemon_with_runtime(data_root, socket, None)
+    Command::new(env!("CARGO_BIN_EXE_agentd"))
+        .arg("--data-root")
+        .arg(data_root)
+        .arg("--socket")
+        .arg(socket)
+        .arg("--worker-executable")
+        .arg(env!("CARGO_BIN_EXE_keith-daemon-worker-host"))
+        .arg("--idle-seconds")
+        .arg("60")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap()
 }
 
-fn start_daemon_with_runtime(
-    data_root: &Path,
-    socket: &Path,
-    runtime: Option<&LocalRuntimeLaunchConfig>,
-) -> Child {
+fn start_daemon_child(data_root: &Path, socket: &Path) -> Child {
+    Command::new(env!("CARGO_BIN_EXE_agentd"))
+        .arg("--data-root")
+        .arg(data_root)
+        .arg("--socket")
+        .arg(socket)
+        .arg("--worker-executable")
+        .arg(env!("CARGO_BIN_EXE_keith-daemon-worker-host"))
+        .arg("--idle-seconds")
+        .arg("60")
+        .env("KEITH_DAEMON_CHILD", "1")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap()
+}
+
+fn start_integration_daemon_child(data_root: &Path, socket: &Path, services: &[&str]) -> Child {
     let mut command = Command::new(env!("CARGO_BIN_EXE_agentd"));
     command
         .arg("--data-root")
@@ -138,42 +168,23 @@ fn start_daemon_with_runtime(
         .arg("--worker-executable")
         .arg(env!("CARGO_BIN_EXE_keith-daemon-worker-host"))
         .arg("--idle-seconds")
-        .arg("60");
-    if let Some(runtime) = runtime {
-        command
-            .arg("--credential-root")
-            .arg(&runtime.credential_root)
-            .arg("--workspace-root")
-            .arg(&runtime.workspace_root)
-            .arg("--openai-base-url")
-            .arg(&runtime.openai_base_url)
-            .arg("--anthropic-base-url")
-            .arg(&runtime.anthropic_base_url);
-        for (provider, base_url) in &runtime.provider_base_urls {
-            command
-                .arg("--provider-base-url")
-                .arg(format!("{provider}={base_url}"));
-        }
-    }
-    command
+        .arg("60")
+        .env("KEITH_DAEMON_CHILD", "1")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .unwrap()
+        .stderr(Stdio::inherit());
+    for service in services {
+        command.arg("--enable-service").arg(service);
+    }
+    command.spawn().unwrap()
 }
 
 fn connect_when_ready(socket: &Path) -> LocalStream {
-    // Debug daemon and worker images are each hundreds of MiB. First launch durably publishes and
-    // fsyncs both before exposing the socket; four process tests can concurrently write roughly
-    // four GiB. Budget 120 seconds for that real publication without weakening command timeouts.
-    let deadline = Instant::now() + Duration::from_secs(120);
+    let deadline = Instant::now() + Duration::from_secs(5);
     loop {
         if let Ok(stream) = connect_local(socket) {
-            // Session attachment synchronously starts a worker (whose contract permits five
-            // seconds), authenticates its control channel, and restores its snapshot.
-            set_local_read_timeout(&stream, Some(DAEMON_COMMAND_TIMEOUT)).unwrap();
-            set_local_write_timeout(&stream, Some(DAEMON_COMMAND_TIMEOUT)).unwrap();
+            set_local_read_timeout(&stream, Some(Duration::from_secs(2))).unwrap();
+            set_local_write_timeout(&stream, Some(Duration::from_secs(2))).unwrap();
             return stream;
         }
         assert!(
@@ -184,27 +195,58 @@ fn connect_when_ready(socket: &Path) -> LocalStream {
     }
 }
 
-fn open_connection(socket: &Path) -> (FramedTransport<LocalStream>, ClientId) {
-    let deadline = Instant::now() + DAEMON_COMMAND_TIMEOUT;
+fn connect_child_when_ready(socket: &Path, child: &mut Child) -> LocalStream {
+    let deadline = Instant::now() + Duration::from_secs(120);
     loop {
-        let mut transport = FramedTransport::new(connect_when_ready(socket), WireFormat::Json);
-        let client_id = ClientId::new();
-        let hello = WireMessage::ClientHello(ClientHello {
-            protocol: CURRENT_PROTOCOL_VERSION,
-            client_id: client_id.clone(),
-            client_name: "daemon-process-test".into(),
-            client_version: "1.0.0".into(),
-            supported_features: BTreeSet::new(),
-            resume: None,
-        });
-        if transport.send(&hello).is_ok()
-            && matches!(transport.receive(), Ok(WireMessage::ServerHello(_)))
-        {
-            return (transport, client_id);
+        if let Some(status) = child.try_wait().unwrap() {
+            panic!("daemon child exited before readiness with {status}");
+        }
+        if let Ok(stream) = connect_local(socket) {
+            set_local_read_timeout(&stream, Some(Duration::from_secs(2))).unwrap();
+            set_local_write_timeout(&stream, Some(Duration::from_secs(2))).unwrap();
+            return stream;
         }
         assert!(
             Instant::now() < deadline,
-            "daemon handshake did not become ready"
+            "daemon child remained alive without opening its socket"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn open_connection(socket: &Path) -> (FramedTransport<LocalStream>, ClientId) {
+    open_connection_with_timeout(socket, Duration::from_secs(2))
+}
+
+fn open_connection_with_timeout(
+    socket: &Path,
+    timeout: Duration,
+) -> (FramedTransport<LocalStream>, ClientId) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Ok(stream) = connect_local(socket) {
+            set_local_read_timeout(&stream, Some(Duration::from_millis(250))).unwrap();
+            set_local_write_timeout(&stream, Some(Duration::from_millis(250))).unwrap();
+            let mut transport = FramedTransport::new(stream, WireFormat::Json);
+            let client_id = ClientId::new();
+            let sent = transport.send(&WireMessage::ClientHello(ClientHello {
+                protocol: CURRENT_PROTOCOL_VERSION,
+                client_id: client_id.clone(),
+                client_name: "daemon-process-test".into(),
+                client_version: "1.0.0".into(),
+                supported_features: BTreeSet::new(),
+                resume: None,
+            }));
+            if sent.is_ok() && matches!(transport.receive(), Ok(WireMessage::ServerHello(_))) {
+                let stream = transport.into_inner();
+                set_local_read_timeout(&stream, Some(timeout)).unwrap();
+                set_local_write_timeout(&stream, Some(timeout)).unwrap();
+                return (FramedTransport::new(stream, WireFormat::Json), client_id);
+            }
+        }
+        assert!(
+            Instant::now() < deadline,
+            "daemon protocol did not become ready"
         );
         thread::sleep(Duration::from_millis(10));
     }
@@ -228,47 +270,464 @@ fn execute(socket: &Path, command: ClientCommand) -> CommandResult {
     result.result
 }
 
-fn execute_on_connection(
-    transport: &mut FramedTransport<LocalStream>,
-    client_id: &ClientId,
-    session_id: Option<SessionId>,
-    command: ClientCommand,
-) -> CommandResult {
-    let command_id = CommandId::new();
+fn execute_fork(socket: &Path, source_session_id: &SessionId) -> CommandResult {
+    let (mut transport, client_id) = open_connection_with_timeout(socket, Duration::from_secs(120));
     transport
         .send(&WireMessage::Command(CommandEnvelope {
             protocol: CURRENT_PROTOCOL_VERSION,
-            command_id: command_id.clone(),
-            client_id: client_id.clone(),
+            command_id: CommandId::new(),
+            client_id,
             sent_at: UtcTimestamp::UNIX_EPOCH,
-            session_id,
-            command,
+            session_id: Some(source_session_id.clone()),
+            command: ClientCommand::ForkSession(ForkSession {
+                source_session_id: source_session_id.clone(),
+                title: Some("Independent process fork".into()),
+            }),
         }))
         .unwrap();
-    loop {
-        if let WireMessage::CommandResult(result) = transport.receive().unwrap()
-            && result.command_id == command_id
-        {
-            return result.result;
+    let WireMessage::CommandResult(result) = transport.receive().unwrap() else {
+        panic!("daemon must return a fork command result");
+    };
+    result.result
+}
+
+fn integration_action(
+    profile_id: &ProfileId,
+    session_id: &SessionId,
+    target: &str,
+    capability: Capability,
+    risk: ActionRisk,
+    effect: ExternalEffect,
+    cancellation_id: CancellationId,
+) -> ExternalAction {
+    let target = RedactedText::parse(target).unwrap();
+    let target_digest = RedactedText::parse(format!("digest-{}", target.as_str())).unwrap();
+    let now = UtcTimestamp::now().unwrap();
+    let approval = if risk.is_consequential() {
+        ApprovalState::Granted {
+            approval_id: ApprovalId::new(),
+            granted_by: ExternalPrincipalId::new(),
+            exact_target_digest: target_digest.clone(),
+            expires_at: UtcTimestamp::from_unix_millis(now.unix_millis().saturating_add(60_000)),
         }
+    } else {
+        ApprovalState::NotRequired
+    };
+    ExternalAction {
+        profile_id: profile_id.clone(),
+        session_id: session_id.clone(),
+        acting_principal: ExternalPrincipalId::new(),
+        requested_capability: capability,
+        risk,
+        approval: ApprovalEnvelope {
+            risk,
+            state: approval,
+        },
+        target,
+        target_digest,
+        cancellation_id,
+        reply_route: None,
+        audit_correlation: AuditCorrelationId::new(),
+        external_effect: effect,
     }
+}
+
+fn integration_mutation(
+    profile_id: &ProfileId,
+    session_id: &SessionId,
+    resource_id: Option<EntityId>,
+    expected_revision: Option<Revision>,
+    key: &str,
+    idempotency_key: &str,
+    operation: IntegrationOperation,
+    cancellation_id: CancellationId,
+) -> IntegrationMutation {
+    let (capability, risk, effect) = match operation {
+        IntegrationOperation::Connect => (
+            Capability::AccountChange,
+            ActionRisk::AccountChange,
+            ExternalEffect::NonRepeatable,
+        ),
+        IntegrationOperation::Cancel => (
+            Capability::LocalWrite,
+            ActionRisk::ReversibleLocalWrite,
+            ExternalEffect::Idempotent {
+                delivery_key: RedactedText::parse(idempotency_key).unwrap(),
+            },
+        ),
+        IntegrationOperation::Delete => (
+            Capability::Delete,
+            ActionRisk::Delete,
+            ExternalEffect::NonRepeatable,
+        ),
+        _ => panic!("process helper supports connect, cancel, and delete"),
+    };
+    IntegrationMutation {
+        profile_id: profile_id.clone(),
+        service: IntegrationService::ChannelAccount,
+        resource_id,
+        native_resource_key: key.into(),
+        display_label: format!("Channel {key}"),
+        expected_revision,
+        idempotency_key: idempotency_key.into(),
+        operation,
+        authority: integration_action(
+            profile_id,
+            session_id,
+            key,
+            capability,
+            risk,
+            effect,
+            cancellation_id,
+        ),
+    }
+}
+
+fn mark_integration_active(data_root: &Path, resource_id: &EntityId) {
+    let store =
+        EmbeddedStore::open(&data_root.join("state.sqlite"), Some(&FileBackupHook)).unwrap();
+    let record = store
+        .get_record(Collection::ChannelAccounts, resource_id)
+        .unwrap()
+        .unwrap();
+    let mut registration: ServiceRegistration =
+        serde_json::from_value(record.payload.clone()).unwrap();
+    let registration_revision = registration.revision.checked_next().unwrap();
+    registration.lifecycle = LifecycleState::Active;
+    registration.revision = registration_revision;
+    registration.updated_at = UtcTimestamp::now().unwrap();
+    registration.controls.insert(ServiceControl::Cancel);
+    registration.controls.remove(&ServiceControl::Restart);
+
+    let operation_record = store
+        .list_records(Collection::IntegrationOperations)
+        .unwrap()
+        .into_iter()
+        .find(|record| {
+            serde_json::from_value::<ActiveServiceOperation>(record.payload.clone())
+                .is_ok_and(|operation| operation.registration_id == *resource_id)
+        })
+        .unwrap();
+    let mut operation: ActiveServiceOperation =
+        serde_json::from_value(operation_record.payload.clone()).unwrap();
+    let operation_revision = operation_record.revision.checked_next().unwrap();
+    operation.lifecycle = LifecycleState::Active;
+    operation.attempt = 1;
+    operation.updated_at = UtcTimestamp::now().unwrap();
+
+    store
+        .transact(&[
+            RecordMutation::Put {
+                collection: Collection::ChannelAccounts,
+                record: VersionedRecord {
+                    version: CURRENT_SCHEMA_VERSION,
+                    id: resource_id.clone(),
+                    revision: registration_revision,
+                    updated_at: registration.updated_at,
+                    payload: serde_json::to_value(registration).unwrap(),
+                },
+                precondition: WritePrecondition::Exact(record.revision),
+            },
+            RecordMutation::Put {
+                collection: Collection::IntegrationOperations,
+                record: VersionedRecord {
+                    version: CURRENT_SCHEMA_VERSION,
+                    id: operation_record.id,
+                    revision: operation_revision,
+                    updated_at: operation.updated_at,
+                    payload: serde_json::to_value(operation).unwrap(),
+                },
+                precondition: WritePrecondition::Exact(operation_record.revision),
+            },
+        ])
+        .unwrap();
+}
+
+#[test]
+fn daemon_process_forks_a_session_into_an_independent_leased_root() {
+    let _serial = serial_daemon_process_test();
+    let directory = tempfile::tempdir().unwrap();
+    let data_root = directory.path().join("data");
+    let socket = directory.path().join("agentd.sock");
+    let workspace = directory.path().join("workspace");
+    fs::create_dir_all(&workspace).unwrap();
+    let source_root = RootTreeId::new();
+    let source_session = SessionId::new();
+    let launch = LocalRuntimeLaunchConfig {
+        data_root: data_root.clone(),
+        credential_root: data_root.join("credentials"),
+        credential_key_source: RuntimeCredentialKeySource::Restricted(
+            data_root.join("credentials"),
+        ),
+        workspace_root: workspace,
+        openai_base_url: "http://127.0.0.1:1".into(),
+        anthropic_base_url: "http://127.0.0.1:1".into(),
+        provider_base_urls: std::collections::BTreeMap::new(),
+    };
+    seed_provider_credential(&launch);
+    let source_profile = seed_runtime_session(&launch, &source_root, &source_session);
+    write_manifest(&data_root, &source_root, &source_session, &source_profile);
+
+    let mut daemon = start_daemon_child(&data_root, &socket);
+    drop(connect_child_when_ready(&socket, &mut daemon));
+    let CommandResult::Data(payload) = execute_fork(&socket, &source_session) else {
+        panic!("real daemon and worker must create the fork");
+    };
+    let ResponsePayload::Snapshot(snapshot) = *payload else {
+        panic!("fork must return the authoritative target snapshot");
+    };
+    assert_ne!(snapshot.session.session_id, source_session);
+    assert_ne!(snapshot.session.root_tree_id, source_root);
+    assert_eq!(snapshot.session.profile_id, source_profile);
+    assert_eq!(snapshot.messages.len(), 0);
+    let fork_worker = wait_for_worker(&data_root, &snapshot.session.root_tree_id);
+    assert!(process_is_alive(fork_worker));
+
+    let CommandResult::Data(payload) = execute(
+        &socket,
+        ClientCommand::ListSessions(SessionFilter::default()),
+    ) else {
+        panic!("forked catalog must remain listable");
+    };
+    let ResponsePayload::Sessions(sessions) = *payload else {
+        panic!("catalog listing must return sessions");
+    };
+    assert_eq!(sessions.len(), 2);
+    assert!(sessions.iter().any(|session| {
+        session.session_id == snapshot.session.session_id
+            && session.root_tree_id == snapshot.session.root_tree_id
+    }));
+
+    #[cfg(unix)]
+    {
+        send_signal(&mut daemon, Signal::SIGTERM);
+        assert!(daemon.wait().unwrap().success());
+    }
+    #[cfg(windows)]
+    {
+        send_signal(&mut daemon, true);
+        let _ = daemon.wait().unwrap();
+        terminate_pid(fork_worker);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+#[allow(clippy::too_many_lines)]
+fn daemon_process_integration_lifecycle_survives_crash_and_quarantines_corrupt_service() {
+    let _serial = serial_daemon_process_test();
+    let directory = tempfile::tempdir().unwrap();
+    let data_root = directory.path().join("data");
+    let socket = directory.path().join("agentd.sock");
+    let workspace = directory.path().join("workspace");
+    fs::create_dir_all(&workspace).unwrap();
+    let root = RootTreeId::new();
+    let session = SessionId::new();
+    let launch = LocalRuntimeLaunchConfig {
+        data_root: data_root.clone(),
+        credential_root: data_root.join("credentials"),
+        credential_key_source: RuntimeCredentialKeySource::Restricted(
+            data_root.join("credentials"),
+        ),
+        workspace_root: workspace,
+        openai_base_url: "http://127.0.0.1:1".into(),
+        anthropic_base_url: "http://127.0.0.1:1".into(),
+        provider_base_urls: std::collections::BTreeMap::new(),
+    };
+    seed_provider_credential(&launch);
+    let profile = seed_runtime_session(&launch, &root, &session);
+    write_manifest(&data_root, &root, &session, &profile);
+
+    let mut daemon = start_integration_daemon_child(&data_root, &socket, &["channels"]);
+    drop(connect_child_when_ready(&socket, &mut daemon));
+    let primary_cancellation = CancellationId::new();
+    let primary = integration_mutation(
+        &profile,
+        &session,
+        None,
+        None,
+        "web/primary",
+        "connect-primary",
+        IntegrationOperation::Connect,
+        primary_cancellation,
+    );
+    let CommandResult::Data(payload) = execute(
+        &socket,
+        ClientCommand::Integration(IntegrationCommand::Mutate(Box::new(primary.clone()))),
+    ) else {
+        panic!("enabled profile-scoped channel must be admitted");
+    };
+    let ResponsePayload::IntegrationResource(primary_resource) = *payload else {
+        panic!("connect must return a durable integration resource");
+    };
+    assert_eq!(primary_resource.lifecycle, LifecycleState::Pending);
+    let CommandResult::Data(replay_payload) = execute(
+        &socket,
+        ClientCommand::Integration(IntegrationCommand::Mutate(Box::new(primary))),
+    ) else {
+        panic!("idempotent replay must return the original resource");
+    };
+    let ResponsePayload::IntegrationResource(replayed) = *replay_payload else {
+        panic!("idempotent replay must keep its response kind");
+    };
+    assert_eq!(replayed.id, primary_resource.id);
+
+    let wrong_profile = ProfileId::new();
+    let denied = integration_mutation(
+        &wrong_profile,
+        &session,
+        None,
+        None,
+        "web/foreign",
+        "connect-foreign",
+        IntegrationOperation::Connect,
+        CancellationId::new(),
+    );
+    let CommandResult::Rejected(error) = execute(
+        &socket,
+        ClientCommand::Integration(IntegrationCommand::Mutate(Box::new(denied))),
+    ) else {
+        panic!("a session must not select another profile");
+    };
+    assert_eq!(error.error.code, ErrorCode::Unauthorized);
+
+    let uncertain_cancellation = CancellationId::new();
+    let uncertain = integration_mutation(
+        &profile,
+        &session,
+        None,
+        None,
+        "web/uncertain",
+        "connect-uncertain",
+        IntegrationOperation::Connect,
+        uncertain_cancellation.clone(),
+    );
+    let CommandResult::Data(payload) = execute(
+        &socket,
+        ClientCommand::Integration(IntegrationCommand::Mutate(Box::new(uncertain))),
+    ) else {
+        panic!("second account must be admitted independently");
+    };
+    let ResponsePayload::IntegrationResource(uncertain_resource) = *payload else {
+        panic!("connect must return the second durable resource");
+    };
+
+    send_signal(&mut daemon, Signal::SIGKILL);
+    assert!(!daemon.wait().unwrap().success());
+    mark_integration_active(&data_root, &uncertain_resource.id);
+    let store =
+        EmbeddedStore::open(&data_root.join("state.sqlite"), Some(&FileBackupHook)).unwrap();
+    store
+        .transact(&[RecordMutation::Put {
+            collection: Collection::ConnectedApps,
+            record: VersionedRecord {
+                version: CURRENT_SCHEMA_VERSION,
+                id: EntityId::new(),
+                revision: Revision::ZERO,
+                updated_at: UtcTimestamp::now().unwrap(),
+                payload: serde_json::json!({"corrupt": true}),
+            },
+            precondition: WritePrecondition::Missing,
+        }])
+        .unwrap();
+    drop(store);
+
+    let mut restarted =
+        start_integration_daemon_child(&data_root, &socket, &["channels", "connected_apps"]);
+    drop(connect_child_when_ready(&socket, &mut restarted));
+    let CommandResult::Data(payload) = execute(
+        &socket,
+        ClientCommand::Integration(IntegrationCommand::List {
+            profile_id: profile.clone(),
+            service: None,
+        }),
+    ) else {
+        panic!("one corrupt service must not prevent the profile projection");
+    };
+    let ResponsePayload::ProfileIntegrations(projection) = *payload else {
+        panic!("list must return the profile integration projection");
+    };
+    assert!(projection.services.iter().any(|service| {
+        service.service == IntegrationService::ConnectedApp
+            && matches!(
+                service.availability,
+                IntegrationAvailabilityProjection::Unavailable { .. }
+            )
+    }));
+    let interrupted = projection
+        .resources
+        .iter()
+        .find(|resource| resource.id == uncertain_resource.id)
+        .unwrap();
+    assert_eq!(interrupted.lifecycle, LifecycleState::Interrupted);
+    assert!(interrupted.safe_error.is_some());
+    assert!(matches!(
+        execute(
+            &socket,
+            ClientCommand::ListSessions(SessionFilter::default())
+        ),
+        CommandResult::Data(_)
+    ));
+
+    let cancel = integration_mutation(
+        &profile,
+        &session,
+        Some(interrupted.id.clone()),
+        Some(interrupted.revision),
+        &interrupted.native_resource_key,
+        "cancel-uncertain",
+        IntegrationOperation::Cancel,
+        uncertain_cancellation,
+    );
+    let CommandResult::Data(payload) = execute(
+        &socket,
+        ClientCommand::Integration(IntegrationCommand::Mutate(Box::new(cancel))),
+    ) else {
+        panic!("exact cancellation identity must cancel the interrupted resource");
+    };
+    let ResponsePayload::IntegrationResource(cancelled) = *payload else {
+        panic!("cancel must return the updated resource");
+    };
+    assert_eq!(cancelled.lifecycle, LifecycleState::Cancelled);
+    let delete = integration_mutation(
+        &profile,
+        &session,
+        Some(cancelled.id.clone()),
+        Some(cancelled.revision),
+        &cancelled.native_resource_key,
+        "delete-uncertain",
+        IntegrationOperation::Delete,
+        CancellationId::new(),
+    );
+    let CommandResult::Data(payload) = execute(
+        &socket,
+        ClientCommand::Integration(IntegrationCommand::Mutate(Box::new(delete))),
+    ) else {
+        panic!("exact deletion must succeed");
+    };
+    let ResponsePayload::IntegrationDeletion(report) = *payload else {
+        panic!("delete must return exact remnant reporting");
+    };
+    assert_eq!(report.remaining_records, 0);
+    assert!(report.remaining_media_objects.is_none());
+    assert!(report.retained_operation_records >= 3);
+    assert!(report.retained_audit_records >= 3);
+    assert!(report.retention_reason.is_some());
+
+    send_signal(&mut restarted, Signal::SIGTERM);
+    assert!(restarted.wait().unwrap().success());
 }
 
 fn wait_for_worker(data_root: &Path, root: &RootTreeId) -> u32 {
     let path = registration_path(&data_root.join("runtime"), root);
-    let deadline = Instant::now() + DAEMON_COMMAND_TIMEOUT;
-    let mut last_registration = None;
+    let deadline = Instant::now() + Duration::from_secs(5);
     loop {
-        if let Ok(registration) = read_registration(&path) {
-            if registration.state == WorkerRunState::Ready {
-                return registration.pid;
-            }
-            last_registration = Some(registration);
+        if let Ok(registration) = read_registration(&path)
+            && registration.state == WorkerRunState::Ready
+        {
+            return registration.pid;
         }
-        assert!(
-            Instant::now() < deadline,
-            "worker did not become ready; registration: {last_registration:?}"
-        );
+        assert!(Instant::now() < deadline, "worker did not become ready");
         thread::sleep(Duration::from_millis(10));
     }
 }
@@ -333,16 +792,11 @@ fn process_is_alive(pid: u32) -> bool {
     let Ok(pid) = i32::try_from(pid) else {
         return false;
     };
-    // An adopted worker is reparented when the first daemon is killed. In minimal CI
-    // containers PID 1 may retain the exited worker as a zombie indefinitely; signal 0 still
-    // succeeds for that process-table entry even though no worker code can execute.
-    if fs::read_to_string(format!("/proc/{pid}/stat"))
+    #[cfg(target_os = "linux")]
+    if fs::read_to_string(Path::new("/proc").join(pid.to_string()).join("stat"))
         .ok()
-        .and_then(|stat| {
-            stat.rsplit_once(") ")
-                .map(|(_, suffix)| suffix.starts_with('Z'))
-        })
-        .unwrap_or(false)
+        .and_then(|stat| stat.split_whitespace().nth(2).map(str::to_owned))
+        .is_some_and(|state| state == "Z")
     {
         return false;
     }
@@ -380,7 +834,7 @@ fn terminate_pid(pid: u32) {
 
 #[test]
 fn daemon_process_is_lazy_contains_crashes_and_adopts_after_restart() {
-    let _process_test_guard = process_test_guard();
+    let _serial = serial_daemon_process_test();
     let directory = tempfile::tempdir().unwrap();
     let data_root = directory.path().join("data");
     let socket = directory.path().join("agentd.sock");
@@ -435,7 +889,6 @@ fn daemon_process_is_lazy_contains_crashes_and_adopts_after_restart() {
     }
     let first_pid = wait_for_worker(&data_root, &first_root);
     let second_pid = wait_for_worker(&data_root, &second_root);
-    let second_start_identity = process_start_identity(second_pid);
 
     terminate_pid(first_pid);
     thread::sleep(Duration::from_millis(150));
@@ -455,6 +908,7 @@ fn daemon_process_is_lazy_contains_crashes_and_adopts_after_restart() {
     send_signal(&mut daemon, true);
     assert!(!daemon.wait().unwrap().success());
     assert!(process_is_alive(second_pid));
+
     let mut restarted = start_daemon(&data_root, &socket);
     assert!(matches!(
         execute(
@@ -476,296 +930,17 @@ fn daemon_process_is_lazy_contains_crashes_and_adopts_after_restart() {
         let _ = restarted.wait().unwrap();
         terminate_pid(second_pid);
     }
-    let deadline = Instant::now() + DAEMON_COMMAND_TIMEOUT;
-    while process_matches(second_pid, second_start_identity.as_deref()) && Instant::now() < deadline
-    {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while process_is_alive(second_pid) && Instant::now() < deadline {
         thread::sleep(Duration::from_millis(10));
     }
-    assert!(!process_matches(
-        second_pid,
-        second_start_identity.as_deref()
-    ));
-}
-
-#[cfg(unix)]
-fn process_start_identity(pid: u32) -> Option<String> {
-    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-    let (_, fields) = stat.rsplit_once(") ")?;
-    fields.split_whitespace().nth(19).map(str::to_owned)
-}
-
-#[cfg(windows)]
-fn process_start_identity(_pid: u32) -> Option<String> {
-    None
-}
-
-fn process_matches(pid: u32, identity: Option<&str>) -> bool {
-    process_is_alive(pid) && process_start_identity(pid).as_deref() == identity
-}
-
-#[test]
-fn real_workers_preserve_origin_and_quiesce_profile_close_across_roots() {
-    let _process_test_guard = process_test_guard();
-    let directory = tempfile::tempdir().unwrap();
-    let data_root = directory.path().join("data");
-    let socket = directory.path().join("agentd.sock");
-    let provider = TcpListener::bind("127.0.0.1:0").unwrap();
-    let provider_address = provider.local_addr().unwrap();
-    let (provider_started_sender, provider_started_receiver) = std::sync::mpsc::channel();
-    let (provider_release_sender, provider_release_receiver) = std::sync::mpsc::channel();
-    let provider_thread = thread::spawn(move || {
-        let (mut stream, _) = provider.accept().unwrap();
-        stream
-            .set_read_timeout(Some(Duration::from_secs(2)))
-            .unwrap();
-        let mut request = [0_u8; 16 * 1024];
-        let _ = stream.read(&mut request);
-        provider_started_sender.send(()).unwrap();
-        provider_release_receiver.recv().unwrap();
-        let _ = stream.write_all(
-            b"HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
-        );
-    });
-
-    let first_root = RootTreeId::new();
-    let first_session = SessionId::new();
-    let second_root = RootTreeId::new();
-    let second_session = SessionId::new();
-    let launch = LocalRuntimeLaunchConfig {
-        data_root: data_root.clone(),
-        credential_root: data_root.join("credentials"),
-        credential_key_source: RuntimeCredentialKeySource::Restricted(
-            data_root.join("credentials"),
-        ),
-        workspace_root: directory.path().join("workspace"),
-        openai_base_url: format!("http://{provider_address}"),
-        anthropic_base_url: "http://127.0.0.1:1".into(),
-        provider_base_urls: std::collections::BTreeMap::new(),
-    };
-    seed_provider_credential(&launch);
-    let first_profile = seed_runtime_session(&launch, &first_root, &first_session);
-    let second_profile = seed_runtime_session(&launch, &second_root, &second_session);
-    assert_eq!(first_profile, second_profile);
-    write_manifest(&data_root, &first_root, &first_session, &first_profile);
-    write_manifest(&data_root, &second_root, &second_session, &second_profile);
-    let (admin_root, prompt_root, prompt_session) = if first_root < second_root {
-        (&first_root, &second_root, &second_session)
-    } else {
-        (&second_root, &first_root, &first_session)
-    };
-    let mut daemon = start_daemon_with_runtime(&data_root, &socket, Some(&launch));
-    for session in [&first_session, &second_session] {
-        assert!(matches!(
-            execute(
-                &socket,
-                ClientCommand::AttachSession(AttachSession {
-                    session_id: session.clone(),
-                    resume: None,
-                })
-            ),
-            CommandResult::Data(_)
-        ));
-    }
-    let admin_pid = wait_for_worker(&data_root, admin_root);
-    let prompt_pid = wait_for_worker(&data_root, prompt_root);
-    assert_ne!(admin_pid, prompt_pid);
-
-    let roster = execute(
-        &socket,
-        ClientCommand::AgentLifecycle(AgentLifecycleCommand::List),
-    );
-    let CommandResult::Data(roster) = roster else {
-        panic!("an unscoped authenticated owner must reach a worker");
-    };
-    let ResponsePayload::AgentRoster(roster) = *roster else {
-        panic!("owner lifecycle list must return the authoritative roster");
-    };
-    let profile_revision = roster
-        .iter()
-        .find(|entry| entry.profile_id == first_profile)
-        .unwrap()
-        .revision;
-
-    let group = execute(
-        &socket,
-        ClientCommand::Conversation(ConversationCommand::Teammates(
-            TeammatesCommand::CreateGroup(CreateGroupCommand {
-                request_id: EntityId::new(),
-                operation_key: StableKey::parse("process-origin-group").unwrap(),
-                title: "Process origin verification".into(),
-                initial_profile_ids: vec![first_profile.clone()],
-                mention_mode: GroupMentionModeCommand::ExplicitOnly,
-                now: UtcTimestamp::now().unwrap(),
-            }),
-        )),
-    );
-    let CommandResult::Data(group) = group else {
-        panic!("owner group creation must return data: {group:?}");
-    };
-    let ResponsePayload::TeammatesReceipt(group) = *group else {
-        panic!("owner group creation must return a teammates receipt");
-    };
-    let conversation_id = group.conversation_id.unwrap();
-    let conversation_revision = group.resulting_revision.unwrap();
-
-    let joined_profile = ProfileId::new();
-    let membership = execute(
-        &socket,
-        ClientCommand::Conversation(ConversationCommand::ChangeMembership(
-            ConversationMembershipRequest {
-                conversation_id: conversation_id.clone(),
-                target: ConversationParticipantPrincipal::Agent(joined_profile),
-                role: ConversationParticipantRole::Observer,
-                action: ConversationMembershipAction::Join,
-                expected_participant_revision: keith_agent_types::Revision::ZERO,
-                expected_conversation_revision: conversation_revision,
-                operation_key: "process-human-membership".into(),
-            },
-        )),
-    );
-    assert!(
-        matches!(membership, CommandResult::Data(_)),
-        "owner group membership change must return data: {membership:?}"
-    );
-    let page = execute(
-        &socket,
-        ClientCommand::Conversation(ConversationCommand::Page(ConversationPageRequest {
-            conversation_id: conversation_id.clone(),
-            after_sequence: 0,
-            limit: 100,
-        })),
-    );
-    let CommandResult::Data(page) = page else {
-        panic!("owner conversation page must return data");
-    };
-    let ResponsePayload::Conversation(page) = *page else {
-        panic!("owner conversation page must return a projection");
-    };
-    assert!(page.events.iter().any(|event| {
-        event.provenance_source == "owner-authorized-runtime-command"
-            && event.author == keith_protocol::ConversationPrincipalProjection::Human
-    }));
-
-    let (mut attached, attached_client) = open_connection(&socket);
-    assert!(matches!(
-        execute_on_connection(
-            &mut attached,
-            &attached_client,
-            Some(prompt_session.clone()),
-            ClientCommand::AttachSession(AttachSession {
-                session_id: prompt_session.clone(),
-                resume: None,
-            }),
-        ),
-        CommandResult::Data(_)
-    ));
-    assert!(matches!(
-        execute_on_connection(
-            &mut attached,
-            &attached_client,
-            Some(prompt_session.clone()),
-            ClientCommand::DetachSession {
-                session_id: prompt_session.clone(),
-            },
-        ),
-        CommandResult::Accepted { .. }
-    ));
-    assert!(matches!(
-        execute_on_connection(
-            &mut attached,
-            &attached_client,
-            None,
-            ClientCommand::AgentLifecycle(AgentLifecycleCommand::List),
-        ),
-        CommandResult::Rejected(_)
-    ));
-
-    let prompt_socket = socket.clone();
-    let prompt_session_for_turn = prompt_session.clone();
-    let (prompt_result_sender, prompt_result_receiver) = std::sync::mpsc::channel();
-    let prompt_thread = thread::spawn(move || {
-        let (mut transport, client_id) = open_connection(&prompt_socket);
-        assert!(matches!(
-            execute_on_connection(
-                &mut transport,
-                &client_id,
-                Some(prompt_session_for_turn.clone()),
-                ClientCommand::AttachSession(AttachSession {
-                    session_id: prompt_session_for_turn.clone(),
-                    resume: None,
-                }),
-            ),
-            CommandResult::Data(_)
-        ));
-        let result = execute_on_connection(
-            &mut transport,
-            &client_id,
-            Some(prompt_session_for_turn.clone()),
-            ClientCommand::SubmitPrompt(SubmitPrompt {
-                session_id: prompt_session_for_turn,
-                text: "remain active until the owner closes this profile".into(),
-                artifacts: Vec::new(),
-                delivery: DeliveryPolicy::Immediate,
-                reply_route: None,
-            }),
-        );
-        prompt_result_sender.send(result.clone()).unwrap();
-        result
-    });
-    if let Err(error) = provider_started_receiver.recv_timeout(DAEMON_COMMAND_TIMEOUT) {
-        panic!(
-            "provider request did not start: {error:?}; prompt result: {:?}",
-            prompt_result_receiver.try_recv()
-        );
-    }
-
-    let close_socket = socket.clone();
-    let close_profile = first_profile.clone();
-    let (close_sender, close_receiver) = std::sync::mpsc::channel();
-    let close_thread = thread::spawn(move || {
-        let result = execute(
-            &close_socket,
-            ClientCommand::AgentLifecycle(AgentLifecycleCommand::Disable(ProfileRevisionCommand {
-                profile_id: close_profile,
-                expected_revision: profile_revision,
-            })),
-        );
-        close_sender.send(result).unwrap();
-    });
-    assert!(
-        close_receiver
-            .recv_timeout(Duration::from_millis(150))
-            .is_err(),
-        "profile close must not complete while another worker owns an in-flight turn"
-    );
-    provider_release_sender.send(()).unwrap();
-    let _prompt_result = prompt_thread.join().unwrap();
-    assert!(matches!(
-        close_receiver.recv_timeout(Duration::from_secs(5)).unwrap(),
-        CommandResult::Data(_)
-    ));
-    close_thread.join().unwrap();
-    provider_thread.join().unwrap();
-    assert!(process_is_alive(admin_pid));
-    assert!(process_is_alive(prompt_pid));
-
-    #[cfg(unix)]
-    {
-        send_signal(&mut daemon, Signal::SIGTERM);
-        assert!(daemon.wait().unwrap().success());
-    }
-    #[cfg(windows)]
-    {
-        send_signal(&mut daemon, true);
-        let _ = daemon.wait().unwrap();
-        terminate_pid(admin_pid);
-        terminate_pid(prompt_pid);
-    }
+    assert!(!process_is_alive(second_pid));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[allow(clippy::too_many_lines)]
 async fn native_platform_bridge_reaches_the_real_daemon_and_leased_worker() {
-    let _process_test_guard = process_test_guard();
+    let _serial = serial_daemon_process_test();
     let directory = tempfile::tempdir().unwrap();
     let data_root = directory.path().join("data");
     let socket = directory.path().join("agentd.sock");
@@ -820,7 +995,7 @@ async fn native_platform_bridge_reaches_the_real_daemon_and_leased_worker() {
         login_secret: b"real-daemon-web-login-secret-0001".to_vec(),
         session_lifetime: Duration::from_secs(60),
         mutation_limit_per_second: 8,
-        daemon_timeout: DAEMON_COMMAND_TIMEOUT,
+        daemon_timeout: Duration::from_secs(2),
         openai_compatibility: None,
         platform_compatibility: Some(PlatformCompatibilityConfig {
             api_key: platform_key.to_vec(),
@@ -1066,7 +1241,7 @@ fn stop_launcher(process: &mut Child) {
 
 #[cfg(unix)]
 fn attach_and_observe_restoration(socket: &Path, session_id: &SessionId) {
-    let (mut transport, client_id) = open_connection(socket);
+    let (mut transport, client_id) = open_connection_with_timeout(socket, Duration::from_secs(120));
     transport
         .send(&WireMessage::Command(CommandEnvelope {
             protocol: CURRENT_PROTOCOL_VERSION,
@@ -1092,10 +1267,12 @@ fn attach_and_observe_restoration(socket: &Path, session_id: &SessionId) {
                 if let DaemonEvent::Warning(error) = envelope.event {
                     assert!(error.message.contains("restored the previous daemon"));
                     warning = true;
-                    break;
                 }
             }
             _ => {}
+        }
+        if result && warning {
+            break;
         }
     }
     assert!(result && warning);
@@ -1107,9 +1284,35 @@ fn sha256(bytes: &[u8]) -> String {
 }
 
 #[cfg(unix)]
+fn wait_for_staging_phase(root: &Path, expected: DaemonStagingPhase) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let phase = fs::read(root.join("staging.json"))
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+            .and_then(|state| state["staged"]["phase"].as_str().map(str::to_owned));
+        if phase.as_deref()
+            == Some(match expected {
+                DaemonStagingPhase::Staged => "staged",
+                DaemonStagingPhase::Launching => "launching",
+                DaemonStagingPhase::Active => "active",
+                DaemonStagingPhase::Restored => "restored",
+            })
+        {
+            return;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "staging phase did not reach {expected:?}; last phase was {phase:?}"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+#[cfg(unix)]
 #[test]
 fn staged_daemon_real_process_success_failures_restore_and_restart_stably() {
-    let _process_test_guard = process_test_guard();
+    let _serial = serial_daemon_process_test();
     let directory = tempfile::tempdir().unwrap();
     let data_root = directory.path().join("data");
     let socket = directory.path().join("agentd.sock");
@@ -1136,8 +1339,9 @@ fn staged_daemon_real_process_success_failures_restore_and_restart_stably() {
     let successful = stage_daemon(&data_root, executable, "daemon-success");
     let mut daemon = start_daemon_with_fault(&data_root, &socket, None, None);
     drop(connect_when_ready(&socket));
-    stop_launcher(&mut daemon);
     let staging_root = data_root.join("self-evolution/daemon-images");
+    wait_for_staging_phase(&staging_root, DaemonStagingPhase::Active);
+    stop_launcher(&mut daemon);
     let staging = DaemonStaging::open(&staging_root, executable).unwrap();
     assert_eq!(
         staging.staged().unwrap().unwrap().phase,

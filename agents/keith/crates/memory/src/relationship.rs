@@ -217,6 +217,9 @@ impl RelationshipService {
     /// Appends an agent-authored preferred-name transition against exact user evidence.
     ///
     /// This method validates a typed value; it never extracts a name from natural language.
+    ///
+    /// # Errors
+    /// Returns [`RelationshipError`] if the evidence is not an exact user-supplied value, or if the transition cannot be appended to the durable relationship log.
     pub fn confirm_preferred_name(
         &self,
         session_id: &SessionId,
@@ -262,6 +265,9 @@ impl RelationshipService {
     }
 
     /// Appends an agent-authored forgetting transition against exact user evidence.
+    ///
+    /// # Errors
+    /// Returns [`RelationshipError`] if the forget transition cannot be appended to the durable relationship log.
     pub fn forget_preferred_name(
         &self,
         session_id: &SessionId,
@@ -291,6 +297,9 @@ impl RelationshipService {
     }
 
     /// Returns the current durable relationship projection without interpreting input.
+    ///
+    /// # Errors
+    /// Returns [`RelationshipError`] if the durable relationship log cannot be read or replayed into a turn context.
     pub fn context(&self) -> Result<RelationshipTurnContext, RelationshipError> {
         let state = self.lock()?;
         relationship_context(&state, false, false, false)

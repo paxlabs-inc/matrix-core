@@ -1,5 +1,18 @@
 #![forbid(unsafe_code)]
 
+pub mod abi;
+pub mod authority;
+
+pub use abi::{
+    DenyAllPluginHostContext, ExecutablePlugin, PluginAbiError, PluginHostCallError,
+    PluginHostContext,
+};
+pub use authority::{
+    GrantApproval, PluginAuthorityError, PluginAuthorityHost, PluginCall, PluginCallOutcome,
+    PluginDataAccess, PluginHealth, PluginInspection, PluginLifecycle, PluginPackage,
+    PluginSafeMode, PluginSafeModeReason, PluginUpdateDiff, TrustedPublisher,
+};
+
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -472,6 +485,12 @@ mod tests {
             kind: PluginKind::WasiComponent,
             hooks,
             grants,
+            publisher: None,
+            digest: None,
+            signature: None,
+            tools: Vec::new(),
+            commands: Vec::new(),
+            migration: None,
         };
         fs::write(
             package.join(MANIFEST_FILE),

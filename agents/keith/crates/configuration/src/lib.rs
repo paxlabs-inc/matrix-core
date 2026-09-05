@@ -4,7 +4,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 
-pub use keith_agent_types::ProfileLifecycleState;
 use keith_agent_types::{
     CURRENT_SCHEMA_VERSION, ProfileId, Revision, SchemaVersion, TimeZoneName, WorkspaceId,
     canonical_json_bytes,
@@ -49,7 +48,19 @@ pub struct ConfigPatch {
     pub autonomy: Option<AutonomyPatch>,
     pub retrieval: Option<RetrievalPatch>,
     pub telemetry: Option<TelemetryPatch>,
+    pub services: Option<ServiceEnablementPatch>,
     pub profile: Option<ProfilePatch>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ServiceEnablementPatch {
+    pub channels: Option<bool>,
+    pub acp: Option<bool>,
+    pub plugins: Option<bool>,
+    pub connected_apps: Option<bool>,
+    pub computers: Option<bool>,
+    pub teaching: Option<bool>,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
@@ -103,6 +114,7 @@ pub struct ProfilePatch {
     pub enabled_mcp_servers: Option<ListOperation>,
     pub enabled_plugins: Option<ListOperation>,
     pub channels: Option<ListOperation>,
+    pub service_policy: Option<ProfileServicePolicy>,
     pub autonomy: Option<ProfileAutonomyPatch>,
     pub notifications: Option<NotificationPatch>,
     pub refinement: Option<RefinementPatch>,
@@ -132,6 +144,8 @@ pub struct RuntimeConfig {
     pub autonomy: AutonomyConfig,
     pub retrieval: RetrievalConfig,
     pub telemetry: TelemetryConfig,
+    #[serde(default)]
+    pub services: ServiceEnablementConfig,
     pub self_evolution: SelfEvolutionConfig,
     pub profile: Option<AgentProfile>,
 }
@@ -140,6 +154,38 @@ pub struct RuntimeConfig {
 #[serde(deny_unknown_fields)]
 pub struct SelfEvolutionConfig {
     enabled: bool,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ServiceEnablementConfig {
+    pub enabled: BTreeSet<PlatformServiceGroup>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PlatformServiceGroup {
+    Channels,
+    Acp,
+    Plugins,
+    ConnectedApps,
+    Computers,
+    Teaching,
+}
+
+impl ServiceEnablementConfig {
+    pub fn set_enabled(&mut self, service: PlatformServiceGroup, enabled: bool) {
+        if enabled {
+            self.enabled.insert(service);
+        } else {
+            self.enabled.remove(&service);
+        }
+    }
+
+    #[must_use]
+    pub fn is_enabled(&self, service: PlatformServiceGroup) -> bool {
+        self.enabled.contains(&service)
+    }
 }
 
 impl SelfEvolutionConfig {
@@ -179,6 +225,7 @@ impl RuntimeConfig {
                 local_metrics: true,
                 export: false,
             },
+            services: ServiceEnablementConfig::default(),
             self_evolution: SelfEvolutionConfig { enabled: false },
             profile: None,
         }
@@ -275,66 +322,11 @@ pub struct AgentProfile {
     pub enabled_mcp_servers: Vec<String>,
     pub enabled_plugins: Vec<String>,
     pub channels: Vec<String>,
+    #[serde(default)]
+    pub service_policy: ProfileServicePolicy,
     pub autonomy: ProfileAutonomy,
     pub notifications: NotificationSettings,
     pub refinement: RefinementSettings,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[allow(clippy::struct_excessive_bools)]
-pub struct ComputerPolicy {
-    pub enabled: bool,
-    pub allow_downloads: bool,
-    pub allow_uploads: bool,
-    pub require_confirmation_for_consequential_actions: bool,
-    pub max_idle_seconds: u32,
-}
-
-impl Default for ComputerPolicy {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            allow_downloads: false,
-            allow_uploads: false,
-            require_confirmation_for_consequential_actions: true,
-            max_idle_seconds: 900,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AgentProfilePresentation {
-    pub role: String,
-    pub description: String,
-    pub avatar: Option<String>,
-    pub lifecycle: ProfileLifecycleState,
-    pub hidden: bool,
-    pub computer_policy: ComputerPolicy,
-}
-
-impl AgentProfilePresentation {
-    /// # Errors
-    /// Returns an error when owner-visible metadata or computer bounds are malformed.
-    pub fn validate(&self) -> Result<(), ConfigError> {
-        if self.role.trim().is_empty() || self.role.len() > 128 {
-            return Err(ConfigError::Invalid("profile role is invalid".into()));
-        }
-        if self.description.len() > 4_096
-            || self
-                .avatar
-                .as_ref()
-                .is_some_and(|value| value.is_empty() || value.len() > 2_048)
-            || self.computer_policy.max_idle_seconds == 0
-            || self.computer_policy.max_idle_seconds > 86_400
-        {
-            return Err(ConfigError::Invalid(
-                "profile presentation is invalid".into(),
-            ));
-        }
-        Ok(())
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -387,6 +379,18 @@ pub struct ProfileAutonomy {
     pub max_children: u16,
     pub max_depth: u16,
     pub daily_token_budget: u64,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProfileServicePolicy {
+    pub allowed_connected_app_toolkits: BTreeSet<String>,
+    pub allow_computers: bool,
+    pub allow_recording: bool,
+    pub allow_recipe_publication: bool,
+    pub max_computers: u16,
+    pub max_recording_bytes: u64,
+    pub max_recipe_steps: u32,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
@@ -739,10 +743,47 @@ fn apply_patch(
         }
         replace_if_some(&mut config.telemetry.export, telemetry.export);
     }
+    if let Some(services) = &patch.services {
+        apply_service_patch(&mut config.services, services, kind)?;
+    }
     if let Some(profile) = &patch.profile {
         apply_profile_patch(&mut config.profile, kind, profile)?;
     }
     Ok(())
+}
+
+fn apply_service_patch(
+    config: &mut ServiceEnablementConfig,
+    patch: &ServiceEnablementPatch,
+    kind: LayerKind,
+) -> Result<(), ConfigError> {
+    if kind != LayerKind::Global {
+        return Err(ConfigError::Prohibited {
+            field: "services",
+            layer: kind,
+        });
+    }
+    for (service, enabled) in [
+        (PlatformServiceGroup::Channels, patch.channels),
+        (PlatformServiceGroup::Acp, patch.acp),
+        (PlatformServiceGroup::Plugins, patch.plugins),
+        (PlatformServiceGroup::ConnectedApps, patch.connected_apps),
+        (PlatformServiceGroup::Computers, patch.computers),
+        (PlatformServiceGroup::Teaching, patch.teaching),
+    ] {
+        replace_service_if_some(config, service, enabled);
+    }
+    Ok(())
+}
+
+fn replace_service_if_some(
+    config: &mut ServiceEnablementConfig,
+    service: PlatformServiceGroup,
+    enabled: Option<bool>,
+) {
+    if let Some(enabled) = enabled {
+        config.set_enabled(service, enabled);
+    }
 }
 
 fn apply_profile_patch(
@@ -774,6 +815,9 @@ fn apply_profile_patch(
     );
     apply_list(&mut profile.enabled_plugins, patch.enabled_plugins.as_ref());
     apply_list(&mut profile.channels, patch.channels.as_ref());
+    if let Some(service_policy) = &patch.service_policy {
+        profile.service_policy.clone_from(service_policy);
+    }
     if let Some(autonomy) = &patch.autonomy {
         replace_if_some(&mut profile.autonomy.mode, autonomy.mode);
         lower_ceiling(
@@ -953,6 +997,16 @@ fn validate_profile(profile: &AgentProfile) -> Result<(), ConfigError> {
         || profile.autonomy.max_depth == 0
         || profile.autonomy.daily_token_budget == 0
         || profile.notifications.daily_limit == 0
+        || (profile.service_policy.allow_computers && profile.service_policy.max_computers == 0)
+        || (profile.service_policy.allow_recording
+            && profile.service_policy.max_recording_bytes == 0)
+        || (profile.service_policy.allow_recipe_publication
+            && profile.service_policy.max_recipe_steps == 0)
+        || profile
+            .service_policy
+            .allowed_connected_app_toolkits
+            .iter()
+            .any(|toolkit| toolkit.trim().is_empty())
     {
         return Err(ConfigError::Invalid(
             "profile fields are incomplete or invalid".into(),
@@ -988,6 +1042,7 @@ fn changed_sections(before: &RuntimeConfig, after: &RuntimeConfig) -> BTreeSet<S
         ("autonomy", before.autonomy != after.autonomy),
         ("retrieval", before.retrieval != after.retrieval),
         ("telemetry", before.telemetry != after.telemetry),
+        ("services", before.services != after.services),
         (
             "self_evolution",
             before.self_evolution != after.self_evolution,
@@ -1033,6 +1088,7 @@ mod tests {
             enabled_mcp_servers: vec!["project".into()],
             enabled_plugins: vec!["built-in".into()],
             channels: vec!["terminal".into()],
+            service_policy: ProfileServicePolicy::default(),
             autonomy: ProfileAutonomy {
                 mode: AutonomyMode::ConfirmSelected,
                 max_children: 3,
@@ -1106,6 +1162,64 @@ kind = "global"
 enabled = true
 "#;
         assert!(parse_or_migrate_toml(attempted).is_err());
+    }
+
+    #[test]
+    fn external_services_are_default_off_and_only_global_configuration_can_enable_them() {
+        let mut manager = ConfigManager::new(RuntimeConfig::secure_defaults()).unwrap();
+        assert_eq!(
+            manager.active().services,
+            ServiceEnablementConfig::default()
+        );
+        manager
+            .apply(ConfigLayer::new(
+                LayerKind::Global,
+                ConfigPatch {
+                    services: Some(ServiceEnablementPatch {
+                        channels: Some(true),
+                        acp: Some(true),
+                        ..ServiceEnablementPatch::default()
+                    }),
+                    ..ConfigPatch::default()
+                },
+            ))
+            .unwrap();
+        assert!(
+            manager
+                .active()
+                .services
+                .is_enabled(PlatformServiceGroup::Channels)
+        );
+        assert!(
+            manager
+                .active()
+                .services
+                .is_enabled(PlatformServiceGroup::Acp)
+        );
+        assert!(
+            !manager
+                .active()
+                .services
+                .is_enabled(PlatformServiceGroup::Computers)
+        );
+        let before = manager.active().clone();
+        assert!(matches!(
+            manager.apply(ConfigLayer::new(
+                LayerKind::Session,
+                ConfigPatch {
+                    services: Some(ServiceEnablementPatch {
+                        computers: Some(true),
+                        ..ServiceEnablementPatch::default()
+                    }),
+                    ..ConfigPatch::default()
+                },
+            )),
+            Err(ConfigError::Prohibited {
+                field: "services",
+                layer: LayerKind::Session
+            })
+        ));
+        assert_eq!(manager.active(), &before);
     }
 
     #[test]

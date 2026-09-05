@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod events;
+mod integrations;
 mod recovery;
 
 pub use events::*;
@@ -18,28 +19,26 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use keith_agent_types::{
-    ActionId, AssignmentId, CURRENT_PROTOCOL_VERSION, CURRENT_SCHEMA_VERSION, CommandId,
-    CommonError, ConversationId, EntityId, ErrorCode, EventId, Generation, ProfileId, Revision,
-    RootTreeId, RoundId, SchemaVersion, Sequence, SessionId, StableKey, TurnId, UtcTimestamp,
+    ActionId, CURRENT_PROTOCOL_VERSION, CURRENT_SCHEMA_VERSION, CommandId, CommonError, EntityId,
+    ErrorCode, Generation, ProfileId, Revision, RootTreeId, SchemaVersion, Sequence, SessionId,
+    TurnId, UtcTimestamp,
 };
+use keith_configuration::ServiceEnablementConfig;
 use keith_connection::{
     AgentTransport, FramedTransport, LocalStream, accept_local, bind_permissioned_local,
     set_local_listener_nonblocking, set_local_read_timeout,
 };
 use keith_protocol::{
-    AgentActivityKind, AgentActivityOutcome, AgentActivityProjection, AgentLifecycleCommand,
-    ClientCommand, CommandError, CommandResult, CommandResultEnvelope, ComputerProtocolCommand,
-    ComputerProtocolResponse, ConversationCommand, ConversationProtocolEnvelope, DaemonEvent,
-    EventEnvelope, EvolutionAvailabilityProjection, EvolutionCommand,
-    EvolutionDisclosureProjection, EvolutionHypothesisProjection, EvolutionLedgerProjection,
-    EvolutionProjection, Feature, MessageProjection, ResponsePayload,
-    ResumeConversationEventsCommand, SessionFilter, SessionSnapshot, SessionState, SessionSummary,
-    TeammatesCommand, ToolProjection, WireFormat, WireMessage, negotiate,
+    AgentActivityKind, AgentActivityOutcome, AgentActivityProjection, ClientCommand, CommandError,
+    CommandResult, CommandResultEnvelope, DaemonEvent, EventEnvelope,
+    EvolutionAvailabilityProjection, EvolutionCommand, EvolutionDisclosureProjection,
+    EvolutionHypothesisProjection, EvolutionLedgerProjection, EvolutionProjection, Feature,
+    IntegrationCommand, MessageProjection, ResponsePayload, SessionFilter, SessionSnapshot,
+    SessionState, SessionSummary, ToolProjection, WireFormat, WireMessage, negotiate,
 };
 use keith_runtime_api::{
-    AcceptedPrompt, ConversationSessionAssignment, RuntimeAgentOutcome, RuntimeCommandAuthority,
-    RuntimeEvent, RuntimeEventKind, RuntimeRequest, RuntimeResponse, RuntimeSession,
-    RuntimeWorkerBinding,
+    AcceptedPrompt, RuntimeAgentOutcome, RuntimeEvent, RuntimeEventKind, RuntimeRequest,
+    RuntimeResponse, RuntimeSession,
 };
 use keith_self_evolution::CanaryRunner;
 use keith_self_evolution::{
@@ -52,61 +51,21 @@ use keith_state_store_core::{
     AtomicStateRepository, Collection, RecordMutation, VersionedRecord, WritePrecondition,
 };
 use keith_supervisor::{
-    SupervisorError, SupervisorOptions, WorkerEvent, WorkerHealth, WorkerImageRegistry,
-    WorkerRollProof, WorkerStatus, WorkerSupervisor, signal_active_cancellation,
+    SupervisorError, SupervisorOptions, WorkerEvent, WorkerImageRegistry, WorkerRollProof,
+    WorkerStatus, WorkerSupervisor, signal_active_cancellation,
 };
 use keith_telemetry::{CandidateObservation, CandidateSignal, MetricName, TelemetryError};
-use keith_worker_runtime::{LeaseError, LeaseManager};
 use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::integrations::{
+    IntegrationError, IntegrationMutationResult, PlatformServiceCoordinator,
+};
+
 pub const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
 const MAX_PROMPT_BYTES: usize = 256 * 1024;
 const MAX_CANDIDATE_OBSERVATIONS: usize = 4_096;
-
-#[derive(Clone, Debug, Error)]
-#[error("{message}")]
-pub struct ComputerCommandRuntimeError {
-    pub code: ErrorCode,
-    pub message: String,
-    pub retryable: bool,
-}
-
-impl ComputerCommandRuntimeError {
-    pub fn new(code: ErrorCode, message: impl Into<String>, retryable: bool) -> Self {
-        Self {
-            code,
-            message: message.into(),
-            retryable,
-        }
-    }
-}
-
-/// Installation-owned computer authority used by the daemon connection boundary.
-pub trait ComputerCommandRuntime: Send {
-    fn execute(
-        &mut self,
-        authenticated_client_id: &keith_agent_types::ClientId,
-        daemon_instance_id: &EntityId,
-        command: ComputerProtocolCommand,
-    ) -> Result<ComputerProtocolResponse, ComputerCommandRuntimeError>;
-
-    fn drain_events(
-        &mut self,
-        authenticated_client_id: &keith_agent_types::ClientId,
-        max_events: usize,
-    ) -> Result<Vec<EventEnvelope>, ComputerCommandRuntimeError>;
-
-    fn resume_catalog(
-        &mut self,
-        authenticated_client_id: &keith_agent_types::ClientId,
-        daemon_instance_id: &EntityId,
-        request: ResumeConversationEventsCommand,
-    ) -> Result<ConversationProtocolEnvelope, ComputerCommandRuntimeError>;
-
-    fn disconnect(&mut self, authenticated_client_id: &keith_agent_types::ClientId);
-}
 
 fn read_or_create_secret(path: &Path) -> io::Result<[u8; 32]> {
     let mut options = OpenOptions::new();
@@ -184,6 +143,7 @@ struct PromptIngressRecord {
     next_attempt_at: UtcTimestamp,
 }
 
+#[allow(clippy::large_enum_variant)]
 enum PromptRunResult {
     Completed(SessionSnapshot),
     Accepted(ActionId),
@@ -195,8 +155,6 @@ pub struct RootManifest {
     pub version: SchemaVersion,
     pub root_tree_id: RootTreeId,
     pub root_session_id: SessionId,
-    #[serde(default)]
-    pub session_aliases: Vec<SessionSummary>,
     pub profile_id: ProfileId,
     pub title: Option<String>,
     pub state: SessionState,
@@ -213,10 +171,6 @@ impl RootManifest {
             state: self.state,
             updated_at: self.updated_at,
         }
-    }
-
-    fn summaries(&self) -> impl Iterator<Item = SessionSummary> + '_ {
-        std::iter::once(self.summary()).chain(self.session_aliases.iter().cloned())
     }
 }
 
@@ -249,20 +203,6 @@ pub enum CatalogError {
     },
     #[error("duplicate root session ID {0}")]
     DuplicateSession(SessionId),
-    #[error("session {session} is assigned to root {actual} instead of {expected}")]
-    SessionRootMismatch {
-        session: SessionId,
-        actual: RootTreeId,
-        expected: RootTreeId,
-    },
-    #[error("session {session} profile {actual} does not match root profile {expected}")]
-    SessionProfileMismatch {
-        session: SessionId,
-        actual: ProfileId,
-        expected: ProfileId,
-    },
-    #[error("session alias references unknown root {0}")]
-    UnknownRoot(RootTreeId),
 }
 
 impl RootCatalog {
@@ -317,7 +257,19 @@ impl RootCatalog {
                     directory: directory_root,
                 });
             }
-            catalog.insert(manifest)?;
+            if catalog
+                .sessions
+                .insert(
+                    manifest.root_session_id.clone(),
+                    manifest.root_tree_id.clone(),
+                )
+                .is_some()
+            {
+                return Err(CatalogError::DuplicateSession(manifest.root_session_id));
+            }
+            catalog
+                .roots
+                .insert(manifest.root_tree_id.clone(), manifest);
         }
         Ok(catalog)
     }
@@ -347,79 +299,21 @@ impl RootCatalog {
                     .as_ref()
                     .is_none_or(|profile| profile == &manifest.profile_id)
             })
-            .flat_map(RootManifest::summaries)
-            .filter(|summary| filter.include_archived || summary.state != SessionState::Archived)
+            .filter(|manifest| filter.include_archived || manifest.state != SessionState::Archived)
+            .map(RootManifest::summary)
             .collect()
     }
 
     fn insert(&mut self, manifest: RootManifest) -> Result<(), CatalogError> {
-        let mut session_ids = BTreeSet::new();
-        for summary in manifest.summaries() {
-            if summary.root_tree_id != manifest.root_tree_id {
-                return Err(CatalogError::SessionRootMismatch {
-                    session: summary.session_id,
-                    actual: summary.root_tree_id,
-                    expected: manifest.root_tree_id.clone(),
-                });
-            }
-            if summary.profile_id != manifest.profile_id {
-                return Err(CatalogError::SessionProfileMismatch {
-                    session: summary.session_id,
-                    actual: summary.profile_id,
-                    expected: manifest.profile_id.clone(),
-                });
-            }
-            if !session_ids.insert(summary.session_id.clone())
-                || self.sessions.contains_key(&summary.session_id)
-            {
-                return Err(CatalogError::DuplicateSession(summary.session_id));
-            }
+        if self.sessions.contains_key(&manifest.root_session_id) {
+            return Err(CatalogError::DuplicateSession(manifest.root_session_id));
         }
-        for session_id in session_ids {
-            self.sessions
-                .insert(session_id, manifest.root_tree_id.clone());
-        }
+        self.sessions.insert(
+            manifest.root_session_id.clone(),
+            manifest.root_tree_id.clone(),
+        );
         self.roots.insert(manifest.root_tree_id.clone(), manifest);
         Ok(())
-    }
-
-    fn upsert_alias(&mut self, summary: SessionSummary) -> Result<RootManifest, CatalogError> {
-        let expected_root = summary.root_tree_id.clone();
-        let manifest = self
-            .roots
-            .get_mut(&expected_root)
-            .ok_or_else(|| CatalogError::UnknownRoot(expected_root.clone()))?;
-        if summary.profile_id != manifest.profile_id {
-            return Err(CatalogError::SessionProfileMismatch {
-                session: summary.session_id,
-                actual: summary.profile_id,
-                expected: manifest.profile_id.clone(),
-            });
-        }
-        if summary.session_id == manifest.root_session_id {
-            manifest.profile_id = summary.profile_id;
-            manifest.title = summary.title;
-            manifest.state = summary.state;
-            manifest.updated_at = summary.updated_at;
-            return Ok(manifest.clone());
-        }
-        if let Some(existing_root) = self.sessions.get(&summary.session_id)
-            && existing_root != &expected_root
-        {
-            return Err(CatalogError::DuplicateSession(summary.session_id));
-        }
-        self.sessions
-            .insert(summary.session_id.clone(), expected_root);
-        if let Some(existing) = manifest
-            .session_aliases
-            .iter_mut()
-            .find(|existing| existing.session_id == summary.session_id)
-        {
-            *existing = summary;
-        } else {
-            manifest.session_aliases.push(summary);
-        }
-        Ok(manifest.clone())
     }
 }
 
@@ -433,6 +327,7 @@ pub struct DaemonOptions {
     pub client_queue_capacity: usize,
     pub command_dedup_capacity: usize,
     pub evolution_source_root: Option<PathBuf>,
+    pub services: ServiceEnablementConfig,
 }
 
 impl Default for DaemonOptions {
@@ -441,11 +336,12 @@ impl Default for DaemonOptions {
             supervisor: SupervisorOptions::default(),
             idle_evict_after: Duration::from_secs(15 * 60),
             maintenance_interval: Duration::from_millis(100),
-            runtime_maintenance_interval: Duration::from_secs(10),
+            runtime_maintenance_interval: Duration::from_secs(1),
             replay_capacity: 4_096,
             client_queue_capacity: 256,
             command_dedup_capacity: 4_096,
             evolution_source_root: None,
+            services: ServiceEnablementConfig::default(),
         }
     }
 }
@@ -459,175 +355,6 @@ pub struct DaemonHealth {
     pub shutting_down: bool,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "principal", content = "profile_id")]
-pub enum TeammateCommandPrincipal {
-    HumanOwner,
-    Agent(ProfileId),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "command")]
-pub enum TeammateCommand {
-    Refresh,
-    AdvanceRead {
-        conversation_id: ConversationId,
-        through_sequence: u64,
-    },
-    ConversationAction {
-        conversation_id: ConversationId,
-        source_event_id: Option<EventId>,
-    },
-    RoundAction {
-        conversation_id: ConversationId,
-        round_id: RoundId,
-        expected_revision: Revision,
-    },
-    AssignmentAction {
-        conversation_id: ConversationId,
-        assignment_id: AssignmentId,
-        expected_revision: Revision,
-    },
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AuthenticatedTeammateCommand {
-    pub command_id: CommandId,
-    pub operation_key: StableKey,
-    pub claimed_principal: TeammateCommandPrincipal,
-    pub generation: Generation,
-    pub expected_through_sequence: Sequence,
-    pub command: TeammateCommand,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TeammateCommandDisposition {
-    Accepted,
-    Replayed,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeammateCommandReceipt {
-    pub command_id: CommandId,
-    pub operation_key: StableKey,
-    pub disposition: TeammateCommandDisposition,
-    pub generation: Generation,
-    pub accepted_through_sequence: Sequence,
-    pub action_id: Option<ActionId>,
-    pub accepted_at: UtcTimestamp,
-}
-
-pub trait TeammateCommandHandler {
-    type Error: std::fmt::Display;
-
-    fn handle(
-        &mut self,
-        principal: &TeammateCommandPrincipal,
-        command: &TeammateCommand,
-    ) -> Result<Option<ActionId>, Self::Error>;
-}
-
-#[derive(Debug, Error)]
-pub enum TeammateCommandRouteError {
-    #[error("teammate command principal does not match authenticated authority")]
-    ForgedPrincipal,
-    #[error("teammate command generation or sequence fence is stale")]
-    StaleFence,
-    #[error("teammate operation key was replayed with different input")]
-    ConflictingReplay,
-    #[error("teammate command handler failed: {0}")]
-    Handler(String),
-    #[error("teammate command clock failed: {0}")]
-    Clock(#[from] keith_agent_types::TimestampError),
-}
-
-pub struct TeammateCommandRouter<H> {
-    handler: H,
-    generation: Generation,
-    through_sequence: Sequence,
-    capacity: usize,
-    order: std::collections::VecDeque<StableKey>,
-    accepted: BTreeMap<StableKey, (AuthenticatedTeammateCommand, TeammateCommandReceipt)>,
-}
-
-impl<H: TeammateCommandHandler> TeammateCommandRouter<H> {
-    pub fn new(
-        handler: H,
-        generation: Generation,
-        through_sequence: Sequence,
-        capacity: usize,
-    ) -> Result<Self, EventStreamError> {
-        if capacity == 0 {
-            return Err(EventStreamError::InvalidCapacity);
-        }
-        Ok(Self {
-            handler,
-            generation,
-            through_sequence,
-            capacity,
-            order: std::collections::VecDeque::with_capacity(capacity),
-            accepted: BTreeMap::new(),
-        })
-    }
-
-    pub fn update_fence(&mut self, generation: Generation, through_sequence: Sequence) {
-        if generation > self.generation
-            || generation == self.generation && through_sequence >= self.through_sequence
-        {
-            self.generation = generation;
-            self.through_sequence = through_sequence;
-        }
-    }
-
-    pub fn route(
-        &mut self,
-        authenticated_principal: &TeammateCommandPrincipal,
-        command: AuthenticatedTeammateCommand,
-    ) -> Result<TeammateCommandReceipt, TeammateCommandRouteError> {
-        if authenticated_principal != &command.claimed_principal {
-            return Err(TeammateCommandRouteError::ForgedPrincipal);
-        }
-        if let Some((accepted, receipt)) = self.accepted.get(&command.operation_key) {
-            if accepted != &command {
-                return Err(TeammateCommandRouteError::ConflictingReplay);
-            }
-            let mut replay = receipt.clone();
-            replay.disposition = TeammateCommandDisposition::Replayed;
-            return Ok(replay);
-        }
-        if command.generation != self.generation
-            || command.expected_through_sequence != self.through_sequence
-        {
-            return Err(TeammateCommandRouteError::StaleFence);
-        }
-        let action_id = self
-            .handler
-            .handle(authenticated_principal, &command.command)
-            .map_err(|error| TeammateCommandRouteError::Handler(error.to_string()))?;
-        let receipt = TeammateCommandReceipt {
-            command_id: command.command_id.clone(),
-            operation_key: command.operation_key.clone(),
-            disposition: TeammateCommandDisposition::Accepted,
-            generation: self.generation,
-            accepted_through_sequence: self.through_sequence,
-            action_id,
-            accepted_at: UtcTimestamp::now()?,
-        };
-        self.order.push_back(command.operation_key.clone());
-        self.accepted
-            .insert(command.operation_key.clone(), (command, receipt.clone()));
-        while self.order.len() > self.capacity {
-            if let Some(oldest) = self.order.pop_front() {
-                self.accepted.remove(&oldest);
-            }
-        }
-        Ok(receipt)
-    }
-}
-
 pub struct DaemonCore {
     instance_id: EntityId,
     data_root: PathBuf,
@@ -636,8 +363,6 @@ pub struct DaemonCore {
     options: DaemonOptions,
     last_worker_events: Vec<WorkerEvent>,
     event_hubs: BTreeMap<RootTreeId, EventHub>,
-    connected_clients: BTreeSet<keith_agent_types::ClientId>,
-    client_session_scopes: BTreeMap<keith_agent_types::ClientId, SessionId>,
     command_ledger: CommandLedger,
     prompt_ingress: EmbeddedStore,
     shutting_down: bool,
@@ -647,24 +372,7 @@ pub struct DaemonCore {
     pending_daemon_restoration: Option<DaemonRestorationNotice>,
     candidate_observations: Vec<CandidateObservation>,
     evolution: EvolutionController,
-    computer_runtime: Option<Box<dyn ComputerCommandRuntime>>,
-}
-
-struct ClientScopeCleanup<'shared, 'daemon> {
-    shared: &'shared Mutex<&'daemon mut DaemonCore>,
-    client_id: keith_agent_types::ClientId,
-}
-
-impl Drop for ClientScopeCleanup<'_, '_> {
-    fn drop(&mut self) {
-        if let Ok(mut daemon) = self.shared.lock() {
-            daemon.connected_clients.remove(&self.client_id);
-            daemon.client_session_scopes.remove(&self.client_id);
-            if let Some(runtime) = daemon.computer_runtime.as_mut() {
-                runtime.disconnect(&self.client_id);
-            }
-        }
-    }
+    platform_services: PlatformServiceCoordinator,
 }
 
 struct EvolutionController {
@@ -706,10 +414,10 @@ pub enum DaemonError {
     PromptIngress(#[from] serde_json::Error),
     #[error(transparent)]
     Telemetry(#[from] TelemetryError),
-    #[error(transparent)]
-    WorkerLease(#[from] LeaseError),
     #[error("self-evolution controller failed: {0}")]
     Evolution(String),
+    #[error("integration coordinator failed: {0}")]
+    Integration(String),
 }
 
 impl DaemonCore {
@@ -783,6 +491,11 @@ impl DaemonCore {
         let command_ledger = CommandLedger::new(options.command_dedup_capacity)?;
         let prompt_ingress =
             EmbeddedStore::open(&data_root.join("state.sqlite"), Some(&FileBackupHook))?;
+        let platform_services = PlatformServiceCoordinator::open(
+            &data_root.join("state.sqlite"),
+            options.services.clone(),
+        )
+        .map_err(|error| DaemonError::Integration(error.to_string()))?;
         let evolution_store = Arc::new(EmbeddedStore::open(
             &data_root.join("state.sqlite"),
             Some(&FileBackupHook),
@@ -834,32 +547,17 @@ impl DaemonCore {
             options,
             last_worker_events: Vec::new(),
             event_hubs: BTreeMap::new(),
-            connected_clients: BTreeSet::new(),
-            client_session_scopes: BTreeMap::new(),
             command_ledger,
             prompt_ingress,
             shutting_down: false,
             startup_recovery,
             worker_runtime_enabled,
-            last_runtime_maintenance: Some(Instant::now()),
+            last_runtime_maintenance: None,
             pending_daemon_restoration,
             candidate_observations: Vec::new(),
             evolution,
-            computer_runtime: None,
+            platform_services,
         })
-    }
-
-    /// Installs the installation-owned live-computer command and event authority.
-    pub fn install_computer_runtime(&mut self, runtime: Box<dyn ComputerCommandRuntime>) {
-        if let Some(mut previous) = self.computer_runtime.replace(runtime) {
-            for client_id in &self.connected_clients {
-                previous.disconnect(client_id);
-            }
-        }
-    }
-
-    pub fn computer_streaming_available(&self) -> bool {
-        self.computer_runtime.is_some()
     }
 
     pub fn catalog(&self) -> &RootCatalog {
@@ -989,6 +687,10 @@ impl DaemonCore {
 
     /// Rebuilds or replaces one root's event hub for an already active generation without
     /// restarting the daemon.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the root is unknown or its worker snapshot cannot seed the event hub.
     pub fn refresh_event_hub(
         &mut self,
         root_tree_id: &RootTreeId,
@@ -1011,16 +713,10 @@ impl DaemonCore {
             .root_for_session(session_id)
             .cloned()
             .ok_or_else(|| DaemonError::UnknownSession(session_id.clone()))?;
-        let status = self.supervisor.status(&root);
-        let status = if let Some(status) = status
-            && status.health != WorkerHealth::Exited
-            && self
-                .supervisor
-                .validate_route(&root, status.generation)
-                .is_ok()
-            && self.supervisor.mark_activity(&root)
-        {
-            status
+        let status = if self.supervisor.mark_activity(&root) {
+            self.supervisor
+                .status(&root)
+                .ok_or_else(|| DaemonError::UnknownSession(session_id.clone()))?
         } else {
             self.supervisor.restart(&root)?
         };
@@ -1033,13 +729,6 @@ impl DaemonCore {
         root_tree_id: &RootTreeId,
         generation: keith_agent_types::Generation,
     ) -> Result<(), DaemonError> {
-        if self
-            .event_hubs
-            .get(root_tree_id)
-            .is_some_and(|hub| hub.generation() == generation)
-        {
-            return Ok(());
-        }
         let manifest = self
             .catalog
             .root(root_tree_id)
@@ -1193,17 +882,17 @@ impl DaemonCore {
         if runtime_maintenance_due {
             let workers = self.supervisor.statuses();
             for worker in workers {
-                // A maintenance-domain failure is not evidence that the authenticated worker
-                // process died. Runtime failures arrive as `RuntimeResponse::Failed`, while a
-                // supervisor error can also be a transient control-channel condition. Monitoring
-                // above is the authoritative process-health boundary and drains confirmed fatal
-                // workers; maintenance must never turn its own probe failure into cancellation of
-                // an otherwise live provider/tool turn.
-                let _ = self.supervisor.execute(
-                    &worker.root_tree_id,
-                    worker.generation,
-                    RuntimeRequest::Maintain,
+                let healthy = matches!(
+                    self.execute_worker(
+                        &worker.root_tree_id,
+                        worker.generation,
+                        RuntimeRequest::Maintain,
+                    ),
+                    Ok(RuntimeResponse::Complete)
                 );
+                if !healthy {
+                    let _ = self.supervisor.drain(&worker.root_tree_id);
+                }
             }
             self.last_runtime_maintenance = Some(Instant::now());
         }
@@ -1359,16 +1048,7 @@ impl DaemonCore {
             return Ok(());
         };
         let connected_client_id = client.client_id.clone();
-        shared
-            .lock()
-            .map_err(|_| DaemonError::LockPoisoned)?
-            .connected_clients
-            .insert(connected_client_id.clone());
-        let _scope_cleanup = ClientScopeCleanup {
-            shared,
-            client_id: connected_client_id.clone(),
-        };
-        let mut features = BTreeSet::from([
+        let features = BTreeSet::from([
             Feature::SessionLifecycle,
             Feature::Branching,
             Feature::Steering,
@@ -1385,16 +1065,15 @@ impl DaemonCore {
             Feature::DeliveryDispatch,
             Feature::AttachmentStaging,
             Feature::SelfEvolution,
-            Feature::AgentLifecycle,
-            Feature::Conversations,
+            Feature::ChannelAccounts,
+            Feature::AcpConnections,
+            Feature::Plugins,
+            Feature::ConnectedApps,
+            Feature::Computers,
+            Feature::Recordings,
+            Feature::Recipes,
+            Feature::HarnessRepairs,
         ]);
-        if shared
-            .lock()
-            .map_err(|_| DaemonError::LockPoisoned)?
-            .computer_streaming_available()
-        {
-            features.insert(Feature::ComputerStreaming);
-        }
         let hello = negotiate(
             &client,
             CURRENT_PROTOCOL_VERSION,
@@ -1410,6 +1089,7 @@ impl DaemonCore {
                 Err(error) if error.is_timed_out() => {
                     let events = {
                         let mut daemon = shared.lock().map_err(|_| DaemonError::LockPoisoned)?;
+                        daemon.maintain()?;
                         daemon.drain_client_events(&connected_client_id)?
                     };
                     for event in events {
@@ -1512,14 +1192,9 @@ impl DaemonCore {
                     unsupported_feature: None,
                 })
             } else {
-                let requester_scope = effective_requester_scope(
-                    self.client_session_scopes.get(connected_client_id),
-                    command.session_id.as_ref(),
-                )
-                .cloned();
                 let (result, events) = self.execute_command(
                     connected_client_id,
-                    requester_scope.as_ref(),
+                    command.session_id.as_ref(),
                     command.command_id.clone(),
                     command.command,
                     events,
@@ -1558,26 +1233,6 @@ impl DaemonCore {
                 Err(error) => return Err(error.into()),
             }
         }
-        if remaining > 0
-            && let Some(runtime) = self.computer_runtime.as_mut()
-        {
-            let mut pending = runtime
-                .drain_events(client_id, remaining)
-                .map_err(|error| DaemonError::Runtime(error.to_string()))?;
-            if pending.len() > remaining
-                || pending.iter().any(|event| {
-                    !matches!(
-                        event.event,
-                        DaemonEvent::Computer(_) | DaemonEvent::Teammates(_)
-                    )
-                })
-            {
-                return Err(DaemonError::Runtime(
-                    "computer runtime returned an invalid client event batch".into(),
-                ));
-            }
-            events.append(&mut pending);
-        }
         Ok(events)
     }
 
@@ -1591,19 +1246,6 @@ impl DaemonCore {
         events: &mut dyn FnMut(EventEnvelope),
     ) -> (CommandResult, Vec<keith_protocol::EventEnvelope>) {
         let embedded_session_id = command_session_id(&command).cloned();
-        if command_rejects_session_scope(&command) && scope_session_id.is_some() {
-            return (
-                CommandResult::Rejected(CommandError {
-                    error: CommonError::new(
-                        ErrorCode::Unauthorized,
-                        "installation administration cannot inherit a session scope",
-                        false,
-                    ),
-                    unsupported_feature: None,
-                }),
-                Vec::new(),
-            );
-        }
         if let (Some(scope), Some(embedded)) = (scope_session_id, embedded_session_id.as_ref())
             && scope != embedded
             && !command_supports_descendant_target(&command)
@@ -1621,69 +1263,14 @@ impl DaemonCore {
             );
         }
         match command {
-            ClientCommand::Computer(command) => {
-                let Some(runtime) = self.computer_runtime.as_mut() else {
-                    return (
-                        CommandResult::Rejected(CommandError {
-                            error: CommonError::new(
-                                ErrorCode::Unavailable,
-                                "computer streaming is unavailable",
-                                true,
-                            ),
-                            unsupported_feature: Some(Feature::ComputerStreaming),
-                        }),
-                        Vec::new(),
-                    );
-                };
-                match runtime.execute(client_id, &self.instance_id, command) {
-                    Ok(response) => (
-                        CommandResult::Data(Box::new(ResponsePayload::Computer(Box::new(
-                            response,
-                        )))),
-                        Vec::new(),
-                    ),
-                    Err(error) => (
-                        CommandResult::Rejected(CommandError {
-                            error: CommonError::new(error.code, error.message, error.retryable),
-                            unsupported_feature: None,
-                        }),
-                        Vec::new(),
-                    ),
-                }
-            }
-            ClientCommand::Conversation(ConversationCommand::Teammates(
-                TeammatesCommand::Resume(request),
-            )) if request.conversation_id.is_none() && request.profile_id.is_some() => {
-                let Some(runtime) = self.computer_runtime.as_mut() else {
-                    return (
-                        CommandResult::Rejected(CommandError {
-                            error: CommonError::new(
-                                ErrorCode::Unavailable,
-                                "computer catalog streaming is unavailable",
-                                true,
-                            ),
-                            unsupported_feature: Some(Feature::ComputerStreaming),
-                        }),
-                        Vec::new(),
-                    );
-                };
-                match runtime.resume_catalog(client_id, &self.instance_id, request) {
-                    Ok(envelope) => (
-                        CommandResult::Data(Box::new(ResponsePayload::TeammatesEvent(Box::new(
-                            envelope,
-                        )))),
-                        Vec::new(),
-                    ),
-                    Err(error) => (
-                        CommandResult::Rejected(CommandError {
-                            error: CommonError::new(error.code, error.message, error.retryable),
-                            unsupported_feature: None,
-                        }),
-                        Vec::new(),
-                    ),
-                }
-            }
             ClientCommand::Evolution(command) => self.execute_evolution_command(command),
+            ClientCommand::Integration(command) => self.execute_integration_command(command),
+            ClientCommand::ChannelAccount(command) => {
+                self.execute_legacy_channel_account_command(command)
+            }
+            ClientCommand::HarnessRepair(command) => {
+                self.execute_legacy_harness_repair_command(command)
+            }
             ClientCommand::ListProfiles => {
                 let result = if self.worker_runtime_enabled {
                     self.runtime_profiles()
@@ -1697,7 +1284,6 @@ impl DaemonCore {
                             workspace_id: keith_agent_types::WorkspaceId::new(),
                             display_name: manifest.profile_id.to_string(),
                             enabled: true,
-                            background: None,
                         })
                         .collect())
                 };
@@ -1722,23 +1308,26 @@ impl DaemonCore {
                 ),
                 Err(error) => rejected_daemon(error),
             },
+            ClientCommand::ForkSession(request) => match self.fork_runtime_session(&request) {
+                Ok(snapshot) => (
+                    CommandResult::Data(Box::new(ResponsePayload::Snapshot(Box::new(snapshot)))),
+                    Vec::new(),
+                ),
+                Err(error) => rejected_daemon(error),
+            },
             ClientCommand::AttachSession(attach) => {
                 match self.activate_and_attach(client_id, &attach) {
-                    Ok(recovery) => {
-                        self.client_session_scopes
-                            .insert(client_id.clone(), attach.session_id.clone());
-                        (
-                            recovery.snapshot.map_or(
-                                CommandResult::Accepted { action_id: None },
-                                |snapshot| {
-                                    CommandResult::Data(Box::new(ResponsePayload::Snapshot(
-                                        Box::new(snapshot),
-                                    )))
-                                },
-                            ),
-                            recovery.events,
-                        )
-                    }
+                    Ok(recovery) => (
+                        recovery.snapshot.map_or(
+                            CommandResult::Accepted { action_id: None },
+                            |snapshot| {
+                                CommandResult::Data(Box::new(ResponsePayload::Snapshot(Box::new(
+                                    snapshot,
+                                ))))
+                            },
+                        ),
+                        recovery.events,
+                    ),
                     Err(error) => (
                         CommandResult::Rejected(CommandError {
                             error: CommonError::new(ErrorCode::NotFound, error.to_string(), false),
@@ -1754,9 +1343,6 @@ impl DaemonCore {
                 {
                     hub.detach(client_id);
                 }
-                // Detaching stops event delivery but deliberately does not erase requester
-                // origin. A session-bound client cannot turn itself into the installation owner
-                // by detaching and sending a scope-free command on the same authenticated client.
                 (CommandResult::Accepted { action_id: None }, Vec::new())
             }
             ClientCommand::AcknowledgeEvents(acknowledgement) => {
@@ -1816,48 +1402,6 @@ impl DaemonCore {
                 Err(error) => rejected_daemon(error),
             },
             feature => {
-                let requester_authority =
-                    match runtime_command_authority(&self.catalog, scope_session_id) {
-                        Ok(authority) => authority,
-                        Err(error) => return rejected_daemon(error),
-                    };
-                if let ClientCommand::Conversation(ConversationCommand::Teammates(
-                    TeammatesCommand::PeerMessage(request),
-                )) = &feature
-                    && peer_message_provisioning_authorized(
-                        &self.catalog,
-                        &requester_authority,
-                        scope_session_id,
-                        request,
-                    )
-                    && let Err(error) = self.provision_conversation_participant_session(
-                        &request.conversation_id,
-                        &request.recipient_profile_id,
-                    )
-                {
-                    return rejected_daemon(error);
-                }
-                let group_provisioning = match &feature {
-                    ClientCommand::Conversation(ConversationCommand::Teammates(
-                        TeammatesCommand::CreateGroup(request),
-                    )) => Some(request.initial_profile_ids.clone()),
-                    _ => None,
-                };
-                let enabled_profile = match &feature {
-                    ClientCommand::AgentLifecycle(AgentLifecycleCommand::Enable(request)) => {
-                        Some(request.profile_id.clone())
-                    }
-                    _ => None,
-                };
-                let conversation_wake = match &feature {
-                    ClientCommand::Conversation(ConversationCommand::Teammates(
-                        TeammatesCommand::PeerMessage(request),
-                    )) => Some(request.conversation_id.clone()),
-                    ClientCommand::Conversation(ConversationCommand::Teammates(
-                        TeammatesCommand::StartRound(request),
-                    )) => Some(request.conversation_id.clone()),
-                    _ => None,
-                };
                 let effective_session_id = command_route_session_id(
                     scope_session_id,
                     embedded_session_id.as_ref(),
@@ -1872,64 +1416,13 @@ impl DaemonCore {
                 };
                 let result = self.execute_runtime_feature(
                     client_id,
-                    requester_authority,
                     effective_session_id,
                     &feature,
                     generation,
                 );
                 match result {
                     Ok(mut result) => {
-                        let branched_session = match (&feature, &result) {
-                            (
-                                ClientCommand::BranchSession(request),
-                                CommandResult::Data(payload),
-                            ) => match payload.as_ref() {
-                                ResponsePayload::Snapshot(snapshot)
-                                    if snapshot.session.session_id != request.session_id =>
-                                {
-                                    Some(snapshot.session.clone())
-                                }
-                                _ => None,
-                            },
-                            _ => None,
-                        };
-                        if let Some(summary) = &branched_session
-                            && let Err(error) = self.register_runtime_session_alias(summary)
-                        {
-                            return rejected_daemon(error);
-                        }
                         if !matches!(result, CommandResult::Rejected(_))
-                            && let Some(profile_id) = enabled_profile
-                            && let Err(error) = self.profile_runtime_root(&profile_id)
-                        {
-                            return rejected_daemon(error);
-                        }
-                        if !matches!(result, CommandResult::Rejected(_))
-                            && let Some(profile_ids) = group_provisioning
-                        {
-                            let Some(conversation_id) = command_result_conversation_id(&result)
-                            else {
-                                return rejected_daemon(DaemonError::Runtime(
-                                    "group creation returned no canonical conversation identity"
-                                        .into(),
-                                ));
-                            };
-                            if let Err(error) = self.provision_group_participant_sessions(
-                                effective_session_id,
-                                &conversation_id,
-                                &profile_ids,
-                            ) {
-                                return rejected_daemon(error);
-                            }
-                        }
-                        if !matches!(result, CommandResult::Rejected(_))
-                            && let Some(conversation_id) = conversation_wake
-                            && let Err(error) = self.wake_conversation_actions(&conversation_id)
-                        {
-                            return rejected_daemon(error);
-                        }
-                        if branched_session.is_none()
-                            && !matches!(result, CommandResult::Rejected(_))
                             && let Some(session_id) = effective_session_id
                         {
                             let authoritative =
@@ -1951,6 +1444,169 @@ impl DaemonCore {
         }
     }
 
+    fn execute_integration_command(
+        &mut self,
+        command: IntegrationCommand,
+    ) -> (CommandResult, Vec<keith_protocol::EventEnvelope>) {
+        let result = match command {
+            IntegrationCommand::List {
+                profile_id,
+                service,
+            } => self
+                .platform_services
+                .list(&profile_id, service)
+                .map(|projection| {
+                    CommandResult::Data(Box::new(ResponsePayload::ProfileIntegrations(Box::new(
+                        projection,
+                    ))))
+                }),
+            IntegrationCommand::Inspect {
+                profile_id,
+                service,
+                resource_id,
+            } => self
+                .platform_services
+                .inspect(&profile_id, service, &resource_id)
+                .map(|projection| {
+                    CommandResult::Data(Box::new(ResponsePayload::IntegrationResource(Box::new(
+                        projection,
+                    ))))
+                }),
+            IntegrationCommand::Mutate(mutation) => {
+                let mutation = *mutation;
+                if let Err(error) = self.validate_integration_session(
+                    &mutation.profile_id,
+                    &mutation.authority.session_id,
+                ) {
+                    return rejected_integration(&error);
+                }
+                let now = match UtcTimestamp::now() {
+                    Ok(now) => now,
+                    Err(error) => {
+                        return rejected_daemon(DaemonError::Runtime(error.to_string()));
+                    }
+                };
+                self.platform_services
+                    .mutate(mutation, now)
+                    .map(|result| match result {
+                        IntegrationMutationResult::Resource(projection) => CommandResult::Data(
+                            Box::new(ResponsePayload::IntegrationResource(Box::new(projection))),
+                        ),
+                        IntegrationMutationResult::Deleted(projection) => CommandResult::Data(
+                            Box::new(ResponsePayload::IntegrationDeletion(projection)),
+                        ),
+                    })
+            }
+        };
+        match result {
+            Ok(result) => (result, Vec::new()),
+            Err(error) => rejected_integration(&error),
+        }
+    }
+
+    fn execute_legacy_channel_account_command(
+        &self,
+        command: keith_protocol::ChannelAccountCommand,
+    ) -> (CommandResult, Vec<keith_protocol::EventEnvelope>) {
+        let read = match command {
+            keith_protocol::ChannelAccountCommand::List { profile_id } => self
+                .platform_services
+                .list(
+                    &profile_id,
+                    Some(keith_protocol::IntegrationService::ChannelAccount),
+                )
+                .map(|projection| {
+                    CommandResult::Data(Box::new(ResponsePayload::ProfileIntegrations(Box::new(
+                        projection,
+                    ))))
+                }),
+            keith_protocol::ChannelAccountCommand::Inspect {
+                profile_id,
+                account_id,
+            } => account_id
+                .parse()
+                .map_err(|_| IntegrationError::NotFound)
+                .and_then(|resource_id| {
+                    self.platform_services.inspect(
+                        &profile_id,
+                        keith_protocol::IntegrationService::ChannelAccount,
+                        &resource_id,
+                    )
+                })
+                .map(|projection| {
+                    CommandResult::Data(Box::new(ResponsePayload::IntegrationResource(Box::new(
+                        projection,
+                    ))))
+                }),
+            keith_protocol::ChannelAccountCommand::Connect(_)
+            | keith_protocol::ChannelAccountCommand::Configure(_)
+            | keith_protocol::ChannelAccountCommand::Test { .. }
+            | keith_protocol::ChannelAccountCommand::Pause { .. }
+            | keith_protocol::ChannelAccountCommand::Resume { .. }
+            | keith_protocol::ChannelAccountCommand::RotateCredentials { .. }
+            | keith_protocol::ChannelAccountCommand::Remove { .. } => {
+                return rejected_integration(&IntegrationError::Unauthorized(
+                    "channel mutations require an IntegrationMutation with full external-action authority"
+                        .into(),
+                ));
+            }
+        };
+        match read {
+            Ok(result) => (result, Vec::new()),
+            Err(error) => rejected_integration(&error),
+        }
+    }
+
+    fn execute_legacy_harness_repair_command(
+        &self,
+        command: keith_protocol::HarnessRepairCommand,
+    ) -> (CommandResult, Vec<keith_protocol::EventEnvelope>) {
+        match command {
+            keith_protocol::HarnessRepairCommand::Refresh { profile_id } => {
+                match self.platform_services.list(
+                    &profile_id,
+                    Some(keith_protocol::IntegrationService::HarnessRepair),
+                ) {
+                    Ok(projection) => (
+                        CommandResult::Data(Box::new(ResponsePayload::ProfileIntegrations(
+                            Box::new(projection),
+                        ))),
+                        Vec::new(),
+                    ),
+                    Err(error) => rejected_integration(&error),
+                }
+            }
+            keith_protocol::HarnessRepairCommand::SetMode { .. }
+            | keith_protocol::HarnessRepairCommand::Approve { .. }
+            | keith_protocol::HarnessRepairCommand::Promote { .. }
+            | keith_protocol::HarnessRepairCommand::Reverse { .. }
+            | keith_protocol::HarnessRepairCommand::RetryCurrentTask { .. } => {
+                rejected_integration(&IntegrationError::Unauthorized(
+                    "harness mutations require an IntegrationMutation with full external-action authority"
+                        .into(),
+                ))
+            }
+        }
+    }
+
+    fn validate_integration_session(
+        &self,
+        profile_id: &ProfileId,
+        session_id: &SessionId,
+    ) -> Result<(), IntegrationError> {
+        let root = self
+            .catalog
+            .root_for_session(session_id)
+            .ok_or(IntegrationError::NotFound)?;
+        let manifest = self.catalog.root(root).ok_or(IntegrationError::NotFound)?;
+        if manifest.profile_id != *profile_id {
+            return Err(IntegrationError::Unauthorized(
+                "action session does not belong to the requested profile".into(),
+            ));
+        }
+        Ok(())
+    }
+
     fn activate_and_attach(
         &mut self,
         client_id: &keith_agent_types::ClientId,
@@ -1962,22 +1618,13 @@ impl DaemonCore {
             .root_for_session(&attach.session_id)
             .cloned()
             .ok_or_else(|| DaemonError::UnknownSession(attach.session_id.clone()))?;
-        let is_alias = self
-            .catalog
-            .root(&root)
-            .is_some_and(|manifest| manifest.root_session_id != attach.session_id);
-        let alias_snapshot = if is_alias {
-            Some(self.runtime_snapshot(&attach.session_id)?)
-        } else {
-            None
-        };
         let pending = self.pending_daemon_restoration.clone();
-        let mut recovery = {
+        let recovery = {
             let hub = self
                 .event_hubs
                 .get_mut(&root)
                 .ok_or(DaemonError::UnknownRoot(root))?;
-            let recovery = hub.attach(client_id.clone(), attach.resume.as_ref());
+            let mut recovery = hub.attach(client_id.clone(), attach.resume.as_ref());
             if let Some(notice) = &pending {
                 hub.publish(DaemonEvent::Warning(CommonError::new(
                     ErrorCode::Unavailable,
@@ -1987,14 +1634,10 @@ impl DaemonCore {
                     ),
                     false,
                 )))?;
+                recovery.events.extend(hub.poll(client_id, 1)?);
             }
             recovery
         };
-        if let Some(snapshot) = alias_snapshot {
-            recovery.mode = keith_protocol::ResumeMode::SnapshotThenDelta;
-            recovery.snapshot = Some(snapshot);
-            recovery.events.clear();
-        }
         if let Some(notice) = pending {
             acknowledge_restoration_notice(
                 self.data_root.join("self-evolution").join("daemon-images"),
@@ -2106,7 +1749,6 @@ impl DaemonCore {
             }
         };
         self.insert_runtime_session(session, &session_id, &root_tree_id)?;
-        self.ensure_event_hub(&root_tree_id, status.generation)?;
         Ok(())
     }
 
@@ -2148,6 +1790,55 @@ impl DaemonCore {
         self.runtime_snapshot(&session_id)
     }
 
+    fn fork_runtime_session(
+        &mut self,
+        request: &keith_protocol::ForkSession,
+    ) -> Result<SessionSnapshot, DaemonError> {
+        if !self.worker_runtime_enabled {
+            return Err(runtime_unavailable());
+        }
+        if self
+            .catalog
+            .root_for_session(&request.source_session_id)
+            .is_none()
+        {
+            return Err(DaemonError::UnknownSession(
+                request.source_session_id.clone(),
+            ));
+        }
+        let session_id = SessionId::new();
+        let root_tree_id = RootTreeId::new();
+        let status = self.supervisor.start(root_tree_id.clone())?;
+        let response = self.execute_worker(
+            &root_tree_id,
+            status.generation,
+            RuntimeRequest::ForkSession {
+                source_session_id: request.source_session_id.clone(),
+                session_id: session_id.clone(),
+                root_tree_id: root_tree_id.clone(),
+                title: request.title.clone(),
+                generation: status.generation,
+            },
+        );
+        let session = match response {
+            Ok(RuntimeResponse::Session(session)) => session,
+            Ok(response) => {
+                let _ = self.supervisor.drain(&root_tree_id);
+                return Err(DaemonError::Runtime(format!(
+                    "worker returned {} for session fork",
+                    runtime_response_kind(&response)
+                )));
+            }
+            Err(error) => {
+                let _ = self.supervisor.drain(&root_tree_id);
+                return Err(error);
+            }
+        };
+        self.insert_runtime_session(session, &session_id, &root_tree_id)?;
+        self.ensure_event_hub(&root_tree_id, status.generation)?;
+        self.runtime_snapshot(&session_id)
+    }
+
     fn insert_runtime_session(
         &mut self,
         session: RuntimeSession,
@@ -2165,7 +1856,6 @@ impl DaemonCore {
             version: CURRENT_SCHEMA_VERSION,
             root_tree_id: session.root_tree_id,
             root_session_id: session.session_id,
-            session_aliases: Vec::new(),
             profile_id: session.profile_id,
             title: session.title,
             state: if session.archived {
@@ -2178,14 +1868,6 @@ impl DaemonCore {
         self.persist_root_manifest(&manifest)?;
         self.catalog.insert(manifest)?;
         Ok(())
-    }
-
-    fn register_runtime_session_alias(
-        &mut self,
-        summary: &SessionSummary,
-    ) -> Result<(), DaemonError> {
-        let manifest = self.catalog.upsert_alias(summary.clone())?;
-        self.persist_root_manifest(&manifest)
     }
 
     fn execute_worker(
@@ -2201,51 +1883,6 @@ impl DaemonCore {
             RuntimeResponse::Failed(error) => Err(DaemonError::Runtime(error)),
             response => Ok(response),
         }
-    }
-
-    fn wake_conversation_actions(
-        &mut self,
-        conversation_id: &ConversationId,
-    ) -> Result<(), DaemonError> {
-        let (query_root, query_status) = self.runtime_route(None)?;
-        let response = self.execute_worker(
-            &query_root,
-            query_status.generation,
-            RuntimeRequest::PendingConversationActionSessions {
-                conversation_id: conversation_id.clone(),
-            },
-        )?;
-        let RuntimeResponse::Sessions(sessions) = response else {
-            return Err(DaemonError::Runtime(format!(
-                "worker returned {} for pending conversation action routing",
-                runtime_response_kind(&response)
-            )));
-        };
-        let mut active_roots = BTreeMap::new();
-        for session in sessions {
-            let catalog_root = self
-                .catalog
-                .root_for_session(&session.session_id)
-                .ok_or_else(|| DaemonError::UnknownSession(session.session_id.clone()))?;
-            if catalog_root != &session.root_tree_id || session.archived {
-                return Err(DaemonError::Runtime(
-                    "pending conversation action resolved outside its cataloged active root".into(),
-                ));
-            }
-            let status = self.activate_session(&session.session_id)?;
-            active_roots.insert(session.root_tree_id, status.generation);
-        }
-        for (root_tree_id, generation) in active_roots {
-            self.execute_worker(
-                &root_tree_id,
-                generation,
-                RuntimeRequest::DrainConversationActions {
-                    conversation_id: conversation_id.clone(),
-                    generation,
-                },
-            )?;
-        }
-        Ok(())
     }
 
     fn runtime_route(
@@ -2285,176 +1922,6 @@ impl DaemonCore {
         }
     }
 
-    fn profile_runtime_root(
-        &mut self,
-        profile_id: &ProfileId,
-    ) -> Result<(RootTreeId, WorkerStatus), DaemonError> {
-        let existing = self
-            .catalog
-            .roots
-            .values()
-            .filter(|manifest| {
-                manifest.profile_id == *profile_id && manifest.state != SessionState::Archived
-            })
-            .max_by_key(|manifest| manifest.updated_at)
-            .cloned();
-        if let Some(manifest) = existing {
-            let status = self.activate_session(&manifest.root_session_id)?;
-            return Ok((manifest.root_tree_id, status));
-        }
-        let profile = self
-            .runtime_profiles()
-            .map_err(DaemonError::Runtime)?
-            .into_iter()
-            .find(|profile| &profile.id == profile_id && profile.enabled)
-            .ok_or_else(|| {
-                DaemonError::Runtime(format!(
-                    "conversation participant profile {profile_id} has no enabled runtime"
-                ))
-            })?;
-        let snapshot = self.create_runtime_session(&keith_protocol::CreateSession {
-            profile_id: profile.id,
-            workspace_id: profile.workspace_id,
-            title: Some("New conversation".into()),
-        })?;
-        let root_tree_id = snapshot.session.root_tree_id.clone();
-        let status = self.activate_session(&snapshot.session.session_id)?;
-        Ok((root_tree_id, status))
-    }
-
-    fn provision_conversation_participant_session(
-        &mut self,
-        conversation_id: &ConversationId,
-        profile_id: &ProfileId,
-    ) -> Result<SessionId, DaemonError> {
-        let (root_tree_id, status) = self.profile_runtime_root(profile_id)?;
-        let response = self.execute_worker(
-            &root_tree_id,
-            status.generation,
-            RuntimeRequest::ProvisionConversationSession {
-                conversation_id: conversation_id.clone(),
-                profile_id: profile_id.clone(),
-                generation: status.generation,
-                now: UtcTimestamp::now().map_err(|error| {
-                    DaemonError::Runtime(format!(
-                        "conversation provisioning clock is unavailable: {error}"
-                    ))
-                })?,
-            },
-        )?;
-        let RuntimeResponse::Session(session) = response else {
-            return Err(DaemonError::Runtime(format!(
-                "participant worker returned {} for conversation provisioning",
-                runtime_response_kind(&response)
-            )));
-        };
-        if session.root_tree_id != root_tree_id
-            || session.profile_id != *profile_id
-            || session.archived
-        {
-            return Err(DaemonError::Runtime(
-                "participant worker provisioned a conversation session outside its assigned profile root"
-                    .into(),
-            ));
-        }
-        Ok(session.session_id)
-    }
-
-    fn provision_group_participant_sessions(
-        &mut self,
-        route_session_id: Option<&SessionId>,
-        conversation_id: &ConversationId,
-        profile_ids: &[ProfileId],
-    ) -> Result<Vec<SessionId>, DaemonError> {
-        let mut expected = BTreeMap::new();
-        for profile_id in profile_ids {
-            if expected.contains_key(profile_id) {
-                continue;
-            }
-            let root_tree_id = if let Some(manifest) = self
-                .catalog
-                .roots
-                .values()
-                .filter(|manifest| {
-                    manifest.profile_id == *profile_id && manifest.state != SessionState::Archived
-                })
-                .max_by_key(|manifest| manifest.updated_at)
-            {
-                manifest.root_tree_id.clone()
-            } else {
-                self.profile_runtime_root(profile_id)?.0
-            };
-            expected.insert(profile_id.clone(), root_tree_id);
-        }
-        if expected.is_empty() {
-            return Err(DaemonError::Runtime(
-                "group creation returned no participant profiles to provision".into(),
-            ));
-        }
-        let assignments = expected
-            .iter()
-            .map(|(profile_id, root_tree_id)| ConversationSessionAssignment {
-                profile_id: profile_id.clone(),
-                root_tree_id: root_tree_id.clone(),
-            })
-            .collect::<Vec<_>>();
-        let (route_root, status) = self.runtime_route(route_session_id)?;
-        let response = self.execute_worker(
-            &route_root,
-            status.generation,
-            RuntimeRequest::ProvisionConversationSessions {
-                conversation_id: conversation_id.clone(),
-                assignments,
-                generation: status.generation,
-                now: UtcTimestamp::now().map_err(|error| {
-                    DaemonError::Runtime(format!(
-                        "group participant provisioning clock is unavailable: {error}"
-                    ))
-                })?,
-            },
-        )?;
-        let RuntimeResponse::Sessions(sessions) = response else {
-            return Err(DaemonError::Runtime(format!(
-                "group coordinator worker returned {} for participant provisioning",
-                runtime_response_kind(&response)
-            )));
-        };
-        if sessions.len() != expected.len() {
-            return Err(DaemonError::Runtime(
-                "group coordinator worker returned an incomplete participant session batch".into(),
-            ));
-        }
-        let mut session_ids = Vec::with_capacity(sessions.len());
-        let mut returned_profiles = BTreeSet::new();
-        for session in sessions {
-            if session.archived
-                || !returned_profiles.insert(session.profile_id.clone())
-                || expected.get(&session.profile_id) != Some(&session.root_tree_id)
-            {
-                return Err(DaemonError::Runtime(
-                    "group coordinator worker provisioned a participant session outside its assigned profile root"
-                        .into(),
-                ));
-            }
-            let summary = SessionSummary {
-                session_id: session.session_id.clone(),
-                root_tree_id: session.root_tree_id,
-                profile_id: session.profile_id,
-                title: session.title,
-                state: SessionState::Dormant,
-                updated_at: session.created_at,
-            };
-            self.register_runtime_session_alias(&summary)?;
-            session_ids.push(summary.session_id);
-        }
-        if returned_profiles.len() != expected.len() {
-            return Err(DaemonError::Runtime(
-                "group coordinator worker omitted an assigned participant profile".into(),
-            ));
-        }
-        Ok(session_ids)
-    }
-
     fn select_runtime_model(
         &mut self,
         selection: &keith_protocol::ModelSelection,
@@ -2476,7 +1943,6 @@ impl DaemonCore {
     fn execute_runtime_feature(
         &mut self,
         client_id: &keith_agent_types::ClientId,
-        requester_authority: RuntimeCommandAuthority,
         session_id: Option<&SessionId>,
         command: &ClientCommand,
         generation: Generation,
@@ -2487,14 +1953,11 @@ impl DaemonCore {
         } else {
             status.generation
         };
-        let worker_binding = self.runtime_worker_binding(&root, &status)?;
         match self.execute_worker(
             &root,
             status.generation,
             RuntimeRequest::ExecuteFeature {
                 client_id: client_id.clone(),
-                requester_authority,
-                worker_binding,
                 scope_session_id: session_id.cloned(),
                 command: command.clone(),
                 generation,
@@ -2506,29 +1969,6 @@ impl DaemonCore {
                 runtime_response_kind(&response)
             ))),
         }
-    }
-
-    fn runtime_worker_binding(
-        &self,
-        root_tree_id: &RootTreeId,
-        status: &WorkerStatus,
-    ) -> Result<RuntimeWorkerBinding, DaemonError> {
-        let lease = LeaseManager::open(self.supervisor.lease_database_path())?
-            .current(root_tree_id)?
-            .ok_or_else(|| {
-                DaemonError::Runtime("routed worker lease is missing or expired".into())
-            })?;
-        if lease.worker_id != status.worker_id || lease.generation != status.generation {
-            return Err(DaemonError::Runtime(
-                "routed worker status does not match its current lease".into(),
-            ));
-        }
-        Ok(RuntimeWorkerBinding {
-            root_tree_id: lease.root_tree_id,
-            worker_id: lease.worker_id,
-            generation: lease.generation,
-            lease_authentication: lease.authentication,
-        })
     }
 
     fn runtime_snapshot(&mut self, session_id: &SessionId) -> Result<SessionSnapshot, DaemonError> {
@@ -2914,14 +2354,14 @@ fn runtime_unavailable() -> DaemonError {
     DaemonError::Runtime("worker runtime is disabled".into())
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "test-fault-injection"))]
 pub(crate) fn startup_fault_requested(boundary: &str) -> bool {
     std::env::var("KEITH_DAEMON_STARTUP_FAIL_AT").as_deref() == Ok(boundary)
         && std::env::var("KEITH_DAEMON_STARTUP_FAIL_IMAGE").ok()
             == std::env::var("KEITH_DAEMON_READY_IMAGE").ok()
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(any(debug_assertions, feature = "test-fault-injection")))]
 pub(crate) const fn startup_fault_requested(_boundary: &str) -> bool {
     false
 }
@@ -2939,41 +2379,6 @@ const fn runtime_response_kind(response: &RuntimeResponse) -> &'static str {
     }
 }
 
-fn command_result_conversation_id(result: &CommandResult) -> Option<ConversationId> {
-    let CommandResult::Data(payload) = result else {
-        return None;
-    };
-    let ResponsePayload::TeammatesReceipt(receipt) = payload.as_ref() else {
-        return None;
-    };
-    receipt.conversation_id.clone()
-}
-
-fn peer_message_provisioning_authorized(
-    catalog: &RootCatalog,
-    authority: &RuntimeCommandAuthority,
-    scope_session_id: Option<&SessionId>,
-    request: &keith_protocol::PeerMessageCommand,
-) -> bool {
-    let RuntimeCommandAuthority::Agent {
-        profile_id,
-        session_id,
-    } = authority
-    else {
-        return false;
-    };
-    if profile_id != &request.sender_profile_id || Some(session_id) != scope_session_id {
-        return false;
-    }
-    catalog
-        .root_for_session(&request.participant_session_id)
-        .and_then(|root_tree_id| catalog.root(root_tree_id))
-        .is_some_and(|manifest| {
-            manifest.profile_id == request.recipient_profile_id
-                && manifest.state != SessionState::Archived
-        })
-}
-
 fn command_session_id(command: &ClientCommand) -> Option<&SessionId> {
     match command {
         ClientCommand::AttachSession(request) => Some(&request.session_id),
@@ -2983,6 +2388,7 @@ fn command_session_id(command: &ClientCommand) -> Option<&SessionId> {
         | ClientCommand::ListGoals { session_id }
         | ClientCommand::ListChildren { session_id } => Some(session_id),
         ClientCommand::BranchSession(request) => Some(&request.session_id),
+        ClientCommand::ForkSession(request) => Some(&request.source_session_id),
         ClientCommand::SelectBranch(request) => Some(&request.session_id),
         ClientCommand::SubmitPrompt(request) => Some(&request.session_id),
         ClientCommand::Steer(request) => Some(&request.session_id),
@@ -3000,60 +2406,41 @@ const fn command_supports_descendant_target(command: &ClientCommand) -> bool {
     matches!(command, ClientCommand::CreateChild(_))
 }
 
-const fn command_rejects_session_scope(command: &ClientCommand) -> bool {
-    matches!(
-        command,
-        ClientCommand::AgentLifecycle(_) | ClientCommand::Computer(_)
-    )
-}
-
 fn command_route_session_id<'a>(
     scope_session_id: Option<&'a SessionId>,
     embedded_session_id: Option<&'a SessionId>,
     command: &ClientCommand,
 ) -> Option<&'a SessionId> {
-    if matches!(
-        command,
-        ClientCommand::AgentLifecycle(_) | ClientCommand::Computer(_)
-    ) {
-        None
-    } else if command_supports_descendant_target(command) {
+    if command_supports_descendant_target(command) {
         scope_session_id.or(embedded_session_id)
     } else {
         embedded_session_id.or(scope_session_id)
     }
 }
 
-fn effective_requester_scope<'a>(
-    attached_scope: Option<&'a SessionId>,
-    envelope_scope: Option<&'a SessionId>,
-) -> Option<&'a SessionId> {
-    attached_scope.or(envelope_scope)
-}
-
-fn runtime_command_authority(
-    catalog: &RootCatalog,
-    requester_scope: Option<&SessionId>,
-) -> Result<RuntimeCommandAuthority, DaemonError> {
-    let Some(session_id) = requester_scope else {
-        return Ok(RuntimeCommandAuthority::HumanOwner);
-    };
-    let root = catalog
-        .root_for_session(session_id)
-        .ok_or_else(|| DaemonError::UnknownSession(session_id.clone()))?;
-    let profile_id = catalog
-        .root(root)
-        .ok_or_else(|| DaemonError::UnknownSession(session_id.clone()))?
-        .profile_id
-        .clone();
-    Ok(RuntimeCommandAuthority::Agent {
-        profile_id,
-        session_id: session_id.clone(),
-    })
-}
-
 fn rejected_runtime(error: String) -> (CommandResult, Vec<keith_protocol::EventEnvelope>) {
     rejected_daemon(DaemonError::Runtime(error))
+}
+
+fn rejected_integration(
+    error: &IntegrationError,
+) -> (CommandResult, Vec<keith_protocol::EventEnvelope>) {
+    let code = match error {
+        IntegrationError::Unauthorized(_) => ErrorCode::Unauthorized,
+        IntegrationError::Disabled | IntegrationError::Unavailable(_) => ErrorCode::Unavailable,
+        IntegrationError::NotFound => ErrorCode::NotFound,
+        IntegrationError::Conflict => ErrorCode::Conflict,
+        IntegrationError::Invalid(_) => ErrorCode::InvalidInput,
+        IntegrationError::Corrupt(_) => ErrorCode::CorruptState,
+        IntegrationError::Store(_) => ErrorCode::Internal,
+    };
+    (
+        CommandResult::Rejected(CommandError {
+            error: CommonError::new(code, error.to_string(), false),
+            unsupported_feature: None,
+        }),
+        Vec::new(),
+    )
 }
 
 fn rejected_evolution(
@@ -3069,6 +2456,7 @@ fn rejected_evolution(
     )
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn record_evolution_approval(
     controller: &EvolutionController,
     hypothesis_id: EntityId,
@@ -3341,6 +2729,7 @@ fn enrich_evolution_row(
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn active_evolution_hypothesis(
     records: &[keith_self_evolution::EvolutionRecord],
 ) -> Result<Option<EvolutionHypothesisProjection>, String> {
@@ -3465,6 +2854,7 @@ const fn hypothesis_state_label(state: HypothesisState) -> &'static str {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn evolution_ledger_projection(
     record: &keith_self_evolution::EvolutionRecord,
 ) -> EvolutionLedgerProjection {
@@ -3941,67 +3331,11 @@ mod tests {
             version: CURRENT_SCHEMA_VERSION,
             root_tree_id: root,
             root_session_id: session,
-            session_aliases: Vec::new(),
             profile_id: ProfileId::new(),
             title: Some("catalog entry".into()),
             state: SessionState::Dormant,
             updated_at: UtcTimestamp::UNIX_EPOCH,
         }
-    }
-
-    #[test]
-    fn peer_provisioning_requires_exact_agent_origin_and_recipient_root_anchor() {
-        let sender_profile = ProfileId::new();
-        let sender_session = SessionId::new();
-        let recipient_profile = ProfileId::new();
-        let recipient_session = SessionId::new();
-        let mut recipient = manifest(RootTreeId::new(), recipient_session.clone());
-        recipient.profile_id = recipient_profile.clone();
-        let mut catalog = RootCatalog::default();
-        catalog.insert(recipient).unwrap();
-        let request = keith_protocol::PeerMessageCommand {
-            request_id: EntityId::new(),
-            operation_key: StableKey::parse("peer-broker-authority").unwrap(),
-            conversation_id: ConversationId::new(),
-            sender_profile_id: sender_profile.clone(),
-            recipient_profile_id: recipient_profile,
-            participant_session_id: recipient_session,
-            expected_conversation_revision: Revision::ZERO,
-            expected_policy_revision: Revision::ZERO,
-            content: "hello".into(),
-            deadline: UtcTimestamp::from_unix_millis(i64::MAX),
-        };
-        let authority = RuntimeCommandAuthority::Agent {
-            profile_id: sender_profile,
-            session_id: sender_session.clone(),
-        };
-        assert!(peer_message_provisioning_authorized(
-            &catalog,
-            &authority,
-            Some(&sender_session),
-            &request,
-        ));
-        assert!(!peer_message_provisioning_authorized(
-            &catalog,
-            &RuntimeCommandAuthority::HumanOwner,
-            None,
-            &request,
-        ));
-        let wrong_scope = SessionId::new();
-        assert!(!peer_message_provisioning_authorized(
-            &catalog,
-            &authority,
-            Some(&wrong_scope),
-            &request,
-        ));
-        let mut wrong_sender = request.clone();
-        wrong_sender.sender_profile_id = ProfileId::new();
-        assert!(!peer_message_provisioning_authorized(
-            &catalog,
-            &authority,
-            Some(&sender_session),
-            &wrong_sender,
-        ));
     }
 
     #[test]
@@ -4029,42 +3363,6 @@ mod tests {
         assert_eq!(
             catalog.list(&SessionFilter::default())[0].session_id,
             session
-        );
-    }
-
-    #[test]
-    fn discovery_restores_durable_branch_aliases_from_the_root_manifest() {
-        let directory = tempfile::tempdir().unwrap();
-        let root = RootTreeId::new();
-        let root_session = SessionId::new();
-        let branch_session = SessionId::new();
-        let root_directory = directory.path().join("sessions").join(root.to_string());
-        fs::create_dir_all(&root_directory).unwrap();
-        let mut stored = manifest(root.clone(), root_session.clone());
-        stored.session_aliases.push(SessionSummary {
-            session_id: branch_session.clone(),
-            root_tree_id: root.clone(),
-            profile_id: stored.profile_id.clone(),
-            title: Some("Conversation branch".into()),
-            state: SessionState::Ready,
-            updated_at: UtcTimestamp::from_unix_millis(42),
-        });
-        fs::write(
-            root_directory.join("manifest.json"),
-            keith_agent_types::canonical_json_bytes(&stored).unwrap(),
-        )
-        .unwrap();
-
-        let catalog = RootCatalog::discover(directory.path()).unwrap();
-        assert_eq!(catalog.root_for_session(&root_session), Some(&root));
-        assert_eq!(catalog.root_for_session(&branch_session), Some(&root));
-        assert_eq!(
-            catalog
-                .list(&SessionFilter::default())
-                .into_iter()
-                .map(|summary| summary.session_id)
-                .collect::<BTreeSet<_>>(),
-            BTreeSet::from([root_session, branch_session])
         );
     }
 
@@ -4104,93 +3402,5 @@ mod tests {
             Some(&root_session)
         );
         assert_eq!(command_session_id(&command), Some(&child_session));
-    }
-
-    #[test]
-    fn teammate_routing_never_inherits_owner_admin_scope() {
-        let attached_session = SessionId::new();
-        let lifecycle = ClientCommand::AgentLifecycle(keith_protocol::AgentLifecycleCommand::List);
-        assert!(command_rejects_session_scope(&lifecycle));
-        assert_eq!(
-            command_route_session_id(Some(&attached_session), None, &lifecycle),
-            None
-        );
-        assert_eq!(
-            effective_requester_scope(Some(&attached_session), None),
-            Some(&attached_session)
-        );
-
-        let conversation =
-            ClientCommand::Conversation(keith_protocol::ConversationCommand::Search(
-                keith_protocol::ConversationSearchRequest {
-                    query: "status".into(),
-                    limit: 10,
-                },
-            ));
-        assert!(!command_rejects_session_scope(&conversation));
-        assert_eq!(
-            command_route_session_id(Some(&attached_session), None, &conversation),
-            Some(&attached_session)
-        );
-        assert_eq!(command_route_session_id(None, None, &conversation), None);
-
-        let promotion = ClientCommand::Conversation(
-            keith_protocol::ConversationCommand::PromoteConversationArtifact(
-                keith_protocol::PromoteConversationArtifact {
-                    artifact_id: keith_agent_types::ArtifactId::new(),
-                    digest_sha256:
-                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".into(),
-                    conversation_id: keith_agent_types::ConversationId::new(),
-                    expected_access_policy_revision: Revision::ZERO,
-                    source_event_ids: vec![keith_agent_types::EventId::new()],
-                    operation_key: "promote-1".into(),
-                },
-            ),
-        );
-        assert!(!command_rejects_session_scope(&promotion));
-        assert_eq!(
-            command_route_session_id(Some(&attached_session), None, &promotion),
-            Some(&attached_session)
-        );
-    }
-
-    #[test]
-    fn requester_authority_preserves_human_owner_and_bound_agent_origins() {
-        let root = RootTreeId::new();
-        let session = SessionId::new();
-        let entry = manifest(root, session.clone());
-        let profile_id = entry.profile_id.clone();
-        let mut catalog = RootCatalog::default();
-        catalog.insert(entry).unwrap();
-        assert_eq!(
-            runtime_command_authority(&catalog, None).unwrap(),
-            RuntimeCommandAuthority::HumanOwner
-        );
-        assert_eq!(
-            runtime_command_authority(&catalog, effective_requester_scope(Some(&session), None))
-                .unwrap(),
-            RuntimeCommandAuthority::Agent {
-                profile_id,
-                session_id: session,
-            }
-        );
-    }
-
-    #[test]
-    fn connection_close_discards_its_sticky_requester_scope() {
-        let directory = tempfile::tempdir().unwrap();
-        let mut daemon = evolution_test_daemon(directory.path());
-        let client_id = keith_agent_types::ClientId::new();
-        daemon
-            .client_session_scopes
-            .insert(client_id.clone(), SessionId::new());
-        {
-            let shared = Mutex::new(&mut daemon);
-            let _cleanup = ClientScopeCleanup {
-                shared: &shared,
-                client_id: client_id.clone(),
-            };
-        }
-        assert!(!daemon.client_session_scopes.contains_key(&client_id));
     }
 }

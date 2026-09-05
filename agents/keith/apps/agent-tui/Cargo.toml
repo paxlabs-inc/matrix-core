@@ -1,0 +1,36 @@
+[package]
+name = "keith-agent-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+crossterm.workspace = true
+keith-agent-types = { path = "../../crates/agent-types" }
+keith-connection = { path = "../../crates/connection" }
+keith-platform = { path = "../../crates/platform" }
+keith-platform-contracts = { path = "../../crates/platform-contracts" }
+keith-protocol = { path = "../../crates/protocol" }
+keith-provider-catalog = { path = "../../crates/provider-catalog" }
+keith-ui-model = { path = "../../crates/ui-model" }
+ratatui.workspace = true
+signal-hook.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+tungstenite.workspace = true
+unicode-width.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+keith-daemon-core = { path = "../../crates/daemon-core" }
+rustix = { version = "1.1.4", features = ["fs", "process", "pty", "termios"] }
+
+[[bin]]
+name = "agent-tui"
+path = "src/main.rs"
+
+[lints]
+workspace = true

@@ -4,10 +4,10 @@ mod browser;
 mod fetch;
 
 pub use browser::{
-    AuthorizedBrowserAction, BrowserControlBounds, BrowserDownloadRequest, BrowserError,
-    BrowserPolicy, BrowserProgress, BrowserProgressSink, BrowserProgressSinks, BrowserRunner,
-    BrowserSessionSummary, ConfirmationProvider, ConfirmationRequest, ConsequentialAction,
-    HeadedBrowserLaunch, NoBrowserProgress, SemanticLink, SemanticObservation,
+    AuthorizedBrowserAction, BrowserDownloadRequest, BrowserError, BrowserPolicy, BrowserProgress,
+    BrowserProgressSink, BrowserProgressSinks, BrowserRunner, BrowserSessionSummary,
+    ConfirmationProvider, ConfirmationRequest, ConsequentialAction, NoBrowserProgress,
+    SemanticLink, SemanticObservation,
 };
 pub use fetch::{
     DestinationResolver, DestinationValidator, FetchProgress, FetchProgressSink, FetchResponse,

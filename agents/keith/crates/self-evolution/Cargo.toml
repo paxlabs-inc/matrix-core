@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 publish = false
 
+[features]
+fault-injection = []
+
 [lints]
 workspace = true
 
@@ -14,6 +17,7 @@ workspace = true
 base64 = "0.22"
 keith-agent-types = { path = "../agent-types" }
 keith-evolution = { path = "../evolution" }
+keith-meta-harness = { path = "../meta-harness" }
 keith-platform = { path = "../platform" }
 keith-provider-core = { path = "../provider-core" }
 keith-release = { path = "../release" }
@@ -28,7 +32,6 @@ keith-tool-core = { path = "../tool-core" }
 keith-tool-runner-core = { path = "../tool-runner" }
 keith-worker-runtime = { path = "../worker-runtime" }
 fs2.workspace = true
-nix.workspace = true
 ring.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -38,7 +41,11 @@ thiserror.workspace = true
 tempfile.workspace = true
 toml.workspace = true
 
+[target.'cfg(unix)'.dependencies]
+nix.workspace = true
+
 [dev-dependencies]
+keith-platform-contracts = { path = "../platform-contracts" }
 keith-state-store = { path = "../state-store" }
 rusqlite.workspace = true
 

@@ -10,17 +10,16 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use keith_agent_types::{
-    CURRENT_PROTOCOL_VERSION, CURRENT_SCHEMA_VERSION, ClientId, CommandId, EntityId,
-    ProtocolVersion, SchemaVersion, UtcTimestamp,
+    CURRENT_PROTOCOL_VERSION, CURRENT_SCHEMA_VERSION, ClientId, CommandId, EntityId, SchemaVersion,
+    UtcTimestamp,
 };
 use keith_connection::{
     AgentTransport, FramedTransport, connect_local, set_local_read_timeout, set_local_write_timeout,
 };
 use keith_platform::PlatformPaths;
 use keith_protocol::{
-    AgentLifecycleCommand, AgentRosterProjection, ClientCommand, ClientHello, CommandEnvelope,
-    CommandResult, CommandResultEnvelope, Feature, ResponsePayload, SessionFilter, SessionSummary,
-    WireFormat, WireMessage,
+    ClientCommand, ClientHello, CommandEnvelope, CommandResult, ResponsePayload, SessionFilter,
+    SessionSummary, WireFormat, WireMessage,
 };
 use keith_release::{
     ReleaseError, decode_public_key, verify_packaged_build_reports, verify_release,
@@ -228,8 +227,7 @@ impl DesktopLifecycle {
             || !config.daemon_executable.is_file()
             || !config.worker_executable.is_file()
             || !config.web_executable.is_file()
-            || !config.asset_root.join("agent_web.js").is_file()
-            || !config.asset_root.join("agent_web_bg.wasm").is_file()
+            || !config.asset_root.join("ui/index.html").is_file()
             || !valid_production_web_assets(&config.asset_root)
             || !config.workspace_root.is_dir()
             || config.login_secret_env.is_empty()
@@ -445,30 +443,27 @@ impl DesktopLifecycle {
 }
 
 fn valid_production_web_assets(root: &Path) -> bool {
-    let manifest_path = root.join("ui/.vite/manifest.json");
-    let Ok(encoded) = fs::read(manifest_path) else {
+    let ui = root.join("ui");
+    let Ok(index) = fs::read_to_string(ui.join("index.html")) else {
         return false;
     };
-    let Ok(manifest) = serde_json::from_slice::<serde_json::Value>(&encoded) else {
+    if !index.starts_with("<!DOCTYPE html>") || !index.contains("Opening Keith") {
         return false;
-    };
-    let Some(entry) = manifest.get("src/index.tsx") else {
-        return false;
-    };
-    let Some(script) = entry.get("file").and_then(serde_json::Value::as_str) else {
-        return false;
-    };
-    let Some(styles) = entry.get("css").and_then(serde_json::Value::as_array) else {
-        return false;
-    };
-    entry.get("isEntry").and_then(serde_json::Value::as_bool) == Some(true)
-        && safe_relative_asset(script)
-        && root.join("ui").join(script).is_file()
-        && !styles.is_empty()
-        && styles.iter().all(|style| {
-            style.as_str().is_some_and(|path| {
-                safe_relative_asset(path) && root.join("ui").join(path).is_file()
-            })
+    }
+    let assets = index
+        .match_indices("/assets/ui/")
+        .filter_map(|(offset, _)| {
+            index[offset + "/assets/ui/".len()..]
+                .split(['\"', '\''])
+                .next()
+        })
+        .map(|asset| asset.split('?').next().unwrap_or(asset))
+        .collect::<BTreeSet<_>>();
+    !assets.is_empty()
+        && assets.iter().all(|asset| {
+            asset.starts_with("_next/static/")
+                && safe_relative_asset(asset)
+                && ui.join(asset).is_file()
         })
 }
 
@@ -498,44 +493,6 @@ impl DesktopConnection {
     ///
     /// Returns an error for transport, negotiation, or response-type failure.
     pub fn list_sessions(&self) -> Result<Vec<SessionSummary>, DesktopError> {
-        let mut client = self.connect()?;
-        let result = client.execute(ClientCommand::ListSessions(SessionFilter::default()))?;
-        let CommandResult::Data(payload) = result.result else {
-            return Err(DesktopError::AgentConnection(
-                "daemon rejected session listing".into(),
-            ));
-        };
-        let ResponsePayload::Sessions(sessions) = *payload else {
-            return Err(DesktopError::AgentConnection(
-                "daemon returned an unexpected response".into(),
-            ));
-        };
-        Ok(sessions)
-    }
-
-    /// Lists the authoritative persistent-agent roster through the same native
-    /// transport used by the web client.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error for negotiation, correlation, or response-type failure.
-    pub fn list_roster(&self) -> Result<Vec<AgentRosterProjection>, DesktopError> {
-        let mut client = self.connect()?;
-        let result = client.execute(ClientCommand::AgentLifecycle(AgentLifecycleCommand::List))?;
-        let CommandResult::Data(payload) = result.result else {
-            return Err(DesktopError::AgentConnection(
-                "daemon rejected roster listing".into(),
-            ));
-        };
-        let ResponsePayload::AgentRoster(roster) = *payload else {
-            return Err(DesktopError::AgentConnection(
-                "daemon returned an unexpected response".into(),
-            ));
-        };
-        Ok(roster)
-    }
-
-    fn connect(&self) -> Result<DesktopNativeClient, DesktopError> {
         let stream = connect_local(&self.socket)
             .map_err(|error| DesktopError::AgentConnection(error.to_string()))?;
         set_local_read_timeout(&stream, Some(Duration::from_secs(2)))
@@ -550,39 +507,49 @@ impl DesktopConnection {
                 client_id: client_id.clone(),
                 client_name: "keith-agent-desktop".into(),
                 client_version: env!("CARGO_PKG_VERSION").into(),
-                supported_features: BTreeSet::from([
-                    Feature::SessionLifecycle,
-                    Feature::Replay,
-                    Feature::Snapshots,
-                    Feature::FramedJson,
-                    Feature::AgentLifecycle,
-                    Feature::Conversations,
-                ]),
+                supported_features: BTreeSet::new(),
                 resume: None,
             }))
-            .map_err(agent_connection_error)?;
-        let WireMessage::ServerHello(hello) =
-            transport.receive().map_err(agent_connection_error)?
-        else {
+            .map_err(|error| DesktopError::AgentConnection(error.to_string()))?;
+        if !matches!(
+            transport
+                .receive()
+                .map_err(|error| DesktopError::AgentConnection(error.to_string()))?,
+            WireMessage::ServerHello(_)
+        ) {
             return Err(DesktopError::AgentConnection(
                 "daemon did not negotiate AgentConnection".into(),
             ));
-        };
-        if !hello
-            .protocol
-            .is_major_compatible_with(CURRENT_PROTOCOL_VERSION)
-            || !hello.supported_features.contains(&Feature::AgentLifecycle)
-            || !hello.supported_features.contains(&Feature::Conversations)
-        {
-            return Err(DesktopError::AgentConnection(
-                "daemon lacks required native desktop features".into(),
-            ));
         }
-        Ok(DesktopNativeClient {
-            transport,
-            client_id,
-            protocol: hello.protocol,
-        })
+        transport
+            .send(&WireMessage::Command(CommandEnvelope {
+                protocol: CURRENT_PROTOCOL_VERSION,
+                command_id: CommandId::new(),
+                client_id,
+                sent_at: UtcTimestamp::now().map_err(|_| DesktopError::InvalidConfiguration)?,
+                session_id: None,
+                command: ClientCommand::ListSessions(SessionFilter::default()),
+            }))
+            .map_err(|error| DesktopError::AgentConnection(error.to_string()))?;
+        let WireMessage::CommandResult(result) = transport
+            .receive()
+            .map_err(|error| DesktopError::AgentConnection(error.to_string()))?
+        else {
+            return Err(DesktopError::AgentConnection(
+                "daemon returned an unexpected message".into(),
+            ));
+        };
+        let CommandResult::Data(payload) = result.result else {
+            return Err(DesktopError::AgentConnection(
+                "daemon rejected session listing".into(),
+            ));
+        };
+        let ResponsePayload::Sessions(sessions) = *payload else {
+            return Err(DesktopError::AgentConnection(
+                "daemon returned an unexpected response".into(),
+            ));
+        };
+        Ok(sessions)
     }
 
     fn probe(socket: &Path) -> Result<(), DesktopError> {
@@ -592,45 +559,6 @@ impl DesktopConnection {
         .list_sessions()
         .map(|_| ())
     }
-}
-
-struct DesktopNativeClient {
-    transport: FramedTransport<keith_connection::LocalStream>,
-    client_id: ClientId,
-    protocol: ProtocolVersion,
-}
-
-impl DesktopNativeClient {
-    fn execute(&mut self, command: ClientCommand) -> Result<CommandResultEnvelope, DesktopError> {
-        let command_id = CommandId::new();
-        self.transport
-            .send(&WireMessage::Command(CommandEnvelope {
-                protocol: self.protocol,
-                command_id: command_id.clone(),
-                client_id: self.client_id.clone(),
-                sent_at: UtcTimestamp::now().map_err(|_| DesktopError::InvalidConfiguration)?,
-                session_id: None,
-                command,
-            }))
-            .map_err(agent_connection_error)?;
-        let WireMessage::CommandResult(result) =
-            self.transport.receive().map_err(agent_connection_error)?
-        else {
-            return Err(DesktopError::AgentConnection(
-                "daemon returned an unexpected message".into(),
-            ));
-        };
-        if result.protocol != self.protocol || result.command_id != command_id {
-            return Err(DesktopError::AgentConnection(
-                "daemon returned an uncorrelated response".into(),
-            ));
-        }
-        Ok(result)
-    }
-}
-
-fn agent_connection_error(error: keith_connection::ConnectionError) -> DesktopError {
-    DesktopError::AgentConnection(error.to_string())
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]

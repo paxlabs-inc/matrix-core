@@ -196,11 +196,13 @@ impl OpenAiProvider {
         sink: &mut dyn ModelEventSink,
     ) -> Result<Usage, ProviderError> {
         let uses_responses_api = self.provider_id == "openai"
-            && request.model.starts_with("gpt-5.6-")
-            && !request.tools.is_empty()
-            && request.reasoning_effort.as_deref() != Some("none");
+            && (!request.tools.is_empty()
+                || request
+                    .reasoning_effort
+                    .as_deref()
+                    .is_some_and(|effort| effort != "none"));
         let body = if uses_responses_api {
-            openai_responses_request(request, true)?
+            openai_responses_request(request)?
         } else {
             openai_request(request)?
         };
@@ -359,7 +361,7 @@ impl OpenAiResponsesProvider {
         cancellation: &CancellationToken,
         sink: &mut dyn ModelEventSink,
     ) -> Result<Usage, ProviderError> {
-        let body = openai_responses_request(request, false)?;
+        let body = openai_responses_request(request)?;
         let secret = credential.expose_utf8()?;
         let mut http_request = self
             .runtime
@@ -853,26 +855,13 @@ fn openai_request(request: &ModelRequest) -> Result<Vec<u8>, ProviderError> {
     if let Some(temperature) = request.temperature {
         body["temperature"] = json!(temperature);
     }
-    if let Some(effort) = &request.reasoning_effort
-        && openai_chat_supports_reasoning_effort(&request.model)
-    {
+    if let Some(effort) = &request.reasoning_effort {
         body["reasoning_effort"] = json!(effort);
     }
     serde_json::to_vec(&body).map_err(internal)
 }
 
-fn openai_chat_supports_reasoning_effort(model: &str) -> bool {
-    let model = model.to_ascii_lowercase();
-    model.starts_with("gpt-5")
-        || model.starts_with("o1")
-        || model.starts_with("o3")
-        || model.starts_with("o4")
-}
-
-fn openai_responses_request(
-    request: &ModelRequest,
-    include_max_output_tokens: bool,
-) -> Result<Vec<u8>, ProviderError> {
+fn openai_responses_request(request: &ModelRequest) -> Result<Vec<u8>, ProviderError> {
     let instructions = request
         .system
         .iter()
@@ -910,7 +899,7 @@ fn openai_responses_request(
         "store": false,
         "stream": true,
     });
-    if include_max_output_tokens && let Some(max_tokens) = request.max_output_tokens {
+    if let Some(max_tokens) = request.max_output_tokens {
         body["max_output_tokens"] = json!(max_tokens);
     }
     if let Some(effort) = &request.reasoning_effort {
@@ -1968,9 +1957,6 @@ fn check_provider_response(
                 "provider reported that the request exceeded its context window".into();
             return Err(normalized);
         }
-        if normalized.message != "provider request failed" {
-            return Err(classify_http_status(status, normalized.message));
-        }
     }
     Err(classify_http_status(
         status,
@@ -2193,52 +2179,15 @@ mod tests {
     }
 
     #[test]
-    fn openai_http_invalid_request_preserves_provider_detail() {
-        let body = r#"{"error":{"code":"invalid_request_error","message":"Unsupported parameter: example"}}"#;
-        let server = TestServer::start(vec![format!(
-            "HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-            body.len()
-        )]);
-        let provider =
-            OpenAiProvider::new(ProviderHttpConfig::new(&server.base_url).unwrap()).unwrap();
-        let error = provider
-            .stream(
-                &request(),
-                &ProviderCredential::new("test-key").unwrap(),
-                &CancellationToken::default(),
-                &mut |_event| Ok(StreamControl::Continue),
-            )
-            .unwrap_err();
-        assert_eq!(error.kind, ProviderErrorKind::InvalidRequest);
-        assert_eq!(error.provider_status, Some(400));
-        assert_eq!(error.message, "Unsupported parameter: example");
-        assert!(!error.allows_retry_or_fallback());
-    }
-
-    #[test]
-    fn openai_chat_reasoning_effort_is_only_sent_to_supported_models() {
-        let mut standard = request();
-        standard.model = "gpt-4.1-mini".into();
-        standard.reasoning_effort = Some("medium".into());
-        let standard_body: Value =
-            serde_json::from_slice(&openai_request(&standard).unwrap()).unwrap();
-        assert!(standard_body.get("reasoning_effort").is_none());
-
-        let mut reasoning = standard;
-        reasoning.model = "o3-mini".into();
-        let reasoning_body: Value =
-            serde_json::from_slice(&openai_request(&reasoning).unwrap()).unwrap();
-        assert_eq!(reasoning_body["reasoning_effort"], "medium");
-    }
-
-    #[test]
-    fn openai_adapter_discovers_streams_tools_usage_and_scopes_secret_to_header() {
+    fn openai_adapter_uses_responses_for_tools_and_scopes_secret_to_header() {
         let model_body = r#"{"data":[{"id":"model-a"}]}"#;
         let stream_body = concat!(
-            "data: {\"choices\":[{\"delta\":{\"content\":\"hello\"},\"finish_reason\":null}]}\n\n",
-            "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_x\",\"function\":{\"name\":\"lookup\",\"arguments\":\"{\\\"q\\\":1}\"}}]},\"finish_reason\":\"tool_calls\"}]}\n\n",
-            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":3}}\n\n",
-            "data: [DONE]\n\n"
+            "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_openai\"}}\n\n",
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"hello\"}\n\n",
+            "data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"type\":\"function_call\",\"name\":\"lookup\",\"arguments\":\"\"}}\n\n",
+            "data: {\"type\":\"response.function_call_arguments.delta\",\"output_index\":0,\"delta\":\"{\\\"q\\\":1}\"}\n\n",
+            "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"function_call\",\"name\":\"lookup\",\"arguments\":\"{\\\"q\\\":1}\"}}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":5,\"output_tokens\":3}}}\n\n"
         );
         let server = TestServer::start(vec![
             response("application/json", model_body),
@@ -2264,6 +2213,7 @@ mod tests {
             )
             .unwrap();
         let second_request = server.request();
+        assert!(second_request.starts_with("POST /v1/responses "));
         let body = second_request.split("\r\n\r\n").nth(1).unwrap();
         assert!(!body.contains("openai-secret"));
         assert_eq!(usage.total_tokens(), 8);
@@ -2526,13 +2476,11 @@ mod tests {
         assert!(request.contains(&format!("authorization: Bearer {token}")));
         assert!(request.contains("chatgpt-account-id: acct-test"));
         assert!(request.contains("openai-beta: responses=experimental"));
-        let body = request.split("\r\n\r\n").nth(1).unwrap();
-        assert!(!body.contains(token));
-        assert!(!body.contains("max_output_tokens"));
+        assert!(!request.split("\r\n\r\n").nth(1).unwrap().contains(token));
     }
 
     #[test]
-    fn openai_luna_uses_responses_when_reasoning_and_tools_are_enabled() {
+    fn openai_reasoning_uses_responses_without_model_name_routing() {
         let stream_body = concat!(
             "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_luna\"}}\n\n",
             "data: {\"type\":\"response.reasoning_summary_text.delta\",\"delta\":\"Checking the request.\"}\n\n",
@@ -2543,13 +2491,14 @@ mod tests {
         let provider =
             OpenAiProvider::new(ProviderHttpConfig::new(&server.base_url).unwrap()).unwrap();
         let credential = ProviderCredential::new("openai-secret").unwrap();
-        let mut luna_request = request();
-        luna_request.model = "gpt-5.6-luna".into();
-        luna_request.reasoning_effort = Some("medium".into());
+        let mut reasoning_request = request();
+        reasoning_request.model = "reasoning-model-from-catalog".into();
+        reasoning_request.tools.clear();
+        reasoning_request.reasoning_effort = Some("medium".into());
         let mut events = Vec::new();
         let usage = provider
             .stream(
-                &luna_request,
+                &reasoning_request,
                 &credential,
                 &CancellationToken::default(),
                 &mut |event| {
@@ -2573,8 +2522,34 @@ mod tests {
         assert!(request.contains("authorization: Bearer openai-secret"));
         let body = request.split("\r\n\r\n").nth(1).unwrap();
         assert!(body.contains("\"reasoning\":{\"effort\":\"medium\",\"summary\":\"auto\"}"));
-        assert!(body.contains("\"max_output_tokens\":100"));
         assert!(!body.contains("openai-secret"));
+    }
+
+    #[test]
+    fn openai_plain_chat_request_keeps_chat_completions_compatibility() {
+        let stream_body = concat!(
+            "data: {\"choices\":[{\"delta\":{\"content\":\"plain\"},\"finish_reason\":\"stop\"}]}\n\n",
+            "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":1}}\n\n",
+            "data: [DONE]\n\n"
+        );
+        let server = TestServer::start(vec![response("text/event-stream", stream_body)]);
+        let provider =
+            OpenAiProvider::new(ProviderHttpConfig::new(&server.base_url).unwrap()).unwrap();
+        let credential = ProviderCredential::new("openai-secret").unwrap();
+        let mut plain_request = request();
+        plain_request.tools.clear();
+        let usage = provider
+            .stream(
+                &plain_request,
+                &credential,
+                &CancellationToken::default(),
+                &mut |_event| Ok(StreamControl::Continue),
+            )
+            .unwrap();
+
+        assert_eq!(usage.total_tokens(), 3);
+        let request = server.request();
+        assert!(request.starts_with("POST /v1/chat/completions "));
     }
 
     #[test]

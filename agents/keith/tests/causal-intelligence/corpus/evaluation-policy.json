@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "version": "evaluation-policy-v1",
+  "baseline_reference": "evidence/causal-intelligence/1.1/20260905T041711Z-f3bed9825d02452dab55ef3366ae8f57/result.json",
+  "baseline_limits": "24 infrastructure plus two real smoke tests; not an ordinary-task population estimate",
+  "splits": {
+    "development_files": [
+      "development.json"
+    ],
+    "validation_file": "validation.json",
+    "held_out_files": [
+      "semantic-held-out.json",
+      "ordinary-held-out.json",
+      "latent-held-out.json",
+      "reconstruction-transfer-held-out.json"
+    ],
+    "chronology": "every observation precedes its query; development ends before validation starts; validation ends before held-out starts",
+    "family_policy": "no family/source-root overlap across development, validation, held-out; paraphrases cluster by source root",
+    "no_tuning": "no held-out inputs, answers, per-case outputs, family labels, or review feedback enter candidate prompts, lessons, training, or gate selection"
+  },
+  "ablations": {
+    "A": "current Keith baseline",
+    "B": "stable truth and exact/lexical anchors",
+    "C": "B plus trained semantic activation and predictions",
+    "C_semantic_only": "B plus trained semantic activation",
+    "C_prediction_only": "B plus predictions",
+    "D": "C plus conditional lessons",
+    "E": "D plus reconstruction",
+    "F": "accepted configuration plus pattern retention"
+  },
+  "replicates": {
+    "stochastic_minimum": 3,
+    "replicate_ids": [
+      1,
+      2,
+      3
+    ],
+    "report_all": true,
+    "failed_cancelled_blocked_runs": "remain in task accounting; no replacement with best retry"
+  },
+  "matched_controls": [
+    "chat provider/model/revision",
+    "context ceiling",
+    "task family and input",
+    "tool grants",
+    "turn/tool/probe budgets",
+    "recollection budget",
+    "initial canonical state",
+    "infrastructure versions"
+  ],
+  "gates": {
+    "protected_invariant_violations": 0,
+    "required_actual_inclusion": 1.0,
+    "semantic_recall_at_10": 0.95,
+    "semantic_query_count": 200,
+    "ordinary_success_loss_max_percentage_points": 2.0,
+    "reconstruction_and_pattern": "each improves a predeclared later decision target without material success/intervention/unsupported-claim regression; otherwise keep simpler configuration"
+  },
+  "uncertainty": {
+    "report": [
+      "numerators and denominators",
+      "Wilson 95 percent intervals for proportions",
+      "paired family/source-root bootstrap 95 percent interval for deltas; 10000 resamples; seed 20260905"
+    ],
+    "clusters": "independent source roots or task families, not query paraphrases or repeated summaries",
+    "decision": "report point gate separately; withhold positive population conclusions if uncertainty spans the acceptance boundary",
+    "minimum": "three stochastic replicates are an initial protocol, not sufficient statistical evidence by themselves"
+  },
+  "metrics": {
+    "required_binding_resolution": {
+      "numerator": "resolved required bindings",
+      "denominator": "all required bindings",
+      "authority": "exact memory owner",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "required_actual_inclusion": {
+      "numerator": "resolved required bindings observed at provider context boundary",
+      "denominator": "resolved required bindings",
+      "authority": "provider request observation",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "recall_at_10": {
+      "numerator": "queries with a permitted gold anchor in actual top 10 canonical IDs",
+      "denominator": "200 frozen semantic queries",
+      "authority": "actual candidate selector",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "counterexample_coverage": {
+      "numerator": "applicable counterexamples included",
+      "denominator": "applicable counterexamples",
+      "authority": "retrieval manifest",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "freshness": {
+      "numerator": "returned anchors at current applicable revision",
+      "denominator": "returned anchors",
+      "authority": "canonical evidence revisions",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "verified_task_success": {
+      "numerator": "goals supported by authoritative observed predicates",
+      "denominator": "attempted tasks including blocked unresolved",
+      "authority": "goal evaluator",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "duplicate_effects": {
+      "numerator": "effects beyond intended operation count",
+      "denominator": "admitted operations",
+      "authority": "independent target log",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "false_completion": {
+      "numerator": "claimed completions without goal evidence",
+      "denominator": "completion claims",
+      "authority": "goal and finalization owners",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "unsupported_claims": {
+      "numerator": "unsupported factual assertions",
+      "denominator": "reviewed factual assertions",
+      "authority": "independent grounded claim review",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "stale_or_cross_profile_use": {
+      "numerator": "forbidden or obsolete inclusions",
+      "denominator": "actual context/action uses",
+      "authority": "profile and correction owners",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "invalid_proposals": {
+      "numerator": "proposals rejected for known preconditions",
+      "denominator": "action proposals",
+      "authority": "admission owner",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "repeated_actions": {
+      "numerator": "same-mechanism repeats without new information",
+      "denominator": "action attempts",
+      "authority": "durable strategy owner",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "useful_probes": {
+      "numerator": "probes producing relevant new supporting or contrary evidence",
+      "denominator": "diagnostic probes",
+      "authority": "prediction assessment",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "revisions": {
+      "numerator": "explicit strategy revisions",
+      "denominator": "tasks",
+      "authority": "convergence owner",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "interruptions": {
+      "numerator": "user or budget interruptions",
+      "denominator": "tasks",
+      "authority": "session owner",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "conditional_transfer": {
+      "numerator": "verified reuse under relevant matching conditions",
+      "denominator": "eligible changed-surface transfer tasks",
+      "authority": "goal evaluator",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "negative_transfer": {
+      "numerator": "incorrect reuse under changed causal conditions",
+      "denominator": "changed-condition tasks",
+      "authority": "goal evaluator",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "later_usefulness": {
+      "numerator": "later decisions improved by retained signal in matched comparison",
+      "denominator": "later evaluated decisions",
+      "authority": "chronological paired evaluation",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "repeated_questions": {
+      "numerator": "requests for already supplied permitted bindings",
+      "denominator": "tasks with prior supplied bindings",
+      "authority": "dialogue observer",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "prediction_calibration": {
+      "numerator": "Brier score or reliability bins for resolved predictions",
+      "denominator": "resolved probabilistic predicates only",
+      "authority": "independent assessment",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "unresolved_rate": {
+      "numerator": "unresolved predictions",
+      "denominator": "predictions",
+      "authority": "assessment owner",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "delayed_rate": {
+      "numerator": "predicates resolved after declared deadline",
+      "denominator": "predicates",
+      "authority": "deadline and observation timestamps",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "unnecessary_interventions": {
+      "numerator": "interventions without an observed authority or unresolved-precondition need",
+      "denominator": "attempted tasks",
+      "authority": "independent task review",
+      "zero_denominator": "unavailable, never perfect"
+    },
+    "later_correct_decision_rate": {
+      "numerator": "later decisions satisfying frozen authoritative goal predicates",
+      "denominator": "later held-out decision tasks",
+      "authority": "independent chronological evaluator",
+      "zero_denominator": "unavailable, never perfect"
+    }
+  },
+  "resource_metrics": {
+    "latency_ms": [
+      "p50",
+      "p95"
+    ],
+    "tokens": "all model input/output/reasoning usage, missing values unavailable",
+    "embedding_spend": "measured units and price/version if known, otherwise unavailable",
+    "storage_bytes": "canonical and projection separately",
+    "recovery_ms": "interruption to authoritative resumed state"
+  },
+  "privacy": "only bounded synthetic IDs/counts/digests and aggregate outcomes enter shared evidence; no credentials, full prompts, private source/answer text, or held-out per-case diagnostics",
+  "comparison_status": "pending_execution",
+  "optional_gates": {
+    "parameters": "initial experimental parameters frozen before evaluation",
+    "reconstruction": {
+      "comparison": "E versus D",
+      "primary_metric": "paired_verified_task_success",
+      "enablement": "paired family bootstrap 95 percent confidence interval lower bound of improvement strictly above zero"
+    },
+    "pattern_retention": {
+      "comparison": "pattern selector versus the best explicit-importance/recency/frequency comparator, chosen using development only and locked before held-out evaluation",
+      "primary_metric": "later_correct_decision_rate",
+      "enablement": "paired family bootstrap 95 percent confidence interval lower bound of improvement strictly above zero"
+    },
+    "shared_constraints": {
+      "ordinary_success_loss_max_percentage_points": 2.0,
+      "unsupported_claim_rate_increase_max_percentage_points": 0.0,
+      "unnecessary_intervention_rate_increase_max_percentage_points": 2.0
+    },
+    "decision": "uncertainty spanning any safety/regression boundary withholds enablement; negative or inconclusive result keeps simpler accepted configuration"
+  },
+  "semantic_structural_rule": {
+    "content_word_jaccard_ceiling": 0.25,
+    "minimum_query_content_words": 3,
+    "not_claimed": "structural overlap proves neither semantic relevance nor encoder quality"
+  }
+}

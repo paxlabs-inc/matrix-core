@@ -1,10 +1,10 @@
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet};
 
 use keith_agent_types::{
     EntityId, EntryId, ProfileId, SessionId, UtcTimestamp, canonical_json_bytes,
 };
 use keith_provider_core::CancellationToken;
-use keith_session_store::{RetentionClass, Sensitivity, SessionEntry};
+use keith_session_store::{RetentionClass, Sensitivity};
 use keith_subagents::MemoryScoutLimits;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -12,11 +12,10 @@ use sha2::{Digest, Sha256};
 use crate::{
     AtlasCoverage, AtlasSearchRequest, EvidenceAuthority, EvidenceFacet, EvidenceFacetKind,
     EvidenceRecord, EvidenceSourceKind, EvidenceValidity, MemoryError, MemoryService,
-    ObservatoryMutation, RecallCapsule,
+    ObservatoryError, ObservatoryMutation, RecallCapsule,
 };
 
 pub const MEMORY_CONTEXT_SELECTOR_VERSION: &str = "memory-context-v1";
-const MAX_PENDING_INGESTIONS: usize = 64;
 const MAX_HOT_ANCHORS: usize = 32;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -33,7 +32,7 @@ pub enum AgentMemoryKind {
 }
 
 impl AgentMemoryKind {
-    fn theme(self) -> &'static str {
+    pub(crate) fn theme(self) -> &'static str {
         match self {
             Self::Preference => "preference",
             Self::PersonalFact => "personal_fact",
@@ -48,6 +47,7 @@ impl AgentMemoryKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MemoryWriteSource {
+    pub evidence_id: Option<EntityId>,
     pub source_entry_id: EntryId,
     pub evidence_quote: String,
 }
@@ -106,38 +106,6 @@ pub struct MemoryContextBundle {
     pub truncated: bool,
 }
 
-#[derive(Clone)]
-pub(crate) struct PendingIngestion {
-    pub session_id: SessionId,
-    pub entries: Vec<SessionEntry>,
-}
-
-#[derive(Default)]
-pub(crate) struct PendingIngestionQueue {
-    items: VecDeque<PendingIngestion>,
-}
-
-impl PendingIngestionQueue {
-    pub(crate) fn push(&mut self, item: PendingIngestion) {
-        if self.items.len() >= MAX_PENDING_INGESTIONS {
-            self.items.pop_front();
-        }
-        self.items.push_back(item);
-    }
-
-    fn take(&mut self) -> VecDeque<PendingIngestion> {
-        std::mem::take(&mut self.items)
-    }
-
-    fn restore(&mut self, mut items: VecDeque<PendingIngestion>) {
-        items.append(&mut self.items);
-        self.items = items;
-        while self.items.len() > MAX_PENDING_INGESTIONS {
-            self.items.pop_front();
-        }
-    }
-}
-
 #[derive(Default)]
 pub(crate) struct HotMemoryCache {
     revision: u64,
@@ -145,51 +113,20 @@ pub(crate) struct HotMemoryCache {
 }
 
 impl MemoryService {
-    /// Queues committed session evidence for fail-open ingestion. The committed session log is the
-    /// durable cursor: replaying its ancestry after a crash is safe because source identities are
-    /// idempotent in the evidence vault.
-    pub fn enqueue_session_entries(&self, session_id: &SessionId, entries: &[SessionEntry]) {
-        if entries.is_empty() {
-            return;
-        }
-        if let Ok(mut pending) = self.pending_ingestion.lock() {
-            pending.push(PendingIngestion {
-                session_id: session_id.clone(),
-                entries: entries.to_vec(),
-            });
-        }
-    }
-
-    /// Drains queued ingestion as optional maintenance. Failed items are restored for a later
-    /// attempt and never become turn, finalization, outbox, or delivery failures.
-    pub fn flush_pending_ingestion(&self, now: UtcTimestamp) -> Result<u64, MemoryError> {
-        let mut items = self
-            .pending_ingestion
-            .lock()
-            .map_err(|_| MemoryError::LockPoisoned)?
-            .take();
-        let mut revision = self.observatory.revision()?;
-        while let Some(item) = items.pop_front() {
-            match self
-                .observatory
-                .ingest_session_entries(&item.session_id, &item.entries, now)
-            {
-                Ok(next_revision) => revision = next_revision,
-                Err(error) => {
-                    items.push_front(item);
-                    self.pending_ingestion
-                        .lock()
-                        .map_err(|_| MemoryError::LockPoisoned)?
-                        .restore(items);
-                    return Err(error.into());
-                }
-            }
-        }
-        Ok(revision)
+    /// Compatibility maintenance entrypoint. Canonical receipt ingestion owns all
+    /// source intake; this only refreshes the vault and repairs its projection.
+    ///
+    /// # Errors
+    /// Returns a busy/corrupt/read error without inventing source progress.
+    pub fn flush_pending_ingestion(&self, _now: UtcTimestamp) -> Result<u64, MemoryError> {
+        self.observatory.revision().map_err(Into::into)
     }
 
     /// Creates source-cited durable memory. The host validates exact evidence and schema while the
     /// agent remains responsible for interpreting what the source means.
+    ///
+    /// # Errors
+    /// Returns [`MemoryError`] if the evidence is malformed or the record cannot be committed to the atlas.
     pub fn memory_create(
         &self,
         request: MemoryCreateRequest,
@@ -216,11 +153,11 @@ impl MemoryService {
                 .relationship
                 .as_ref()
                 .ok_or(MemoryError::Relationship(crate::RelationshipError::Invalid))?;
-            let context = relationship.confirm_preferred_name(
-                &source.source_session,
+            let context = self.confirm_preferred_name_from_source(
+                &source,
                 &request.source.source_entry_id,
-                &source_digest_for(&source, &request.source.source_entry_id)?,
                 request.text.trim(),
+                None,
                 now,
             )?;
             relationship.sync_evidence(&self.observatory, now)?;
@@ -251,7 +188,11 @@ impl MemoryService {
             source_identity,
             Some(request.source.source_entry_id),
             EvidenceSourceKind::DurableMemory,
-            source.authority,
+            if request.text.trim() == request.source.evidence_quote.trim() {
+                source.authority
+            } else {
+                EvidenceAuthority::DerivedInference
+            },
             request.text.trim().to_owned(),
             now,
             request.sensitivity,
@@ -260,12 +201,21 @@ impl MemoryService {
         );
         evidence.id = id;
         self.observatory
-            .apply(vec![ObservatoryMutation::Observe(evidence.clone())], now)?;
+            .apply_from_snapshot(now, |snapshot, revision| {
+                let current = revalidate_source(snapshot, &source)?;
+                evidence.causal = Some(crate::ingestion::context_lineage(current, revision));
+                evidence.sensitivity =
+                    strongest_sensitivity(evidence.sensitivity, current.sensitivity);
+                Ok(vec![ObservatoryMutation::Observe(evidence.clone())])
+            })?;
         self.invalidate_hot_cache();
         Ok(evidence)
     }
 
     /// Supersedes one exact evidence record with a newly source-cited correction.
+    ///
+    /// # Errors
+    /// Returns [`MemoryError`] if the target record is missing or the correction cannot be committed to the atlas.
     pub fn memory_correct(
         &self,
         request: MemoryCorrectRequest,
@@ -277,7 +227,10 @@ impl MemoryService {
         }
         let prior = self
             .observatory
-            .evidence(&[request.evidence_id.clone()], Sensitivity::Secret)?
+            .evidence(
+                std::slice::from_ref(&request.evidence_id),
+                Sensitivity::Secret,
+            )?
             .into_iter()
             .next()
             .ok_or(MemoryError::MissingRecord)?;
@@ -291,11 +244,11 @@ impl MemoryService {
                 .relationship
                 .as_ref()
                 .ok_or(MemoryError::Relationship(crate::RelationshipError::Invalid))?;
-            let context = relationship.confirm_preferred_name(
-                &source.source_session,
+            let context = self.confirm_preferred_name_from_source(
+                &source,
                 &request.source.source_entry_id,
-                &source_digest_for(&source, &request.source.source_entry_id)?,
                 request.replacement.trim(),
+                Some(&prior),
                 now,
             )?;
             relationship.sync_evidence(&self.observatory, now)?;
@@ -325,7 +278,11 @@ impl MemoryService {
             format!("agent-memory:{id}"),
             Some(request.source.source_entry_id),
             EvidenceSourceKind::DurableMemory,
-            source.authority,
+            if request.replacement.trim() == request.source.evidence_quote.trim() {
+                source.authority
+            } else {
+                EvidenceAuthority::DerivedInference
+            },
             request.replacement.trim().to_owned(),
             now,
             request.sensitivity.unwrap_or(prior.sensitivity),
@@ -333,18 +290,28 @@ impl MemoryService {
             facets,
         );
         replacement.id = id;
-        self.observatory.apply(
-            vec![ObservatoryMutation::Supersede {
-                prior_id: prior.id,
-                replacement: replacement.clone(),
-            }],
-            now,
-        )?;
+        self.observatory
+            .apply_from_snapshot(now, |snapshot, revision| {
+                let current = revalidate_source(snapshot, &source)?;
+                let target = revalidate_source(snapshot, &prior)?;
+                replacement.causal = Some(crate::ingestion::context_lineage(current, revision));
+                replacement.sensitivity = strongest_sensitivity(
+                    strongest_sensitivity(replacement.sensitivity, current.sensitivity),
+                    target.sensitivity,
+                );
+                Ok(vec![ObservatoryMutation::Supersede {
+                    prior_id: prior.id.clone(),
+                    replacement: replacement.clone(),
+                }])
+            })?;
         self.invalidate_hot_cache();
         Ok(replacement)
     }
 
     /// Removes one record from all future activation while retaining a source-cited tombstone.
+    ///
+    /// # Errors
+    /// Returns [`MemoryError`] if the target record is missing or the forget transition cannot be committed.
     pub fn memory_forget(
         &self,
         request: MemoryForgetRequest,
@@ -353,7 +320,10 @@ impl MemoryService {
         self.flush_pending_ingestion(now)?;
         let prior = self
             .observatory
-            .evidence(&[request.evidence_id.clone()], Sensitivity::Secret)?
+            .evidence(
+                std::slice::from_ref(&request.evidence_id),
+                Sensitivity::Secret,
+            )?
             .into_iter()
             .next()
             .ok_or(MemoryError::MissingRecord)?;
@@ -368,27 +338,37 @@ impl MemoryService {
                 .relationship
                 .as_ref()
                 .ok_or(MemoryError::Relationship(crate::RelationshipError::Invalid))?;
-            relationship.forget_preferred_name(
-                &source.source_session,
-                &request.source.source_entry_id,
-                &source_digest,
-                now,
-            )?;
+            self.observatory.apply_from_snapshot(now, |snapshot, _| {
+                revalidate_source(snapshot, &source)?;
+                revalidate_source(snapshot, &prior)?;
+                relationship
+                    .forget_preferred_name(
+                        &source.source_session,
+                        &request.source.source_entry_id,
+                        &source_digest,
+                        now,
+                    )
+                    .map_err(|_| ObservatoryError::InvalidEvidence)?;
+                Ok(vec![])
+            })?;
             relationship.sync_evidence(&self.observatory, now)?;
         } else {
-            self.observatory.apply(
-                vec![ObservatoryMutation::Delete {
+            self.observatory.apply_from_snapshot(now, |snapshot, _| {
+                revalidate_source(snapshot, &source)?;
+                revalidate_source(snapshot, &prior)?;
+                Ok(vec![ObservatoryMutation::Delete {
                     evidence_id: request.evidence_id,
                     source_entries: vec![request.source.source_entry_id],
                     source_digests: vec![source_digest],
-                }],
-                now,
-            )?;
+                }])
+            })?;
         }
         self.invalidate_hot_cache();
         Ok(())
     }
 
+    /// # Errors
+    /// Returns [`MemoryError`] if the atlas index cannot be read or the query is malformed.
     pub fn memory_search(
         &self,
         query: &str,
@@ -405,6 +385,8 @@ impl MemoryService {
             .map_err(Into::into)
     }
 
+    /// # Errors
+    /// Returns [`MemoryError`] if the atlas cannot be read.
     pub fn memory_get(
         &self,
         evidence_ids: &[EntityId],
@@ -415,6 +397,8 @@ impl MemoryService {
             .map_err(Into::into)
     }
 
+    /// # Errors
+    /// Returns [`MemoryError`] if the atlas cannot be read or the turn context cannot be assembled.
     #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
     pub fn memory_context(
         &self,
@@ -658,7 +642,36 @@ impl MemoryService {
         })
     }
 
-    fn validate_write_source(
+    fn confirm_preferred_name_from_source(
+        &self,
+        source: &EvidenceRecord,
+        entry: &EntryId,
+        name: &str,
+        prior: Option<&EvidenceRecord>,
+        now: UtcTimestamp,
+    ) -> Result<crate::RelationshipTurnContext, MemoryError> {
+        let relationship = self
+            .relationship
+            .as_ref()
+            .ok_or(MemoryError::Relationship(crate::RelationshipError::Invalid))?;
+        let digest = source_digest_for(source, entry)?;
+        let mut result = None;
+        self.observatory.apply_from_snapshot(now, |snapshot, _| {
+            revalidate_source(snapshot, source)?;
+            if let Some(prior) = prior {
+                revalidate_source(snapshot, prior)?;
+            }
+            result = Some(
+                relationship
+                    .confirm_preferred_name(&source.source_session, entry, &digest, name, now)
+                    .map_err(|_| ObservatoryError::InvalidEvidence)?,
+            );
+            Ok(vec![])
+        })?;
+        result.ok_or(MemoryError::Changed)
+    }
+
+    pub(crate) fn validate_write_source(
         &self,
         source: &MemoryWriteSource,
         authority: Option<EvidenceAuthority>,
@@ -671,8 +684,23 @@ impl MemoryService {
         snapshot
             .values()
             .find(|record| {
-                record.source_entries.contains(&source.source_entry_id)
-                    && record.source_kind == EvidenceSourceKind::UserMessage
+                record.profile_id == self.profile_id
+                    && source.evidence_id.as_ref().map_or_else(
+                        || {
+                            record.source_identity
+                                == format!(
+                                    "session:{}:entry:{}",
+                                    record.source_session, source.source_entry_id
+                                )
+                        },
+                        |id| &record.id == id,
+                    )
+                    && record
+                        .source_entries
+                        .iter()
+                        .position(|entry| entry == &source.source_entry_id)
+                        .and_then(|index| record.source_digests.get(index))
+                        .is_some_and(|digest| crate::causal::valid_digest(digest))
                     && matches!(
                         record.validity,
                         EvidenceValidity::Active | EvidenceValidity::Disputed
@@ -708,8 +736,8 @@ impl MemoryService {
                                 )
                         })
                 })
-                .cloned()
                 .take(MAX_HOT_ANCHORS)
+                .cloned()
                 .collect();
             cache.revision = revision;
         }
@@ -723,7 +751,7 @@ impl MemoryService {
             .collect())
     }
 
-    fn invalidate_hot_cache(&self) {
+    pub(crate) fn invalidate_hot_cache(&self) {
         if let Ok(mut cache) = self.hot_cache.lock() {
             cache.revision = u64::MAX;
             cache.anchors.clear();
@@ -731,7 +759,7 @@ impl MemoryService {
     }
 }
 
-fn source_digest_for(record: &EvidenceRecord, entry_id: &EntryId) -> Result<String, MemoryError> {
+pub(crate) fn source_digest_for(record: &EvidenceRecord, entry_id: &EntryId) -> Result<String, MemoryError> {
     record
         .source_entries
         .iter()
@@ -741,7 +769,7 @@ fn source_digest_for(record: &EvidenceRecord, entry_id: &EntryId) -> Result<Stri
         .ok_or(MemoryError::InvalidEvidenceQuote)
 }
 
-fn normalize_facets(facets: &mut Vec<EvidenceFacet>) -> Result<(), MemoryError> {
+pub(crate) fn normalize_facets(facets: &mut Vec<EvidenceFacet>) -> Result<(), MemoryError> {
     if facets.len() > 64
         || facets.iter().any(|facet| {
             facet.value.trim().is_empty()
@@ -777,8 +805,38 @@ const fn sensitivity_rank(sensitivity: Sensitivity) -> u8 {
 }
 
 fn hex_digest(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
     Sha256::digest(bytes)
         .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+        .fold(String::new(), |mut digest, byte| {
+            let _ = write!(digest, "{byte:02x}");
+            digest
+        })
+}
+
+pub(crate) fn revalidate_source<'a>(
+    snapshot: &'a BTreeMap<EntityId, EvidenceRecord>,
+    selected: &EvidenceRecord,
+) -> Result<&'a EvidenceRecord, ObservatoryError> {
+    snapshot
+        .get(&selected.id)
+        .filter(|current| {
+            current.profile_id == selected.profile_id
+                && current.content_digest == selected.content_digest
+                && current.source_digests == selected.source_digests
+                && current.authority == selected.authority
+                && matches!(
+                    current.validity,
+                    EvidenceValidity::Active | EvidenceValidity::Disputed
+                )
+        })
+        .ok_or(ObservatoryError::MissingEvidence)
+}
+
+pub(crate) const fn strongest_sensitivity(left: Sensitivity, right: Sensitivity) -> Sensitivity {
+    if sensitivity_rank(left) >= sensitivity_rank(right) {
+        left
+    } else {
+        right
+    }
 }

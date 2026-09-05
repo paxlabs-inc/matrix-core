@@ -1,5 +1,14 @@
 #![forbid(unsafe_code)]
 
+mod bindings;
+mod world;
+
+pub use bindings::{
+    BindingContractError, BindingTargetKind, BindingTargetSlot, BindingTaskScope, ObjectBindingKey,
+    ObjectBindingReference,
+};
+pub use world::{CURRENT_WORLD_VERSION, WorldVersion, WorldVersionError};
+
 use std::fmt::{self, Display};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -195,105 +204,26 @@ macro_rules! typed_ids {
 
 typed_ids!(
     ActionId,
-    AssignmentId,
     ArtifactId,
-    AuditId,
     ChildId,
     ClientId,
     CommandId,
     CommitmentId,
-    ComputerId,
-    ConversationId,
     DeliveryId,
     EntryId,
-    EventId,
     GoalId,
-    GrantId,
     JobId,
     KernelId,
     MessageId,
     ProcessInstanceId,
     ProfileId,
     RootTreeId,
-    RoundId,
     SessionId,
-    TakeoverLeaseId,
     ToolCallId,
     TurnId,
     WorkerId,
     WorkspaceId,
 );
-
-#[derive(Clone, Debug, Eq, Error, PartialEq)]
-pub enum StableKeyError {
-    #[error("stable key must contain 1 to 192 safe ASCII characters")]
-    Invalid,
-}
-
-#[derive(Clone, Debug, Eq, Hash, JsonSchema, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(transparent)]
-pub struct StableKey(String);
-
-impl StableKey {
-    pub const MAX_BYTES: usize = 192;
-
-    /// # Errors
-    ///
-    /// Returns [`StableKeyError::Invalid`] unless the value is non-empty, bounded, and uses the
-    /// canonical stable-key alphabet.
-    pub fn parse(value: impl Into<String>) -> Result<Self, StableKeyError> {
-        let value = value.into();
-        let valid = !value.is_empty()
-            && value.len() <= Self::MAX_BYTES
-            && value.bytes().all(|byte| {
-                byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'/' | b'-')
-            });
-        if valid {
-            Ok(Self(value))
-        } else {
-            Err(StableKeyError::Invalid)
-        }
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl Display for StableKey {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.0)
-    }
-}
-
-impl FromStr for StableKey {
-    type Err = StableKeyError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        Self::parse(value)
-    }
-}
-
-impl<'de> Deserialize<'de> for StableKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
-        Self::parse(value).map_err(serde::de::Error::custom)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, JsonSchema, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ProfileLifecycleState {
-    Provisioning,
-    Draft,
-    Enabled,
-    Disabled,
-    Archived,
-    Deleted,
-}
 
 macro_rules! monotonic_counter {
     ($name:ident) => {
@@ -338,6 +268,7 @@ macro_rules! monotonic_counter {
 monotonic_counter!(Generation);
 monotonic_counter!(Revision);
 monotonic_counter!(Sequence);
+monotonic_counter!(CapabilityEpoch);
 
 #[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
 pub enum TimestampError {
@@ -701,28 +632,19 @@ pub struct CommonCompatibilityFixture {
 pub struct CommonTypesSchema {
     pub fixture: CommonCompatibilityFixture,
     pub action_id: ActionId,
-    pub assignment_id: AssignmentId,
     pub artifact_id: ArtifactId,
-    pub audit_id: AuditId,
     pub child_id: ChildId,
     pub client_id: ClientId,
     pub command_id: CommandId,
     pub commitment_id: CommitmentId,
-    pub computer_id: ComputerId,
-    pub conversation_id: ConversationId,
     pub delivery_id: DeliveryId,
     pub entry_id: EntryId,
-    pub event_id: EventId,
     pub goal_id: GoalId,
-    pub grant_id: GrantId,
     pub job_id: JobId,
     pub message_id: MessageId,
     pub process_instance_id: ProcessInstanceId,
     pub profile_id: ProfileId,
     pub root_tree_id: RootTreeId,
-    pub round_id: RoundId,
-    pub stable_key: StableKey,
-    pub takeover_lease_id: TakeoverLeaseId,
     pub tool_call_id: ToolCallId,
     pub turn_id: TurnId,
     pub worker_id: WorkerId,
@@ -794,16 +716,7 @@ mod tests {
         let decoded: CommonCompatibilityFixture =
             serde_json::from_str(fixture).expect("version-one fixture must remain readable");
         assert_eq!(decoded.schema, CURRENT_SCHEMA_VERSION);
-        assert!(
-            decoded
-                .protocol
-                .is_major_compatible_with(CURRENT_PROTOCOL_VERSION),
-            "version-one fixture must remain protocol-compatible"
-        );
-        assert!(
-            decoded.protocol.minor <= CURRENT_PROTOCOL_VERSION.minor,
-            "compatibility fixture must not describe a newer protocol"
-        );
+        assert_eq!(decoded.protocol, ProtocolVersion::new(1, 0));
         let canonical = canonical_json_bytes(&decoded).expect("canonical fixture");
         let original: serde_json::Value = serde_json::from_str(fixture).expect("fixture JSON");
         let expected = canonical_json_bytes(&original).expect("canonical fixture JSON");
@@ -827,32 +740,6 @@ mod tests {
 
         let error = r#"{"version":{"major":1,"minor":0},"code":"future_error","message":"no","retryable":false}"#;
         assert!(serde_json::from_str::<CommonError>(error).is_err());
-    }
-
-    #[test]
-    fn teammate_domain_ids_remain_domain_objects_not_agent_principals() {
-        let raw = EntityId::from_u128(42);
-        let profile = ProfileId::from(raw.clone());
-        let conversation = ConversationId::from(raw.clone());
-        let computer = ComputerId::from(raw);
-
-        assert_eq!(profile.to_string(), conversation.to_string());
-        assert_eq!(profile.to_string(), computer.to_string());
-        let _: ProfileId = profile;
-        let _: ConversationId = conversation;
-        let _: ComputerId = computer;
-    }
-
-    #[test]
-    fn stable_keys_are_bounded_and_canonical() {
-        let key = StableKey::parse("conversation/01:event/02:profile/03").expect("safe stable key");
-        assert_eq!(
-            serde_json::from_str::<StableKey>(&serde_json::to_string(&key).unwrap()).unwrap(),
-            key
-        );
-        assert!(StableKey::parse("").is_err());
-        assert!(StableKey::parse("contains whitespace").is_err());
-        assert!(StableKey::parse("x".repeat(StableKey::MAX_BYTES + 1)).is_err());
     }
 
     #[test]

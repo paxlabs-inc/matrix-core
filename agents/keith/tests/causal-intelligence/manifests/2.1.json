@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "task": "2.1",
+  "source_paths": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "apps/agent-acp/Cargo.toml",
+    "apps/agent-cli",
+    "apps/agent-desktop/Cargo.toml",
+    "apps/agent-tui/Cargo.toml",
+    "apps/agent-web/Cargo.toml",
+    "apps/agent-web/src",
+    "apps/agent-web/static",
+    "apps/agent-worker",
+    "apps/agentd",
+    "apps/browser-runner/Cargo.toml",
+    "apps/channel-gateway/Cargo.toml",
+    "apps/cua-runner/Cargo.toml",
+    "apps/kernel-runner/Cargo.toml",
+    "apps/performance-runner/Cargo.toml",
+    "apps/tool-runner/Cargo.toml",
+    "apps/xtask",
+    "crates",
+    "scripts/qualification/causal_intelligence.py",
+    "tests/causal-intelligence/test_runtime_baseline.py",
+    "tests/causal-intelligence/test_runtime_ingestion.py"
+  ],
+  "config_paths": [
+    ".cargo/config.toml",
+    "packaging/providers.json",
+    "rust-toolchain.toml"
+  ],
+  "binary_paths": [
+    "/tmp/keith-causal-ingestion-build/debug/agentd",
+    "/tmp/keith-causal-ingestion-build/debug/agent-worker",
+    "/tmp/keith-causal-ingestion-build/debug/agent-web",
+    "/tmp/keith-causal-ingestion-build/debug/agent-cli"
+  ],
+  "required_case_ids": [
+    "session-source-pages-and-lineage",
+    "memory-provenance-and-replay",
+    "runtime-intake-focused",
+    "live-committed-source-intake",
+    "session-store-strict-clippy",
+    "memory-strict-clippy",
+    "local-runtime-strict-clippy",
+    "dependency-policy"
+  ],
+  "cases": [
+    {
+      "id": "session-source-pages-and-lineage",
+      "kind": "cargo_test",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "keith-session-store",
+        "--locked"
+      ],
+      "expected_case_count": 28,
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "memory-provenance-and-replay",
+      "kind": "cargo_test",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "keith-memory",
+        "--locked"
+      ],
+      "expected_case_count": 42,
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "runtime-intake-focused",
+      "kind": "cargo_test",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "keith-local-runtime",
+        "--locked"
+      ],
+      "expected_case_count": 29,
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "live-committed-source-intake",
+      "kind": "unittest",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/causal-intelligence",
+        "-p",
+        "test_runtime_ingestion.py",
+        "-v"
+      ],
+      "expected_case_count": 3,
+      "timeout_seconds": 3600,
+      "required_artifacts": [
+        "ingestion.json"
+      ]
+    },
+    {
+      "id": "session-store-strict-clippy",
+      "kind": "cargo_clippy",
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "keith-session-store",
+        "--all-targets",
+        "--no-deps",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "expected_case_count": 1,
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "memory-strict-clippy",
+      "kind": "cargo_clippy",
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "keith-memory",
+        "--all-targets",
+        "--no-deps",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "expected_case_count": 1,
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "local-runtime-strict-clippy",
+      "kind": "cargo_clippy",
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "keith-local-runtime",
+        "--all-targets",
+        "--no-deps",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "expected_case_count": 1,
+      "timeout_seconds": 1200
+    },
+    {
+      "id": "dependency-policy",
+      "kind": "dependency_policy",
+      "argv": [
+        "cargo",
+        "dependency-policy"
+      ],
+      "expected_case_count": 1,
+      "timeout_seconds": 1200
+    }
+  ]
+}

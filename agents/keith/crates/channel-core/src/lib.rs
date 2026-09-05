@@ -3,8 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use keith_agent_types::{
-    ArtifactId, CURRENT_PROTOCOL_VERSION, ClientId, CommandId, ConversationId, EntityId, EventId,
-    ProfileId, Revision, SessionId, StableKey, UtcTimestamp,
+    ArtifactId, CURRENT_PROTOCOL_VERSION, ClientId, CommandId, ProfileId, SessionId, UtcTimestamp,
 };
 use keith_connection::{AgentTransport, ConnectionError};
 use keith_protocol::{
@@ -104,20 +103,6 @@ impl InboundMessage {
         }
         Ok(())
     }
-
-    /// Returns a platform-stable source key used for canonical append deduplication.
-    pub fn stable_source_key(&self) -> Result<StableKey, GatewayError> {
-        self.validate()?;
-        StableKey::parse(format!(
-            "channel:{}:{}:{}:{}:{}",
-            self.channel,
-            self.external_account,
-            self.conversation,
-            self.thread.as_deref().unwrap_or("root"),
-            self.message_id
-        ))
-        .map_err(|_| GatewayError::Malformed)
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -128,500 +113,6 @@ pub struct RoutedInbound {
     pub message: InboundMessage,
 }
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ExternalConversationIdentity {
-    pub channel: String,
-    pub external_account: String,
-    pub conversation: String,
-    pub thread: Option<String>,
-}
-
-impl From<&InboundMessage> for ExternalConversationIdentity {
-    fn from(message: &InboundMessage) -> Self {
-        Self {
-            channel: message.channel.clone(),
-            external_account: message.external_account.clone(),
-            conversation: message.conversation.clone(),
-            thread: message.thread.clone(),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum BoundMentionPolicy {
-    Always,
-    RequireMention,
-    Ignore,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum BoundMemoryPolicy {
-    Shared,
-    PrivatePerParticipant,
-    Disabled,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "authority", content = "principals")]
-pub enum BoundChannelAuthority {
-    Disabled,
-    ProfileCallers,
-    AllowList(BTreeSet<String>),
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum BoundProactivePostPolicy {
-    Denied,
-    Allowed,
-}
-
-/// Policy evidence copied from the durable binding. The daemon must revalidate its revisions and
-/// digest before append or publication; gateways never widen it.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ConversationBindingPolicy {
-    pub route_revision: Revision,
-    pub conversation_revision: Revision,
-    pub participant_revision: Revision,
-    pub policy_digest_sha256: String,
-    pub mention: BoundMentionPolicy,
-    pub memory: BoundMemoryPolicy,
-    pub tools: BoundChannelAuthority,
-    pub schedules: BoundChannelAuthority,
-    pub proactive_posts: BoundProactivePostPolicy,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ConversationBindingReference {
-    pub binding_id: EntityId,
-    pub stable_key: StableKey,
-    pub binding_revision: Revision,
-    pub external: ExternalConversationIdentity,
-    pub conversation_id: ConversationId,
-    pub participant_profile_id: ProfileId,
-    pub participant_session_id: SessionId,
-    pub policy: ConversationBindingPolicy,
-}
-
-/// A routing-authorized, immutable snapshot of the binding used for one channel operation.
-/// Callers cannot supply capabilities separately from this snapshot; the policy is always the
-/// exact policy that was authorized with the binding revision.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ChannelConversationBindingSnapshot {
-    pub binding: ConversationBindingReference,
-    pub state: ChannelConversationBindingState,
-    pub revalidated_at: UtcTimestamp,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ChannelConversationBindingState {
-    Active,
-    Revoked,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AuthenticatedChannelParticipant {
-    pub profile_id: ProfileId,
-    pub session_id: SessionId,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ConversationBoundIngressRequest {
-    pub request_id: EntityId,
-    pub operation_key: StableKey,
-    pub source_message_key: StableKey,
-    pub binding: ChannelConversationBindingSnapshot,
-    pub authenticated_participant: AuthenticatedChannelParticipant,
-    pub sender_external_id: String,
-    pub occurred_at: UtcTimestamp,
-    pub text: String,
-    pub artifacts: Vec<ArtifactId>,
-    pub reply_route: ReplyRoute,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ConversationBoundOutboundRequest {
-    pub request_id: EntityId,
-    pub operation_key: StableKey,
-    pub source_message_key: StableKey,
-    pub binding: ChannelConversationBindingSnapshot,
-    pub authenticated_participant: AuthenticatedChannelParticipant,
-    pub event_id: EventId,
-    pub stable_publication_key: StableKey,
-    pub text: String,
-    pub artifacts: Vec<ArtifactId>,
-    pub route: ReplyRoute,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ConversationBoundReceiptDisposition {
-    Accepted,
-    Duplicate,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ConversationBoundIngressReceipt {
-    pub request_id: EntityId,
-    pub operation_key: StableKey,
-    pub source_message_key: StableKey,
-    pub binding_id: EntityId,
-    pub binding_stable_key: StableKey,
-    pub binding_revision: Revision,
-    pub conversation_id: ConversationId,
-    pub authenticated_participant: AuthenticatedChannelParticipant,
-    pub policy_snapshot: ConversationBindingPolicy,
-    pub disposition: ConversationBoundReceiptDisposition,
-    pub accepted_at: UtcTimestamp,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ConversationBoundOutboundReceipt {
-    pub request_id: EntityId,
-    pub operation_key: StableKey,
-    pub source_message_key: StableKey,
-    pub binding_id: EntityId,
-    pub binding_stable_key: StableKey,
-    pub binding_revision: Revision,
-    pub conversation_id: ConversationId,
-    pub authenticated_participant: AuthenticatedChannelParticipant,
-    pub event_id: EventId,
-    pub stable_publication_key: StableKey,
-    pub policy_snapshot: ConversationBindingPolicy,
-    pub disposition: ConversationBoundReceiptDisposition,
-    pub accepted_at: UtcTimestamp,
-}
-
-impl ChannelConversationBindingSnapshot {
-    pub fn validate_current(&self, current: &Self) -> Result<(), ConversationBoundChannelError> {
-        validate_binding_snapshot(current)?;
-        if current.state == ChannelConversationBindingState::Revoked {
-            return Err(ConversationBoundChannelError::BindingRevoked);
-        }
-        if self.binding.binding_id != current.binding.binding_id
-            || self.binding.stable_key != current.binding.stable_key
-            || self.binding.binding_revision != current.binding.binding_revision
-            || self.binding.external != current.binding.external
-            || self.binding.conversation_id != current.binding.conversation_id
-            || self.binding.participant_profile_id != current.binding.participant_profile_id
-            || self.binding.participant_session_id != current.binding.participant_session_id
-            || self.binding.policy != current.binding.policy
-        {
-            return Err(ConversationBoundChannelError::BindingStale);
-        }
-        if self.state != ChannelConversationBindingState::Active {
-            return Err(ConversationBoundChannelError::BindingRevoked);
-        }
-        Ok(())
-    }
-}
-
-impl ConversationBoundIngressRequest {
-    pub fn validate_current(
-        &self,
-        current: &ChannelConversationBindingSnapshot,
-    ) -> Result<(), ConversationBoundChannelError> {
-        self.binding.validate_current(current)?;
-        validate_authenticated_participant(&self.binding.binding, &self.authenticated_participant)?;
-        validate_channel_text(&self.sender_external_id, MAX_EXTERNAL_SENDER_BYTES)?;
-        validate_channel_text(&self.text, MAX_CONVERSATION_MESSAGE_BYTES)?;
-        validate_channel_artifacts(&self.artifacts)?;
-        validate_reply_route(&self.reply_route, &self.binding.binding.external)
-    }
-
-    pub fn accepted_receipt(
-        &self,
-        current: &ChannelConversationBindingSnapshot,
-        disposition: ConversationBoundReceiptDisposition,
-        accepted_at: UtcTimestamp,
-    ) -> Result<ConversationBoundIngressReceipt, ConversationBoundChannelError> {
-        self.validate_current(current)?;
-        Ok(ConversationBoundIngressReceipt {
-            request_id: self.request_id.clone(),
-            operation_key: self.operation_key.clone(),
-            source_message_key: self.source_message_key.clone(),
-            binding_id: current.binding.binding_id.clone(),
-            binding_stable_key: current.binding.stable_key.clone(),
-            binding_revision: current.binding.binding_revision,
-            conversation_id: current.binding.conversation_id.clone(),
-            authenticated_participant: self.authenticated_participant.clone(),
-            policy_snapshot: current.binding.policy.clone(),
-            disposition,
-            accepted_at,
-        })
-    }
-}
-
-impl ConversationBoundOutboundRequest {
-    pub fn validate_current(
-        &self,
-        current: &ChannelConversationBindingSnapshot,
-    ) -> Result<(), ConversationBoundChannelError> {
-        self.binding.validate_current(current)?;
-        validate_authenticated_participant(&self.binding.binding, &self.authenticated_participant)?;
-        validate_channel_text(&self.text, MAX_CONVERSATION_MESSAGE_BYTES)?;
-        validate_channel_artifacts(&self.artifacts)?;
-        validate_reply_route(&self.route, &self.binding.binding.external)
-    }
-
-    pub fn accepted_receipt(
-        &self,
-        current: &ChannelConversationBindingSnapshot,
-        disposition: ConversationBoundReceiptDisposition,
-        accepted_at: UtcTimestamp,
-    ) -> Result<ConversationBoundOutboundReceipt, ConversationBoundChannelError> {
-        self.validate_current(current)?;
-        Ok(ConversationBoundOutboundReceipt {
-            request_id: self.request_id.clone(),
-            operation_key: self.operation_key.clone(),
-            source_message_key: self.source_message_key.clone(),
-            binding_id: current.binding.binding_id.clone(),
-            binding_stable_key: current.binding.stable_key.clone(),
-            binding_revision: current.binding.binding_revision,
-            conversation_id: current.binding.conversation_id.clone(),
-            authenticated_participant: self.authenticated_participant.clone(),
-            event_id: self.event_id.clone(),
-            stable_publication_key: self.stable_publication_key.clone(),
-            policy_snapshot: current.binding.policy.clone(),
-            disposition,
-            accepted_at,
-        })
-    }
-}
-
-fn validate_binding_snapshot(
-    snapshot: &ChannelConversationBindingSnapshot,
-) -> Result<(), ConversationBoundChannelError> {
-    validate_external_identity(&snapshot.binding.external)?;
-    if snapshot.binding.policy.policy_digest_sha256.len() != 64
-        || !snapshot
-            .binding
-            .policy
-            .policy_digest_sha256
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-    {
-        return Err(ConversationBoundChannelError::InvalidPolicySnapshot);
-    }
-    Ok(())
-}
-
-fn validate_authenticated_participant(
-    binding: &ConversationBindingReference,
-    authenticated: &AuthenticatedChannelParticipant,
-) -> Result<(), ConversationBoundChannelError> {
-    if binding.participant_profile_id != authenticated.profile_id
-        || binding.participant_session_id != authenticated.session_id
-    {
-        return Err(ConversationBoundChannelError::AuthenticatedIdentityMismatch);
-    }
-    Ok(())
-}
-
-fn validate_external_identity(
-    external: &ExternalConversationIdentity,
-) -> Result<(), ConversationBoundChannelError> {
-    validate_channel_text(&external.channel, MAX_EXTERNAL_IDENTITY_BYTES)?;
-    validate_channel_text(&external.external_account, MAX_EXTERNAL_IDENTITY_BYTES)?;
-    validate_channel_text(&external.conversation, MAX_EXTERNAL_IDENTITY_BYTES)?;
-    if let Some(thread) = &external.thread {
-        validate_channel_text(thread, MAX_EXTERNAL_IDENTITY_BYTES)?;
-    }
-    Ok(())
-}
-
-fn validate_reply_route(
-    route: &ReplyRoute,
-    external: &ExternalConversationIdentity,
-) -> Result<(), ConversationBoundChannelError> {
-    if route.channel != external.channel
-        || route.external_account != external.external_account
-        || route.conversation != external.conversation
-        || route.thread != external.thread
-    {
-        return Err(ConversationBoundChannelError::RouteMismatch);
-    }
-    if let Some(reply_to) = &route.reply_to_message {
-        validate_channel_text(reply_to, MAX_EXTERNAL_IDENTITY_BYTES)?;
-    }
-    Ok(())
-}
-
-fn validate_channel_artifacts(
-    artifacts: &[ArtifactId],
-) -> Result<(), ConversationBoundChannelError> {
-    if artifacts.len() > MAX_CONVERSATION_ARTIFACTS {
-        return Err(ConversationBoundChannelError::ArtifactLimit);
-    }
-    let unique = artifacts.iter().collect::<BTreeSet<_>>();
-    if unique.len() != artifacts.len() {
-        return Err(ConversationBoundChannelError::DuplicateArtifact);
-    }
-    Ok(())
-}
-
-fn validate_channel_text(
-    value: &str,
-    max_bytes: usize,
-) -> Result<(), ConversationBoundChannelError> {
-    if value.is_empty()
-        || value.len() > max_bytes
-        || value.trim() != value
-        || value.chars().any(char::is_control)
-    {
-        return Err(ConversationBoundChannelError::InvalidText);
-    }
-    Ok(())
-}
-
-const MAX_EXTERNAL_IDENTITY_BYTES: usize = 512;
-const MAX_EXTERNAL_SENDER_BYTES: usize = 512;
-const MAX_CONVERSATION_MESSAGE_BYTES: usize = 64 * 1024;
-const MAX_CONVERSATION_ARTIFACTS: usize = 64;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
-pub enum ConversationBoundChannelError {
-    #[error("conversation binding has been revoked")]
-    BindingRevoked,
-    #[error("conversation binding revision or policy is stale")]
-    BindingStale,
-    #[error("authenticated participant does not match the conversation binding")]
-    AuthenticatedIdentityMismatch,
-    #[error("conversation binding policy snapshot is invalid")]
-    InvalidPolicySnapshot,
-    #[error("channel route does not match the conversation binding")]
-    RouteMismatch,
-    #[error("channel text is empty, non-canonical, or exceeds its bound")]
-    InvalidText,
-    #[error("channel artifact count exceeds its bound")]
-    ArtifactLimit,
-    #[error("channel artifact identifiers must be unique")]
-    DuplicateArtifact,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ConversationRoutedInbound {
-    pub binding: ConversationBindingReference,
-    pub source_key: StableKey,
-    pub message: InboundMessage,
-}
-
-impl ConversationRoutedInbound {
-    /// Validates that a resolver-bound message still has the same immutable external identity and
-    /// stable source identity before it is admitted to the canonical append path.
-    pub fn validate(&self) -> Result<(), GatewayError> {
-        self.message.validate()?;
-        if self.binding.external != ExternalConversationIdentity::from(&self.message)
-            || self.source_key != self.message.stable_source_key()?
-            || !valid_sha256(&self.binding.policy.policy_digest_sha256)
-        {
-            return Err(GatewayError::BindingMismatch);
-        }
-        Ok(())
-    }
-
-    pub fn dispatch_key(&self) -> ConversationDispatchKey {
-        ConversationDispatchKey {
-            conversation_id: self.binding.conversation_id.clone(),
-            participant_profile_id: self.binding.participant_profile_id.clone(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ConversationDispatchKey {
-    pub conversation_id: ConversationId,
-    pub participant_profile_id: ProfileId,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct CanonicalChannelAppend {
-    pub binding: ConversationBindingReference,
-    pub source_key: StableKey,
-    pub sender_external_id: String,
-    pub occurred_at: UtcTimestamp,
-    pub text: String,
-    pub artifacts: Vec<ArtifactId>,
-    pub reply_route: ReplyRoute,
-}
-
-impl TryFrom<ConversationRoutedInbound> for CanonicalChannelAppend {
-    type Error = GatewayError;
-
-    fn try_from(routed: ConversationRoutedInbound) -> Result<Self, Self::Error> {
-        routed.validate()?;
-        let reply_route = routed.message.reply_route();
-        Ok(Self {
-            binding: routed.binding,
-            source_key: routed.source_key,
-            sender_external_id: routed.message.sender,
-            occurred_at: routed.message.occurred_at,
-            text: routed.message.text,
-            artifacts: routed
-                .message
-                .attachments
-                .into_iter()
-                .filter_map(|attachment| attachment.artifact_id)
-                .collect(),
-            reply_route,
-        })
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct CanonicalChannelAppendReceipt {
-    pub binding_id: EntityId,
-    pub binding_revision: Revision,
-    pub conversation_id: ConversationId,
-    pub event_id: EventId,
-    pub source_key: StableKey,
-    pub duplicate: bool,
-}
-
-/// Server-side adapter contract. Implementations resolve from authoritative storage at enqueue and
-/// revalidate immediately before append; a caller-supplied binding is evidence, not authority.
-pub trait CanonicalConversationIngress {
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    fn resolve(
-        &self,
-        external: &ExternalConversationIdentity,
-        now: UtcTimestamp,
-    ) -> Result<ConversationBindingReference, Self::Error>;
-
-    fn append(
-        &self,
-        append: CanonicalChannelAppend,
-        now: UtcTimestamp,
-    ) -> Result<CanonicalChannelAppendReceipt, Self::Error>;
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct CanonicalChannelPublication {
-    pub binding: ConversationBindingReference,
-    pub event_id: EventId,
-    pub stable_publication_key: StableKey,
-    pub route: ReplyRoute,
-    pub text: String,
-    pub artifacts: Vec<ArtifactId>,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct OutboundMessage {
@@ -629,37 +120,6 @@ pub struct OutboundMessage {
     pub idempotency_key: String,
     pub text: String,
     pub artifacts: Vec<ArtifactId>,
-}
-
-impl TryFrom<CanonicalChannelPublication> for OutboundMessage {
-    type Error = GatewayError;
-
-    fn try_from(publication: CanonicalChannelPublication) -> Result<Self, Self::Error> {
-        let external = ExternalConversationIdentity {
-            channel: publication.route.channel.clone(),
-            external_account: publication.route.external_account.clone(),
-            conversation: publication.route.conversation.clone(),
-            thread: publication.route.thread.clone(),
-        };
-        if external != publication.binding.external
-            || !valid_sha256(&publication.binding.policy.policy_digest_sha256)
-        {
-            return Err(GatewayError::BindingMismatch);
-        }
-        Ok(Self {
-            route: publication.route,
-            idempotency_key: publication.stable_publication_key.to_string(),
-            text: publication.text,
-            artifacts: publication.artifacts,
-        })
-    }
-}
-
-fn valid_sha256(value: &str) -> bool {
-    value.len() == 64
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -738,6 +198,717 @@ pub trait ChannelAdapter {
     fn reconnect(&mut self) -> Result<(), AdapterFailure>;
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelContractVersion {
+    pub major: u16,
+    pub minor: u16,
+}
+
+impl ChannelContractVersion {
+    pub const fn new(major: u16, minor: u16) -> Self {
+        Self { major, minor }
+    }
+
+    pub const fn is_compatible_with(self, required: Self) -> bool {
+        self.major == required.major && self.minor >= required.minor
+    }
+}
+
+pub const CHANNEL_CONTRACT_V2: ChannelContractVersion = ChannelContractVersion::new(2, 0);
+
+/// Selects the stable v2 contract only when the peer advertises a compatible version.
+///
+/// # Errors
+///
+/// Returns an unsupported-feature error rather than silently downgrading or translating versions.
+pub fn negotiate_channel_contract_v2(
+    peer_versions: &[ChannelContractVersion],
+) -> Result<ChannelContractVersion, ChannelAdapterErrorV2> {
+    if peer_versions
+        .iter()
+        .any(|version| version.is_compatible_with(CHANNEL_CONTRACT_V2))
+    {
+        Ok(CHANNEL_CONTRACT_V2)
+    } else {
+        Err(ChannelAdapterErrorV2::unsupported(
+            "channel contract v2 is not supported by the peer",
+        ))
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelCapabilityV2 {
+    InboundMessages,
+    OutboundMessages,
+    Threads,
+    Replies,
+    Mentions,
+    Commands,
+    MessageEdits,
+    MessageDeletion,
+    Reactions,
+    Attachments,
+    Voice,
+    RichContent,
+    Typing,
+    DeliveryReceipts,
+    ReadReceipts,
+    RateLimits,
+    Reconnect,
+    Cancellation,
+    IdempotentSend,
+}
+
+impl ChannelCapabilityV2 {
+    pub const ALL: [Self; 19] = [
+        Self::InboundMessages,
+        Self::OutboundMessages,
+        Self::Threads,
+        Self::Replies,
+        Self::Mentions,
+        Self::Commands,
+        Self::MessageEdits,
+        Self::MessageDeletion,
+        Self::Reactions,
+        Self::Attachments,
+        Self::Voice,
+        Self::RichContent,
+        Self::Typing,
+        Self::DeliveryReceipts,
+        Self::ReadReceipts,
+        Self::RateLimits,
+        Self::Reconnect,
+        Self::Cancellation,
+        Self::IdempotentSend,
+    ];
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "support")]
+pub enum ChannelCapabilitySupportV2 {
+    Supported,
+    Unsupported { safe_reason: String },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelCapabilitiesV2 {
+    pub contract: ChannelContractVersion,
+    pub declarations: BTreeMap<ChannelCapabilityV2, ChannelCapabilitySupportV2>,
+    pub max_event_bytes: u64,
+    pub max_attachment_bytes: u64,
+    pub max_attachments: usize,
+    pub max_rich_content_bytes: u64,
+    pub requests_per_minute: Option<u32>,
+}
+
+impl ChannelCapabilitiesV2 {
+    pub fn supports(&self, capability: ChannelCapabilityV2) -> bool {
+        matches!(
+            self.declarations.get(&capability),
+            Some(ChannelCapabilitySupportV2::Supported)
+        )
+    }
+
+    /// Validates that every v2 feature is truthfully declared and all bounds are operative.
+    ///
+    /// # Errors
+    ///
+    /// Returns a malformed-contract error for an incompatible version, missing declaration,
+    /// blank limitation, or disabled resource bound.
+    pub fn validate(&self) -> Result<(), ChannelAdapterErrorV2> {
+        if !self.contract.is_compatible_with(CHANNEL_CONTRACT_V2)
+            || self.max_event_bytes == 0
+            || self.max_attachment_bytes == 0
+            || self.max_attachments == 0
+            || self.max_rich_content_bytes == 0
+            || self.requests_per_minute == Some(0)
+            || ChannelCapabilityV2::ALL
+                .iter()
+                .any(|capability| !self.declarations.contains_key(capability))
+            || self.declarations.values().any(|support| {
+                matches!(
+                    support,
+                    ChannelCapabilitySupportV2::Unsupported { safe_reason }
+                        if safe_reason.trim().is_empty()
+                )
+            })
+        {
+            return Err(ChannelAdapterErrorV2::malformed(
+                "channel capability declaration is incomplete or invalid",
+            ));
+        }
+        Ok(())
+    }
+
+    /// Refuses an operation unless the adapter explicitly declared support.
+    ///
+    /// # Errors
+    ///
+    /// Returns an unsupported-feature error for a missing or unsupported declaration.
+    pub fn require(&self, capability: ChannelCapabilityV2) -> Result<(), ChannelAdapterErrorV2> {
+        match self.declarations.get(&capability) {
+            Some(ChannelCapabilitySupportV2::Supported) => Ok(()),
+            Some(ChannelCapabilitySupportV2::Unsupported { safe_reason }) => {
+                Err(ChannelAdapterErrorV2::unsupported(safe_reason))
+            }
+            None => Err(ChannelAdapterErrorV2::unsupported(
+                "channel capability was not declared",
+            )),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelConnectionHealthV2 {
+    Disconnected,
+    Connected,
+    RateLimited,
+    Revoked,
+    Failed,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct ChannelAccountSetupV2 {
+    pub account_id: String,
+    pub required_credential_names: BTreeSet<String>,
+    pub required_scopes: BTreeSet<String>,
+    pub webhook_configured: bool,
+    pub socket_or_polling_configured: bool,
+    pub connection_health: ChannelConnectionHealthV2,
+    pub reconnect_cursor_present: bool,
+    pub safe_test_supported: bool,
+    pub metadata: BTreeMap<String, String>,
+}
+
+impl ChannelAccountSetupV2 {
+    /// Ensures setup diagnostics contain stable names and never pretend an ingress path exists.
+    ///
+    /// # Errors
+    ///
+    /// Returns a malformed-contract error for blank account, credential, or scope identifiers,
+    /// or when neither webhook nor socket/polling ingress is configured.
+    pub fn validate(&self) -> Result<(), ChannelAdapterErrorV2> {
+        if self.account_id.trim().is_empty()
+            || self
+                .required_credential_names
+                .iter()
+                .any(|name| name.trim().is_empty())
+            || self
+                .required_scopes
+                .iter()
+                .any(|scope| scope.trim().is_empty())
+            || (!self.webhook_configured && !self.socket_or_polling_configured)
+        {
+            return Err(ChannelAdapterErrorV2::malformed(
+                "channel account setup diagnostics are invalid",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelAdapterErrorKindV2 {
+    Authentication,
+    Permission,
+    MalformedEvent,
+    RateLimit,
+    TransientNetwork,
+    PermanentDestination,
+    UnsupportedFeature,
+    UncertainAcknowledgement,
+    StaleCursor,
+    Cancelled,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelAdapterErrorV2 {
+    pub kind: ChannelAdapterErrorKindV2,
+    pub safe_message: String,
+    pub retry_after_ms: Option<u64>,
+}
+
+impl ChannelAdapterErrorV2 {
+    pub fn malformed(message: impl Into<String>) -> Self {
+        Self {
+            kind: ChannelAdapterErrorKindV2::MalformedEvent,
+            safe_message: message.into(),
+            retry_after_ms: None,
+        }
+    }
+
+    pub fn unsupported(message: impl Into<String>) -> Self {
+        Self {
+            kind: ChannelAdapterErrorKindV2::UnsupportedFeature,
+            safe_message: message.into(),
+            retry_after_ms: None,
+        }
+    }
+
+    pub fn is_retryable(&self) -> bool {
+        matches!(
+            self.kind,
+            ChannelAdapterErrorKindV2::RateLimit
+                | ChannelAdapterErrorKindV2::TransientNetwork
+                | ChannelAdapterErrorKindV2::UncertainAcknowledgement
+        )
+    }
+}
+
+impl From<AdapterFailure> for ChannelAdapterErrorV2 {
+    fn from(failure: AdapterFailure) -> Self {
+        let kind = match failure.class {
+            RetryClass::Retryable | RetryClass::Reconnect => {
+                ChannelAdapterErrorKindV2::TransientNetwork
+            }
+            RetryClass::RateLimited => ChannelAdapterErrorKindV2::RateLimit,
+            RetryClass::Permanent => ChannelAdapterErrorKindV2::PermanentDestination,
+        };
+        Self {
+            kind,
+            safe_message: failure.safe_message,
+            retry_after_ms: failure.retry_after_ms,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelConversationKindV2 {
+    Direct,
+    GroupDirect,
+    Channel,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelIdentityV2 {
+    pub platform_id: String,
+    pub display_name: Option<String>,
+    pub is_bot: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelConversationV2 {
+    pub platform_id: String,
+    pub kind: ChannelConversationKindV2,
+    pub thread_id: Option<String>,
+    pub reply_to_message_id: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelMentionV2 {
+    pub identity: ChannelIdentityV2,
+    pub start: Option<usize>,
+    pub end: Option<usize>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelAttachmentKindV2 {
+    File,
+    Image,
+    Audio,
+    Voice,
+    Video,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelAttachmentV2 {
+    pub attachment: Attachment,
+    pub kind: ChannelAttachmentKindV2,
+    pub duration_ms: Option<u64>,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelRichContentV2 {
+    pub kind: String,
+    pub text: String,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelMessageV2 {
+    pub message_id: String,
+    pub account_id: String,
+    pub conversation: ChannelConversationV2,
+    pub sender: ChannelIdentityV2,
+    pub text: String,
+    pub attachments: Vec<ChannelAttachmentV2>,
+    pub rich_content: Vec<ChannelRichContentV2>,
+    pub mentions: Vec<ChannelMentionV2>,
+    pub occurred_at: UtcTimestamp,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelMessageEditV2 {
+    pub message_id: String,
+    pub account_id: String,
+    pub conversation: ChannelConversationV2,
+    pub editor: ChannelIdentityV2,
+    pub text: String,
+    pub occurred_at: UtcTimestamp,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelMessageDeleteV2 {
+    pub message_id: String,
+    pub account_id: String,
+    pub conversation: ChannelConversationV2,
+    pub actor: Option<ChannelIdentityV2>,
+    pub occurred_at: UtcTimestamp,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelReactionActionV2 {
+    Added,
+    Removed,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelReactionV2 {
+    pub message_id: String,
+    pub account_id: String,
+    pub conversation: ChannelConversationV2,
+    pub actor: ChannelIdentityV2,
+    pub reaction: String,
+    pub action: ChannelReactionActionV2,
+    pub occurred_at: UtcTimestamp,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelCommandV2 {
+    pub command_id: String,
+    pub account_id: String,
+    pub conversation: ChannelConversationV2,
+    pub sender: ChannelIdentityV2,
+    pub name: String,
+    pub arguments: String,
+    pub occurred_at: UtcTimestamp,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelReceiptStateV2 {
+    Accepted,
+    Delivered,
+    Read,
+    Failed,
+    Cancelled,
+    Uncertain,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "event", content = "payload")]
+pub enum ChannelEventKindV2 {
+    MessageCreated(ChannelMessageV2),
+    MessageEdited(ChannelMessageEditV2),
+    MessageDeleted(ChannelMessageDeleteV2),
+    Reaction(ChannelReactionV2),
+    Command(ChannelCommandV2),
+    Typing {
+        account_id: String,
+        conversation: ChannelConversationV2,
+        actor: ChannelIdentityV2,
+    },
+    Receipt {
+        account_id: String,
+        conversation: ChannelConversationV2,
+        platform_message_id: String,
+        state: ChannelReceiptStateV2,
+    },
+    RateLimited {
+        retry_after_ms: u64,
+    },
+    ReconnectRequired {
+        safe_reason: String,
+    },
+    CancellationRequested {
+        cancellation_id: String,
+    },
+}
+
+impl ChannelEventKindV2 {
+    pub const fn required_capability(&self) -> ChannelCapabilityV2 {
+        match self {
+            Self::MessageCreated(_) => ChannelCapabilityV2::InboundMessages,
+            Self::MessageEdited(_) => ChannelCapabilityV2::MessageEdits,
+            Self::MessageDeleted(_) => ChannelCapabilityV2::MessageDeletion,
+            Self::Reaction(_) => ChannelCapabilityV2::Reactions,
+            Self::Command(_) => ChannelCapabilityV2::Commands,
+            Self::Typing { .. } => ChannelCapabilityV2::Typing,
+            Self::Receipt { .. } => ChannelCapabilityV2::DeliveryReceipts,
+            Self::RateLimited { .. } => ChannelCapabilityV2::RateLimits,
+            Self::ReconnectRequired { .. } => ChannelCapabilityV2::Reconnect,
+            Self::CancellationRequested { .. } => ChannelCapabilityV2::Cancellation,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelEventV2 {
+    pub contract: ChannelContractVersion,
+    pub event_id: String,
+    pub delivery_attempt: u32,
+    pub event: ChannelEventKindV2,
+    pub metadata: BTreeMap<String, String>,
+}
+
+impl ChannelEventV2 {
+    /// Checks version, identity, delivery attempt, and feature declaration before admission.
+    ///
+    /// # Errors
+    ///
+    /// Returns malformed or unsupported-feature errors without dispatching the event.
+    pub fn validate(
+        &self,
+        capabilities: &ChannelCapabilitiesV2,
+    ) -> Result<(), ChannelAdapterErrorV2> {
+        capabilities.validate()?;
+        if !self.contract.is_compatible_with(CHANNEL_CONTRACT_V2)
+            || self.event_id.trim().is_empty()
+            || self.delivery_attempt == 0
+        {
+            return Err(ChannelAdapterErrorV2::malformed(
+                "channel event envelope is malformed",
+            ));
+        }
+        capabilities.require(self.event.required_capability())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelOutboundMessageV2 {
+    pub route: ReplyRoute,
+    pub idempotency_key: String,
+    pub text: String,
+    pub artifacts: Vec<ArtifactId>,
+    pub rich_content: Vec<ChannelRichContentV2>,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "operation", content = "payload")]
+pub enum ChannelOperationV2 {
+    SendMessage(ChannelOutboundMessageV2),
+    EditMessage {
+        route: ReplyRoute,
+        platform_message_id: String,
+        text: String,
+        rich_content: Vec<ChannelRichContentV2>,
+    },
+    DeleteMessage {
+        route: ReplyRoute,
+        platform_message_id: String,
+    },
+    AddReaction {
+        route: ReplyRoute,
+        platform_message_id: String,
+        reaction: String,
+    },
+    RemoveReaction {
+        route: ReplyRoute,
+        platform_message_id: String,
+        reaction: String,
+    },
+    SetTyping {
+        route: ReplyRoute,
+        active: bool,
+    },
+    Cancel {
+        cancellation_id: String,
+    },
+}
+
+impl ChannelOperationV2 {
+    pub const fn required_capability(&self) -> ChannelCapabilityV2 {
+        match self {
+            Self::SendMessage(_) => ChannelCapabilityV2::OutboundMessages,
+            Self::EditMessage { .. } => ChannelCapabilityV2::MessageEdits,
+            Self::DeleteMessage { .. } => ChannelCapabilityV2::MessageDeletion,
+            Self::AddReaction { .. } | Self::RemoveReaction { .. } => {
+                ChannelCapabilityV2::Reactions
+            }
+            Self::SetTyping { .. } => ChannelCapabilityV2::Typing,
+            Self::Cancel { .. } => ChannelCapabilityV2::Cancellation,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelOperationReceiptV2 {
+    pub operation_id: String,
+    pub platform_message_id: Option<String>,
+    pub accepted_at: UtcTimestamp,
+    pub state: ChannelReceiptStateV2,
+    pub duplicate_possible: bool,
+    pub metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReconnectCursorV2 {
+    pub value: String,
+    pub observed_at: UtcTimestamp,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RawWebhookRequestV2<'a> {
+    pub timestamp_seconds: i64,
+    pub signature: &'a str,
+    pub body: &'a [u8],
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedWebhookRequestV2<'a> {
+    body: &'a [u8],
+}
+
+impl<'a> VerifiedWebhookRequestV2<'a> {
+    /// Verifies timestamp freshness and signature against the raw body before parsing is possible.
+    ///
+    /// # Errors
+    ///
+    /// Returns authentication for a stale timestamp, unsupported signature version, or mismatch.
+    pub fn verify(
+        request: RawWebhookRequestV2<'a>,
+        now_seconds: i64,
+        max_clock_skew_seconds: i64,
+        verifier: impl FnOnce(i64, &[u8], &str) -> bool,
+    ) -> Result<Self, ChannelAdapterErrorV2> {
+        if max_clock_skew_seconds <= 0
+            || now_seconds.abs_diff(request.timestamp_seconds)
+                > u64::try_from(max_clock_skew_seconds).unwrap_or(0)
+            || !request.signature.starts_with("v0=")
+            || !verifier(request.timestamp_seconds, request.body, request.signature)
+        {
+            return Err(ChannelAdapterErrorV2 {
+                kind: ChannelAdapterErrorKindV2::Authentication,
+                safe_message: "channel webhook signature verification failed".to_owned(),
+                retry_after_ms: None,
+            });
+        }
+        Ok(Self { body: request.body })
+    }
+
+    pub const fn body(&self) -> &[u8] {
+        self.body
+    }
+}
+
+pub struct ChannelConformanceV2;
+
+impl ChannelConformanceV2 {
+    /// Applies the common contract checks to a normalized event.
+    ///
+    /// # Errors
+    ///
+    /// Returns malformed or unsupported-feature errors for non-conforming events.
+    pub fn admit_event(
+        capabilities: &ChannelCapabilitiesV2,
+        event: &ChannelEventV2,
+    ) -> Result<(), ChannelAdapterErrorV2> {
+        event.validate(capabilities)
+    }
+
+    /// Rejects absent, blank, or stale reconnect cursors.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stale-cursor error when durable reconnect cannot safely continue.
+    pub fn admit_cursor(
+        cursor: &ReconnectCursorV2,
+        now: UtcTimestamp,
+        max_age_ms: u64,
+    ) -> Result<(), ChannelAdapterErrorV2> {
+        let age = now.unix_millis().abs_diff(cursor.observed_at.unix_millis());
+        if cursor.value.trim().is_empty() || max_age_ms == 0 || age > max_age_ms {
+            return Err(ChannelAdapterErrorV2 {
+                kind: ChannelAdapterErrorKindV2::StaleCursor,
+                safe_message: "channel reconnect cursor is stale".to_owned(),
+                retry_after_ms: None,
+            });
+        }
+        Ok(())
+    }
+
+    /// Checks that classified errors are safe and internally consistent.
+    ///
+    /// # Errors
+    ///
+    /// Returns a malformed error when a safe message is absent or retry metadata is invalid.
+    pub fn admit_error(error: &ChannelAdapterErrorV2) -> Result<(), ChannelAdapterErrorV2> {
+        if error.safe_message.trim().is_empty()
+            || (error.retry_after_ms.is_some()
+                && error.kind != ChannelAdapterErrorKindV2::RateLimit)
+            || (error.kind == ChannelAdapterErrorKindV2::RateLimit
+                && error.retry_after_ms == Some(0))
+        {
+            return Err(ChannelAdapterErrorV2::malformed(
+                "channel adapter error classification is invalid",
+            ));
+        }
+        Ok(())
+    }
+}
+
+pub trait ChannelAdapterV2 {
+    fn capabilities_v2(&self) -> ChannelCapabilitiesV2;
+
+    /// Receives one verified and normalized v2 channel event.
+    ///
+    /// # Errors
+    ///
+    /// Returns a classified adapter error without invoking a model or tool.
+    fn receive_v2(&mut self) -> Result<ChannelEventV2, ChannelAdapterErrorV2>;
+
+    /// Executes one capability-checked outbox operation.
+    ///
+    /// # Errors
+    ///
+    /// Returns a classified adapter error, including uncertain acknowledgement.
+    fn execute_v2(
+        &mut self,
+        operation: &ChannelOperationV2,
+    ) -> Result<ChannelOperationReceiptV2, ChannelAdapterErrorV2>;
+
+    /// Reconnects using adapter-owned durable state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a classified connection or stale-cursor error.
+    fn reconnect_v2(&mut self) -> Result<(), ChannelAdapterErrorV2>;
+
+    fn reconnect_cursor_v2(&self) -> Option<ReconnectCursorV2>;
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct GatewayLimits {
     pub global_concurrency: usize,
@@ -781,126 +952,6 @@ pub enum GatewayError {
     InvalidLimits,
     #[error("session dispatch was not in flight")]
     NotInFlight,
-    #[error("canonical conversation binding is missing or does not match the external route")]
-    BindingMismatch,
-    #[error("canonical conversation dispatch was not in flight")]
-    ConversationNotInFlight,
-}
-
-/// Bounded fair queue for canonical conversation ingress. Ordering is serialized by canonical
-/// conversation and participant, not by a legacy transcript session.
-pub struct ConversationGatewayQueue {
-    limits: GatewayLimits,
-    pending: BTreeMap<ConversationDispatchKey, VecDeque<ConversationRoutedInbound>>,
-    ready: VecDeque<ConversationDispatchKey>,
-    in_flight: BTreeSet<ConversationDispatchKey>,
-    seen: BTreeSet<StableKey>,
-    seen_order: VecDeque<StableKey>,
-    pending_count: usize,
-}
-
-impl ConversationGatewayQueue {
-    pub fn new(limits: GatewayLimits) -> Result<Self, GatewayError> {
-        if limits.global_concurrency == 0
-            || limits.max_pending == 0
-            || limits.max_pending_per_session == 0
-            || limits.max_seen_messages == 0
-            || limits.max_attachments == 0
-            || limits.max_attachment_bytes == 0
-            || limits.max_total_attachment_bytes == 0
-        {
-            return Err(GatewayError::InvalidLimits);
-        }
-        Ok(Self {
-            limits,
-            pending: BTreeMap::new(),
-            ready: VecDeque::new(),
-            in_flight: BTreeSet::new(),
-            seen: BTreeSet::new(),
-            seen_order: VecDeque::new(),
-            pending_count: 0,
-        })
-    }
-
-    pub fn enqueue(
-        &mut self,
-        routed: ConversationRoutedInbound,
-    ) -> Result<EnqueueOutcome, GatewayError> {
-        routed.validate()?;
-        self.validate_attachments(&routed.message.attachments)?;
-        if self.seen.contains(&routed.source_key) {
-            return Ok(EnqueueOutcome::Duplicate);
-        }
-        let key = routed.dispatch_key();
-        let queued = self.pending.get(&key).map_or(0, VecDeque::len);
-        if self.pending_count >= self.limits.max_pending
-            || queued >= self.limits.max_pending_per_session
-        {
-            return Err(GatewayError::Backpressure);
-        }
-        let queue = self.pending.entry(key.clone()).or_default();
-        let was_empty = queue.is_empty();
-        self.seen.insert(routed.source_key.clone());
-        self.seen_order.push_back(routed.source_key.clone());
-        queue.push_back(routed);
-        self.pending_count += 1;
-        if was_empty && !self.in_flight.contains(&key) {
-            self.ready.push_back(key);
-        }
-        while self.seen_order.len() > self.limits.max_seen_messages {
-            if let Some(expired) = self.seen_order.pop_front() {
-                self.seen.remove(&expired);
-            }
-        }
-        Ok(EnqueueOutcome::Queued)
-    }
-
-    pub fn take_ready(&mut self) -> Option<ConversationRoutedInbound> {
-        if self.in_flight.len() >= self.limits.global_concurrency {
-            return None;
-        }
-        while let Some(key) = self.ready.pop_front() {
-            if self.in_flight.contains(&key) {
-                continue;
-            }
-            let item = self.pending.get_mut(&key)?.pop_front()?;
-            self.pending_count -= 1;
-            self.in_flight.insert(key);
-            return Some(item);
-        }
-        None
-    }
-
-    pub fn complete(&mut self, key: &ConversationDispatchKey) -> Result<(), GatewayError> {
-        if !self.in_flight.remove(key) {
-            return Err(GatewayError::ConversationNotInFlight);
-        }
-        if self.pending.get(key).is_some_and(|queue| !queue.is_empty()) {
-            self.ready.push_back(key.clone());
-        } else {
-            self.pending.remove(key);
-        }
-        Ok(())
-    }
-
-    fn validate_attachments(&self, attachments: &[Attachment]) -> Result<(), GatewayError> {
-        if attachments.len() > self.limits.max_attachments {
-            return Err(GatewayError::AttachmentLimit);
-        }
-        let mut total = 0_u64;
-        for attachment in attachments {
-            if attachment.byte_length > self.limits.max_attachment_bytes {
-                return Err(GatewayError::AttachmentLimit);
-            }
-            total = total
-                .checked_add(attachment.byte_length)
-                .ok_or(GatewayError::AttachmentLimit)?;
-        }
-        if total > self.limits.max_total_attachment_bytes {
-            return Err(GatewayError::AttachmentLimit);
-        }
-        Ok(())
-    }
 }
 
 pub struct GatewayQueue {
@@ -1419,5 +1470,161 @@ mod tests {
             CommandResult::Accepted { .. }
         ));
         server_thread.join().expect("server completes");
+    }
+
+    fn slack_capabilities() -> ChannelCapabilitiesV2 {
+        let declarations = ChannelCapabilityV2::ALL
+            .into_iter()
+            .map(|capability| {
+                let support = if matches!(
+                    capability,
+                    ChannelCapabilityV2::Typing | ChannelCapabilityV2::ReadReceipts
+                ) {
+                    ChannelCapabilitySupportV2::Unsupported {
+                        safe_reason: "Slack does not expose this feature to bot applications"
+                            .to_owned(),
+                    }
+                } else {
+                    ChannelCapabilitySupportV2::Supported
+                };
+                (capability, support)
+            })
+            .collect();
+        ChannelCapabilitiesV2 {
+            contract: CHANNEL_CONTRACT_V2,
+            declarations,
+            max_event_bytes: 1_024,
+            max_attachment_bytes: 1_024,
+            max_attachments: 4,
+            max_rich_content_bytes: 1_024,
+            requests_per_minute: Some(50),
+        }
+    }
+
+    #[test]
+    fn slack_v2_conformance_requires_complete_truthful_capability_declarations() {
+        assert_eq!(
+            negotiate_channel_contract_v2(&[
+                ChannelContractVersion::new(1, 4),
+                ChannelContractVersion::new(2, 1),
+            ])
+            .expect("compatible v2 peer"),
+            CHANNEL_CONTRACT_V2
+        );
+        assert_eq!(
+            negotiate_channel_contract_v2(&[ChannelContractVersion::new(1, 9)])
+                .expect_err("no silent v1 downgrade")
+                .kind,
+            ChannelAdapterErrorKindV2::UnsupportedFeature
+        );
+        let capabilities = slack_capabilities();
+        capabilities.validate().expect("complete declaration");
+        let setup = ChannelAccountSetupV2 {
+            account_id: "T123".to_owned(),
+            required_credential_names: BTreeSet::from(["bot_token".to_owned()]),
+            required_scopes: BTreeSet::from(["chat:write".to_owned()]),
+            webhook_configured: true,
+            socket_or_polling_configured: false,
+            connection_health: ChannelConnectionHealthV2::Disconnected,
+            reconnect_cursor_present: false,
+            safe_test_supported: true,
+            metadata: BTreeMap::new(),
+        };
+        setup.validate().expect("truthful account setup");
+        let mut unavailable = setup;
+        unavailable.webhook_configured = false;
+        assert_eq!(
+            unavailable
+                .validate()
+                .expect_err("account without ingress is invalid")
+                .kind,
+            ChannelAdapterErrorKindV2::MalformedEvent
+        );
+        assert!(capabilities.supports(ChannelCapabilityV2::Threads));
+        assert_eq!(
+            capabilities
+                .require(ChannelCapabilityV2::Typing)
+                .expect_err("typing must remain unsupported")
+                .kind,
+            ChannelAdapterErrorKindV2::UnsupportedFeature
+        );
+
+        let mut incomplete = capabilities;
+        incomplete
+            .declarations
+            .remove(&ChannelCapabilityV2::MessageDeletion);
+        assert_eq!(
+            incomplete
+                .validate()
+                .expect_err("undeclared behavior denied")
+                .kind,
+            ChannelAdapterErrorKindV2::MalformedEvent
+        );
+    }
+
+    #[test]
+    fn slack_v2_webhook_must_be_verified_before_body_access() {
+        let body = br#"{"type":"event_callback"}"#;
+        let request = RawWebhookRequestV2 {
+            timestamp_seconds: 100,
+            signature: "v0=trusted",
+            body,
+        };
+        let verified =
+            VerifiedWebhookRequestV2::verify(request, 110, 300, |timestamp, raw, sig| {
+                timestamp == 100 && raw == body && sig == "v0=trusted"
+            })
+            .expect("verified raw body");
+        assert_eq!(verified.body(), body);
+
+        let stale = RawWebhookRequestV2 {
+            timestamp_seconds: 100,
+            signature: "v0=trusted",
+            body,
+        };
+        let mut verifier_called = false;
+        let error = VerifiedWebhookRequestV2::verify(stale, 1_000, 300, |_, _, _| {
+            verifier_called = true;
+            true
+        })
+        .expect_err("stale request denied before verification");
+        assert_eq!(error.kind, ChannelAdapterErrorKindV2::Authentication);
+        assert!(!verifier_called);
+    }
+
+    #[test]
+    fn slack_v2_conformance_covers_events_errors_and_stale_reconnect_cursors() {
+        let capabilities = slack_capabilities();
+        let event = ChannelEventV2 {
+            contract: CHANNEL_CONTRACT_V2,
+            event_id: "Ev01".to_owned(),
+            delivery_attempt: 1,
+            event: ChannelEventKindV2::RateLimited {
+                retry_after_ms: 1_000,
+            },
+            metadata: BTreeMap::new(),
+        };
+        ChannelConformanceV2::admit_event(&capabilities, &event).expect("declared event");
+        ChannelConformanceV2::admit_error(&ChannelAdapterErrorV2 {
+            kind: ChannelAdapterErrorKindV2::RateLimit,
+            safe_message: "Slack rate limit reached".to_owned(),
+            retry_after_ms: Some(1_000),
+        })
+        .expect("classified rate limit");
+
+        let stale = ReconnectCursorV2 {
+            value: "Ev01".to_owned(),
+            observed_at: UtcTimestamp::from_unix_millis(1_000),
+        };
+        assert_eq!(
+            ChannelConformanceV2::admit_cursor(
+                &stale,
+                UtcTimestamp::from_unix_millis(11_001),
+                10_000,
+            )
+            .expect_err("stale cursor denied")
+            .kind,
+            ChannelAdapterErrorKindV2::StaleCursor
+        );
     }
 }

@@ -9,20 +9,18 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-use keith_agent_types::{
-    CommandId, ConversationId, EntityId, ProfileId, Revision, SessionId, StableKey, UtcTimestamp,
-};
+use keith_agent_types::{CommandId, EntityId, ProfileId, SessionId, UtcTimestamp};
 use keith_channel_adapters::{DiscordAdapter, DiscordConfig, DiscordCursor, DiscordUpload};
 use keith_channel_core::{
     AdapterEvent, AdapterFailure, AgentConnection, ChannelAdapter, EnqueueOutcome, GatewayLimits,
     GatewayQueue, OutboundMessage, ReconnectPolicy, ReplyRoute, RetryClass, RoutedInbound,
+    SessionAction,
 };
 use keith_connection::{FramedTransport, LocalStream, connect_local};
 use keith_credentials::SecretValue;
 use keith_protocol::{
-    ChannelBindingResolveCommand, ChannelMessageCommand, ClientCommand, CommandResult,
-    ConversationCommand, DeliveryAcknowledgement, DeliveryFailure, DeliveryFailureClass,
-    ResponsePayload, StagedAttachment, TeammatesCommand, TeammatesReceiptStatus, WireFormat,
+    ClientCommand, CommandResult, DeliveryAcknowledgement, DeliveryFailure, DeliveryFailureClass,
+    ResponsePayload, StagedAttachment, WireFormat,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -170,6 +168,46 @@ fn connect(socket: &Path) -> Result<LocalAgentConnection, String> {
         .map_err(|error| error.to_string())
 }
 
+fn submit_with_reconnect(
+    connection: &mut Option<LocalAgentConnection>,
+    socket: &Path,
+    policy: ReconnectPolicy,
+    action: &SessionAction,
+) -> Result<CommandResult, String> {
+    let mut attempt = 0;
+    loop {
+        if connection.is_none() {
+            match connect(socket) {
+                Ok(connected) => *connection = Some(connected),
+                Err(error) => {
+                    let Some(delay) = policy.delay_ms(attempt) else {
+                        return Err(error);
+                    };
+                    attempt = attempt.saturating_add(1);
+                    thread::sleep(Duration::from_millis(delay));
+                    continue;
+                }
+            }
+        }
+        let now = UtcTimestamp::now().unwrap_or(UtcTimestamp::UNIX_EPOCH);
+        match connection
+            .as_mut()
+            .expect("connection initialized")
+            .submit(action, now)
+        {
+            Ok(result) => return Ok(result),
+            Err(error) => {
+                *connection = None;
+                let Some(delay) = policy.delay_ms(attempt) else {
+                    return Err(error.to_string());
+                };
+                attempt = attempt.saturating_add(1);
+                thread::sleep(Duration::from_millis(delay));
+            }
+        }
+    }
+}
+
 fn write_report(report: &GatewayReport) -> Result<(), String> {
     let stdout = io::stdout();
     let mut output = stdout.lock();
@@ -215,148 +253,6 @@ fn execute_with_reconnect(
                 attempt = attempt.saturating_add(1);
                 thread::sleep(Duration::from_millis(delay));
             }
-        }
-    }
-}
-
-#[derive(Clone)]
-struct ResolvedGatewayBinding {
-    binding_id: EntityId,
-    revision: Revision,
-    conversation_id: ConversationId,
-    participant_profile_id: ProfileId,
-}
-
-fn channel_operation_key(
-    prefix: &str,
-    message: &keith_channel_core::InboundMessage,
-) -> Result<StableKey, String> {
-    let identity = [
-        message.channel.as_str(),
-        message.external_account.as_str(),
-        message.conversation.as_str(),
-        message.thread.as_deref().unwrap_or_default(),
-        message.sender.as_str(),
-        message.message_id.as_str(),
-    ]
-    .join("\0");
-    StableKey::parse(format!(
-        "channel:{prefix}:{}",
-        hex_sha256(identity.as_bytes())
-    ))
-    .map_err(|_| "channel message identity cannot form a stable operation key".to_owned())
-}
-
-fn resolve_conversation_binding(
-    connection: &mut Option<LocalAgentConnection>,
-    socket: &Path,
-    reconnect: ReconnectPolicy,
-    authenticated_profile_id: &ProfileId,
-    message: &keith_channel_core::InboundMessage,
-) -> Result<ResolvedGatewayBinding, String> {
-    let request_id = EntityId::new();
-    let command = ClientCommand::Conversation(ConversationCommand::Teammates(
-        TeammatesCommand::ResolveChannelBinding(ChannelBindingResolveCommand {
-            request_id: request_id.clone(),
-            operation_key: channel_operation_key("resolve", message)?,
-            adapter: message.channel.clone(),
-            external_channel_id: message.conversation.clone(),
-            external_subject_id: message.sender.clone(),
-            authenticated_profile_id: authenticated_profile_id.clone(),
-            expected_binding_revision: None,
-        }),
-    ));
-    let CommandResult::Data(payload) =
-        execute_with_reconnect(connection, socket, reconnect, &command)?
-    else {
-        return Err("daemon rejected channel binding resolution".to_owned());
-    };
-    let ResponsePayload::TeammatesReceipt(receipt) = *payload else {
-        return Err("daemon returned an unexpected channel binding response".to_owned());
-    };
-    if receipt.request_id != request_id
-        || !matches!(
-            receipt.status,
-            TeammatesReceiptStatus::Applied | TeammatesReceiptStatus::Replayed
-        )
-    {
-        return Err(receipt
-            .safe_reason
-            .unwrap_or_else(|| "channel binding resolution was denied".to_owned()));
-    }
-    let binding_id = receipt
-        .binding_id
-        .ok_or_else(|| "channel binding response omitted its binding identity".to_owned())?;
-    let conversation_id = receipt
-        .conversation_id
-        .ok_or_else(|| "channel binding response omitted its conversation identity".to_owned())?;
-    let participant_profile_id = receipt
-        .profile_id
-        .ok_or_else(|| "channel binding response omitted its participant identity".to_owned())?;
-    let revision = receipt
-        .resulting_revision
-        .ok_or_else(|| "channel binding response omitted its revision".to_owned())?;
-    if participant_profile_id != *authenticated_profile_id {
-        return Err("channel binding response changed the authenticated participant".to_owned());
-    }
-    Ok(ResolvedGatewayBinding {
-        binding_id,
-        revision,
-        conversation_id,
-        participant_profile_id,
-    })
-}
-
-fn append_channel_message(
-    connection: &mut Option<LocalAgentConnection>,
-    socket: &Path,
-    reconnect: ReconnectPolicy,
-    binding: &ResolvedGatewayBinding,
-    message: &keith_channel_core::InboundMessage,
-) -> Result<(), String> {
-    let request_id = EntityId::new();
-    let operation_key = channel_operation_key("append", message)?;
-    let command = ClientCommand::Conversation(ConversationCommand::Teammates(
-        TeammatesCommand::AppendChannelMessage(ChannelMessageCommand {
-            request_id: request_id.clone(),
-            operation_key,
-            binding_id: binding.binding_id.clone(),
-            expected_binding_revision: binding.revision,
-            conversation_id: binding.conversation_id.clone(),
-            participant_profile_id: binding.participant_profile_id.clone(),
-            external_message_id: message.message_id.clone(),
-            content: message.text.clone(),
-            received_at: message.occurred_at,
-            artifact_ids: message
-                .attachments
-                .iter()
-                .filter_map(|attachment| attachment.artifact_id.clone())
-                .collect(),
-        }),
-    ));
-    match execute_with_reconnect(connection, socket, reconnect, &command)? {
-        CommandResult::Data(payload) => {
-            let ResponsePayload::TeammatesReceipt(receipt) = *payload else {
-                return Err("daemon returned an unexpected canonical append response".to_owned());
-            };
-            if receipt.request_id != request_id
-                || receipt.binding_id.as_ref() != Some(&binding.binding_id)
-                || receipt.conversation_id.as_ref() != Some(&binding.conversation_id)
-                || receipt.profile_id.as_ref() != Some(&binding.participant_profile_id)
-                || !matches!(
-                    receipt.status,
-                    TeammatesReceiptStatus::Applied | TeammatesReceiptStatus::Replayed
-                )
-            {
-                return Err(receipt
-                    .safe_reason
-                    .unwrap_or_else(|| "canonical channel append was denied".to_owned()));
-            }
-            Ok(())
-        }
-        CommandResult::Rejected(rejection) => Err(rejection.error.message),
-        CommandResult::Accepted { .. } => {
-            Err("daemon accepted canonical append without a durable receipt".to_owned())
         }
     }
 }
@@ -488,6 +384,7 @@ fn dispatch_available(
     socket: &Path,
     reconnect: ReconnectPolicy,
     channel: &str,
+    external_account: &str,
     attachment_root: &Path,
     adapter: &mut DiscordAdapter,
 ) -> Result<usize, String> {
@@ -499,6 +396,7 @@ fn dispatch_available(
             reconnect,
             &ClientCommand::ClaimDelivery {
                 channel: channel.to_owned(),
+                external_account: external_account.to_owned(),
             },
         )? {
             CommandResult::Data(payload) => match *payload {
@@ -513,6 +411,9 @@ fn dispatch_available(
         let Some(claim) = claim else {
             break;
         };
+        if claim.route.channel != channel || claim.route.external_account != external_account {
+            return Err("daemon returned a delivery claim for another channel account".to_owned());
+        }
         let staged = load_delivery_artifacts(
             attachment_root,
             &claim.artifacts,
@@ -691,6 +592,7 @@ fn run_discord(
     let outbound_shutdown = Arc::clone(&shutdown);
     let outbound_socket = socket.to_path_buf();
     let outbound_token_environment = arguments.token_environment.clone();
+    let outbound_external_account = arguments.bot_user_id.clone();
     let outbound_attachment_root = arguments.attachment_root.clone();
     let mut outbound_adapter = DiscordAdapter::new(
         config,
@@ -706,6 +608,7 @@ fn run_discord(
                 &outbound_socket,
                 reconnect,
                 "discord",
+                &outbound_external_account,
                 &outbound_attachment_root,
                 &mut outbound_adapter,
             ) {
@@ -742,20 +645,29 @@ fn run_discord(
                         &arguments.attachment_root,
                         &mut ready,
                     )?;
-                    let binding = resolve_conversation_binding(
-                        &mut connection,
-                        socket,
-                        reconnect,
-                        &arguments.profile_id,
-                        &ready.message,
-                    )?;
-                    append_channel_message(
-                        &mut connection,
-                        socket,
-                        reconnect,
-                        &binding,
-                        &ready.message,
-                    )?;
+                    let action = SessionAction::from(ready);
+                    let mut settled = false;
+                    while !shutdown.load(Ordering::Acquire) {
+                        match submit_with_reconnect(&mut connection, socket, reconnect, &action) {
+                            Ok(
+                                CommandResult::Accepted { .. }
+                                | CommandResult::Data(_)
+                                | CommandResult::Rejected(_),
+                            ) => {
+                                settled = true;
+                                break;
+                            }
+                            Err(_) => {
+                                connection = None;
+                                thread::sleep(Duration::from_millis(
+                                    reconnect.initial_delay_ms.max(1),
+                                ));
+                            }
+                        }
+                    }
+                    if !settled {
+                        return Ok(());
+                    }
                     save_cursor(&arguments.cursor, inbound.cursor())?;
                     queue
                         .complete(&session_id)
@@ -824,25 +736,21 @@ fn run_standard_input(socket: &Path, reconnect: ReconnectPolicy) -> Result<(), S
         }
         while let Some(ready) = queue.take_ready() {
             let session_id = ready.session_id.clone();
-            let message_id = ready.message.message_id.clone();
-            let report = match resolve_conversation_binding(
-                &mut connection,
-                socket,
-                reconnect,
-                &ready.profile_id,
-                &ready.message,
-            )
-            .and_then(|binding| {
-                append_channel_message(&mut connection, socket, reconnect, &binding, &ready.message)
-            }) {
-                Ok(()) => GatewayReport {
-                    message_id,
+            let action = SessionAction::from(ready);
+            let report = match submit_with_reconnect(&mut connection, socket, reconnect, &action) {
+                Ok(CommandResult::Accepted { .. } | CommandResult::Data(_)) => GatewayReport {
+                    message_id: action.message_id,
                     outcome: "submitted",
                     safe_error: None,
                 },
-                Err(error) => GatewayReport {
-                    message_id,
+                Ok(CommandResult::Rejected(rejection)) => GatewayReport {
+                    message_id: action.message_id,
                     outcome: "rejected",
+                    safe_error: Some(rejection.error.message),
+                },
+                Err(error) => GatewayReport {
+                    message_id: action.message_id,
+                    outcome: "connection_failed",
                     safe_error: Some(error),
                 },
             };

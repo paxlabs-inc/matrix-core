@@ -11,10 +11,7 @@ use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
-use keith_agent_types::{
-    CURRENT_SCHEMA_VERSION, ConversationId, EntityId, EventId, ProfileId, Revision, SchemaVersion,
-    UtcTimestamp,
-};
+use keith_agent_types::{CURRENT_SCHEMA_VERSION, EntityId, Revision, SchemaVersion, UtcTimestamp};
 use keith_workspace::{EditOutcome, FileToken, PersonalWorkspace, WorkspaceActor, WorkspaceEvent};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -99,52 +96,6 @@ pub struct SkillInspection {
     pub history: Vec<SkillHistoryEntry>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SkillCapturedInputSource {
-    ExplicitUserInput,
-    PublicArtifactMetadata,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SkillCapturedInput {
-    pub name: String,
-    pub description: String,
-    pub source: SkillCapturedInputSource,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SaveAsSkillRequest {
-    pub owner_profile_id: ProfileId,
-    pub source_conversation_id: ConversationId,
-    pub source_event_ids: Vec<EventId>,
-    pub skill_id: String,
-    pub description: String,
-    pub triggers: Vec<String>,
-    pub captured_inputs: Vec<SkillCapturedInput>,
-    pub steps: Vec<String>,
-    pub required_tools: Vec<String>,
-    pub validation: Vec<String>,
-    pub known_failures: Vec<String>,
-    pub stop_conditions: Vec<String>,
-    pub now: UtcTimestamp,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProfileSkillVersion {
-    pub version: SchemaVersion,
-    pub owner_profile_id: ProfileId,
-    pub skill_id: String,
-    pub revision: Revision,
-    pub package_digest_sha256: String,
-    pub source_conversation_id: ConversationId,
-    pub source_event_ids: Vec<EventId>,
-    pub captured_inputs: Vec<SkillCapturedInput>,
-    pub created_at: UtcTimestamp,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SkillSelectionRequest {
     pub task: String,
@@ -209,8 +160,6 @@ struct SkillLedger {
     #[serde(default)]
     origins: BTreeMap<String, String>,
     history: BTreeMap<String, Vec<SkillHistoryEntry>>,
-    #[serde(default)]
-    profile_versions: BTreeMap<String, Vec<ProfileSkillVersion>>,
 }
 
 impl Default for SkillLedger {
@@ -222,7 +171,6 @@ impl Default for SkillLedger {
             installed_at: BTreeMap::new(),
             origins: BTreeMap::new(),
             history: BTreeMap::new(),
-            profile_versions: BTreeMap::new(),
         }
     }
 }
@@ -235,8 +183,6 @@ pub enum SkillError {
     Json(#[from] serde_json::Error),
     #[error("skill manifest failed: {0}")]
     Manifest(#[from] toml::de::Error),
-    #[error("skill manifest encoding failed: {0}")]
-    ManifestEncoding(#[from] toml::ser::Error),
     #[error("skill workspace failed: {0}")]
     Workspace(#[from] keith_workspace::PersonalWorkspaceError),
     #[error("skill package is malformed, unsafe, or oversized")]
@@ -461,110 +407,6 @@ impl SkillRegistry {
                 revision: Some(entry.revision),
             },
         )
-    }
-
-    /// Saves an explicitly described procedure as a versioned profile-owned skill. The request
-    /// can carry only input schemas from an explicit user request or public artifact metadata;
-    /// transcript text, credentials, approvals, and authority are not accepted by this API.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error for unsafe or oversized capture metadata, malformed packages, conflicts,
-    /// or persistence failure.
-    pub fn save_as_skill(
-        &self,
-        request: SaveAsSkillRequest,
-    ) -> Result<ProfileSkillVersion, SkillError> {
-        validate_save_as_skill(&request)?;
-        let manifest = SkillManifest {
-            id: request.skill_id.clone(),
-            version: "1".into(),
-            description: request.description.clone(),
-            triggers: request.triggers.clone(),
-            inputs: request
-                .captured_inputs
-                .iter()
-                .map(|input| input.name.clone())
-                .collect(),
-            steps: request.steps.clone(),
-            required_tools: request.required_tools.clone(),
-            validation: request.validation.clone(),
-            known_failures: request.known_failures.clone(),
-            stop_conditions: request.stop_conditions.clone(),
-            platforms: Vec::new(),
-        };
-        validate_manifest(&manifest)?;
-        let manifest_source = toml::to_string(&manifest)?;
-        let mut body = format!(
-            "# {}\n\n{}\n\n## Inputs\n",
-            manifest.id, manifest.description
-        );
-        for input in &request.captured_inputs {
-            writeln!(&mut body, "- `{}`: {}", input.name, input.description)
-                .map_err(|_| SkillError::InvalidPackage)?;
-        }
-        body.push_str("\n## Procedure\n");
-        for (index, step) in request.steps.iter().enumerate() {
-            writeln!(&mut body, "{}. {step}", index.saturating_add(1))
-                .map_err(|_| SkillError::InvalidPackage)?;
-        }
-        let source = format!("+++\n{manifest_source}+++\n{body}");
-        let package = self.install(
-            source,
-            format!(
-                "profile-save:{}:{}",
-                request.owner_profile_id, request.source_conversation_id
-            ),
-            request.now,
-        )?;
-        let version = ProfileSkillVersion {
-            version: CURRENT_SCHEMA_VERSION,
-            owner_profile_id: request.owner_profile_id,
-            skill_id: package.manifest.id,
-            revision: package
-                .provenance
-                .revision
-                .ok_or(SkillError::InvalidPackage)?,
-            package_digest_sha256: package.provenance.digest,
-            source_conversation_id: request.source_conversation_id,
-            source_event_ids: request.source_event_ids,
-            captured_inputs: request.captured_inputs,
-            created_at: request.now,
-        };
-        let mut ledger = self.ledger()?;
-        let versions = ledger
-            .profile_versions
-            .entry(version.skill_id.clone())
-            .or_default();
-        if versions.iter().any(|existing| {
-            existing.owner_profile_id == version.owner_profile_id
-                && existing.revision == version.revision
-        }) {
-            return Err(SkillError::Conflict);
-        }
-        versions.push(version.clone());
-        if versions.len() > self.limits.max_history_per_skill {
-            versions.remove(0);
-        }
-        persist_ledger(&self.workspace.layout().root, &ledger)?;
-        Ok(version)
-    }
-
-    pub fn profile_skill_versions(
-        &self,
-        owner_profile_id: &ProfileId,
-        skill_id: &str,
-    ) -> Result<Vec<ProfileSkillVersion>, SkillError> {
-        validate_skill_id(skill_id)?;
-        let ledger = self.ledger()?;
-        Ok(ledger
-            .profile_versions
-            .get(skill_id)
-            .into_iter()
-            .flatten()
-            .filter(|version| &version.owner_profile_id == owner_profile_id)
-            .cloned()
-            .collect())
     }
 
     /// Updates the profile package only when the expected content digest remains current.
@@ -899,88 +741,6 @@ fn validate_manifest(manifest: &SkillManifest) -> Result<(), SkillError> {
     } else {
         Err(SkillError::InvalidPackage)
     }
-}
-
-fn validate_save_as_skill(request: &SaveAsSkillRequest) -> Result<(), SkillError> {
-    const MAX_SOURCE_EVENTS: usize = 256;
-    const MAX_INPUTS: usize = 32;
-    const MAX_LIST_ITEMS: usize = 128;
-    const MAX_ITEM_BYTES: usize = 2_048;
-    if request.source_event_ids.is_empty()
-        || request.source_event_ids.len() > MAX_SOURCE_EVENTS
-        || request.captured_inputs.is_empty()
-        || request.captured_inputs.len() > MAX_INPUTS
-        || request.steps.is_empty()
-        || request.steps.len() > MAX_LIST_ITEMS
-        || request.triggers.is_empty()
-        || request.triggers.len() > MAX_LIST_ITEMS
-        || request.required_tools.len() > MAX_LIST_ITEMS
-        || request.validation.is_empty()
-        || request.validation.len() > MAX_LIST_ITEMS
-        || request.known_failures.is_empty()
-        || request.known_failures.len() > MAX_LIST_ITEMS
-        || request.stop_conditions.is_empty()
-        || request.stop_conditions.len() > MAX_LIST_ITEMS
-        || !bounded_safe_capture(&request.description, MAX_ITEM_BYTES)
-    {
-        return Err(SkillError::InvalidPackage);
-    }
-    let event_count = request
-        .source_event_ids
-        .iter()
-        .collect::<BTreeSet<_>>()
-        .len();
-    if event_count != request.source_event_ids.len() {
-        return Err(SkillError::InvalidPackage);
-    }
-    let mut names = BTreeSet::new();
-    for input in &request.captured_inputs {
-        if !names.insert(input.name.as_str())
-            || !valid_name(&input.name)
-            || !bounded_safe_capture(&input.description, MAX_ITEM_BYTES)
-        {
-            return Err(SkillError::InvalidPackage);
-        }
-    }
-    for item in request
-        .triggers
-        .iter()
-        .chain(&request.steps)
-        .chain(&request.validation)
-        .chain(&request.known_failures)
-        .chain(&request.stop_conditions)
-    {
-        if !bounded_safe_capture(item, MAX_ITEM_BYTES) {
-            return Err(SkillError::InvalidPackage);
-        }
-    }
-    if request.required_tools.iter().any(|tool| !valid_name(tool)) {
-        return Err(SkillError::InvalidPackage);
-    }
-    Ok(())
-}
-
-fn bounded_safe_capture(value: &str, max_bytes: usize) -> bool {
-    if value.trim().is_empty() || value.len() > max_bytes || value.contains('\0') {
-        return false;
-    }
-    let normalized = value.to_ascii_lowercase();
-    const FORBIDDEN: [&str; 13] = [
-        "password",
-        "passphrase",
-        "secret",
-        "credential",
-        "api key",
-        "access token",
-        "private key",
-        "authorization:",
-        "cookie:",
-        "approval token",
-        "authority grant",
-        "private transcript",
-        "conversation transcript",
-    ];
-    !FORBIDDEN.iter().any(|marker| normalized.contains(marker))
 }
 
 fn validate_skill_id(id: &str) -> Result<(), SkillError> {
@@ -1368,48 +1128,6 @@ mod tests {
             project: root.join("project"),
         };
         SkillRegistry::open(workspace, roots, SkillLimits::default()).unwrap()
-    }
-
-    #[test]
-    #[cfg(unix)]
-    fn chromium_runtime_symlinks_do_not_disable_valid_skill_selection() {
-        use std::os::unix::fs::symlink;
-
-        let directory = tempdir().unwrap();
-        let builtins = directory.path().join("builtins");
-        write_package(
-            &builtins,
-            "repository-awareness",
-            &skill(
-                "repository-awareness",
-                "1",
-                "inspect a repository before changing it",
-                "repository change",
-                "filesystem",
-            ),
-        );
-        let registry = registry(directory.path());
-        let browser = directory.path().join("workspace/browser");
-        fs::create_dir_all(&browser).unwrap();
-        symlink("/tmp/chromium-lock", browser.join("SingletonLock")).unwrap();
-        symlink("/tmp/chromium-cookie", browser.join("SingletonCookie")).unwrap();
-        symlink("/tmp/chromium-socket", browser.join("SingletonSocket")).unwrap();
-
-        let selected = registry
-            .select(
-                &SkillSelectionRequest {
-                    task: "make a repository change".into(),
-                    platform: "linux".into(),
-                    ready_tools: BTreeSet::from(["filesystem".into()]),
-                    max_prompt_bytes: 4_096,
-                    max_skills: 1,
-                },
-                UtcTimestamp::from_unix_millis(1),
-            )
-            .unwrap();
-
-        assert_eq!(selected.selected.len(), 1);
-        assert_eq!(selected.selected[0].id, "repository-awareness");
     }
 
     #[test]

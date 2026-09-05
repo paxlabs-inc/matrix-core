@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "surfaces": [
+    "channel",
+    "acp",
+    "plugin",
+    "composio",
+    "computer",
+    "teaching",
+    "meta_harness",
+    "credentials",
+    "profiles",
+    "approvals",
+    "data_control"
+  ],
+  "privileged_transitions": [
+    "self_evolution",
+    "plugin_install",
+    "account_connection",
+    "grant_widening",
+    "computer_control",
+    "action_approval",
+    "credential_access",
+    "profile_selection"
+  ],
+  "attacks": [
+    {
+      "class": "injection",
+      "probes": [
+        {"package": "keith-channel-adapters", "test": "slack_signed_webhook_uses_official_hmac_vector_and_rejects_before_parse"},
+        {"package": "keith-meta-harness", "test": "meta_harness_evaluator_leakage_injection_crash_and_protected_surface_attacks_fail_closed"}
+      ]
+    },
+    {
+      "class": "ssrf",
+      "probes": [
+        {"package": "keith-composio", "test": "control_plane_and_mcp_endpoint_policy_blocks_credential_ssrf"},
+        {"package": "keith-web", "test": "fetch::tests::rejects_ssrf_destinations_and_non_http_schemes"}
+      ]
+    },
+    {
+      "class": "webhook_forgery",
+      "probes": [
+        {"package": "keith-channel-adapters", "test": "slack_signed_webhook_uses_official_hmac_vector_and_rejects_before_parse"}
+      ]
+    },
+    {
+      "class": "protocol_confusion",
+      "probes": [
+        {"package": "keith-agent-acp", "test": "real_process_refuses_unsupported_protocol_versions"}
+      ]
+    },
+    {
+      "class": "plugin_escape",
+      "probes": [
+        {"package": "keith-plugin-host", "test": "abi_ambient_wasi_import_is_rejected_instead_of_inherited"}
+      ]
+    },
+    {
+      "class": "oauth_substitution",
+      "probes": [
+        {"package": "keith-composio", "test": "tests::durable_state_refuses_profile_or_provider_identity_substitution"}
+      ]
+    },
+    {
+      "class": "stream_hijack",
+      "probes": [
+        {"package": "keith-cua-runner", "test": "real_runner_process_enforces_stream_and_exclusive_control_across_restart"}
+      ]
+    },
+    {
+      "class": "stale_input",
+      "probes": [
+        {"package": "keith-cua", "test": "controller::tests::stale_coordinate_is_refused_and_exact_semantic_action_is_audited"}
+      ]
+    },
+    {
+      "class": "recording_leakage",
+      "probes": [
+        {"package": "keith-task-recipe", "test": "synchronized_capture_substitutes_credentials_and_never_serializes_raw_secrets"}
+      ]
+    },
+    {
+      "class": "evaluator_tampering",
+      "probes": [
+        {"package": "keith-meta-harness", "test": "meta_harness_evaluator_leakage_injection_crash_and_protected_surface_attacks_fail_closed"}
+      ]
+    },
+    {
+      "class": "cross_profile",
+      "probes": [
+        {"package": "keith-agentd", "test": "daemon_process_integration_lifecycle_survives_crash_and_quarantines_corrupt_service"},
+        {"package": "keith-composio", "test": "tests::durable_state_refuses_profile_or_provider_identity_substitution"}
+      ]
+    },
+    {
+      "class": "durable_boundary_crash",
+      "probes": [
+        {"package": "keith-agentd", "test": "daemon_process_integration_lifecycle_survives_crash_and_quarantines_corrupt_service"},
+        {"package": "keith-self-evolution", "test": "promotion_crash_boundary_matrix_recovers_to_old_or_fully_committed_state"}
+      ]
+    }
+  ],
+  "authority_boundaries": [
+    {"source_surface": "channel", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-channel-adapters", "test": "slack_signed_webhook_uses_official_hmac_vector_and_rejects_before_parse"}]},
+    {"source_surface": "acp", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-acp", "test": "permission::tests::client_response_cannot_substitute_target_or_unoffered_option"}]},
+    {"source_surface": "plugin", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-plugin-host", "test": "abi_ambient_wasi_import_is_rejected_instead_of_inherited"}]},
+    {"source_surface": "composio", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-composio", "test": "tests::durable_state_refuses_profile_or_provider_identity_substitution"}]},
+    {"source_surface": "computer", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-cua", "test": "controller::tests::stale_coordinate_is_refused_and_exact_semantic_action_is_audited"}]},
+    {"source_surface": "teaching", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-task-recipe", "test": "synchronized_capture_substitutes_credentials_and_never_serializes_raw_secrets"}]},
+    {"source_surface": "meta_harness", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-meta-harness", "test": "meta_harness_evaluator_leakage_injection_crash_and_protected_surface_attacks_fail_closed"}]},
+    {"source_surface": "credentials", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-credentials", "test": "tests::seeded_leak_suite_scans_persistence_browser_process_export_event_log_and_diagnostics"}]},
+    {"source_surface": "profiles", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-agentd", "test": "daemon_process_integration_lifecycle_survives_crash_and_quarantines_corrupt_service"}]},
+    {"source_surface": "approvals", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-platform-contracts", "test": "tests::consequential_action_requires_exact_unexpired_approval"}]},
+    {"source_surface": "data_control", "denies_all_privileged_transitions": true, "probes": [{"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}]}
+  ],
+  "durable_boundaries": [
+    {"surface": "channel", "recovery": ["safe_reconciliation", "cancellation", "quarantine", "deletion", "daemon_availability"], "probes": [{"package": "keith-agentd", "test": "daemon_process_integration_lifecycle_survives_crash_and_quarantines_corrupt_service"}]},
+    {"surface": "acp", "recovery": ["safe_reconciliation", "cancellation", "daemon_availability"], "probes": [{"package": "keith-agent-acp", "test": "managed_http_sse_authenticates_replays_and_closes_a_real_connection"}]},
+    {"surface": "plugin", "recovery": ["safe_reconciliation", "quarantine", "reversal", "deletion", "daemon_availability"], "probes": [{"package": "keith-plugin-host", "test": "authority_crash_loop_and_corruption_enter_safe_mode_without_blocking_uninstall"}]},
+    {"surface": "composio", "recovery": ["safe_reconciliation", "cancellation", "quarantine", "deletion", "daemon_availability"], "probes": [{"package": "keith-composio", "test": "tests::real_http_journey_proves_sessions_accounts_policy_mcp_recovery_and_isolation"}]},
+    {"surface": "computer", "recovery": ["safe_reconciliation", "cancellation", "quarantine", "deletion", "daemon_availability"], "probes": [{"package": "keith-cua-runner", "test": "real_runner_process_crash_reconciles_without_cross_profile_access"}]},
+    {"surface": "teaching", "recovery": ["safe_reconciliation", "cancellation", "reversal", "deletion", "daemon_availability"], "probes": [{"package": "keith-task-recipe", "test": "filesystem_store_exports_sanitized_data_and_cascades_complete_deletion"}]},
+    {"surface": "meta_harness", "recovery": ["safe_reconciliation", "cancellation", "quarantine", "reversal", "deletion", "daemon_availability"], "probes": [{"package": "keith-self-evolution", "test": "promotion_crash_boundary_matrix_recovers_to_old_or_fully_committed_state"}]},
+    {"surface": "credentials", "recovery": ["safe_reconciliation", "deletion", "daemon_availability"], "probes": [{"package": "keith-credentials", "test": "tests::seeded_leak_suite_scans_persistence_browser_process_export_event_log_and_diagnostics"}]},
+    {"surface": "profiles", "recovery": ["safe_reconciliation", "quarantine", "deletion", "daemon_availability"], "probes": [{"package": "keith-state-store", "test": "tests::external_service_collections_round_trip_restart_and_exact_deletion"}]},
+    {"surface": "approvals", "recovery": ["safe_reconciliation", "cancellation", "daemon_availability"], "probes": [{"package": "keith-platform-contracts", "test": "tests::consequential_action_requires_exact_unexpired_approval"}]},
+    {"surface": "data_control", "recovery": ["safe_reconciliation", "deletion", "daemon_availability"], "probes": [{"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}]}
+  ],
+  "data_control": [
+    {"class": "channel_accounts", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "channel_events", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "acp_metadata", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "plugins", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "connected_accounts", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "computer_state", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "recordings", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "recipes", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "traces", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "candidates", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}},
+    {"class": "derived_indexes", "exported": true, "deleted": true, "remaining_records": 0, "remaining_objects": 0, "probe": {"package": "keith-data-control", "test": "tests::complete_lifecycle_exports_restores_deletes_rebuilds_and_isolates"}}
+  ],
+  "forbidden_audit_fields": [
+    "raw_credentials",
+    "secrets",
+    "full_private_content",
+    "reusable_stream_urls",
+    "private_reasoning"
+  ],
+  "audit_records": [
+    {"correlation_id": "security-journey-1", "profile_id": "profile-a", "surface": "channel", "action": "receive", "outcome": "rejected_untrusted_control", "safe_summary": "Inbound content remained data only"},
+    {"correlation_id": "security-journey-1", "profile_id": "profile-a", "surface": "composio", "action": "invoke", "outcome": "approval_required", "safe_summary": "Consequential tool request stopped at policy"},
+    {"correlation_id": "security-journey-1", "profile_id": "profile-a", "surface": "computer", "action": "take_control", "outcome": "stale_input_rejected", "safe_summary": "Observed state no longer matched the action target"},
+    {"correlation_id": "security-journey-1", "profile_id": "profile-a", "surface": "meta_harness", "action": "evaluate", "outcome": "candidate_quarantined", "safe_summary": "Independent evaluation rejected the candidate"}
+  ],
+  "unavailable_credentialed_services": [
+    "live_channel_accounts",
+    "live_composio_accounts",
+    "external_acp_editors"
+  ]
+}

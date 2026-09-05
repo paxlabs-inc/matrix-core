@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "task": "1.4",
+  "proof_scope": "source_inventory_only",
+  "source_paths": [
+    "tests/causal-intelligence/test_donor_inventory.py",
+    "tests/causal-intelligence/donor-inventory.json",
+    "docs/architecture/causal-intelligence-capability-ledger.md",
+    "docs/features/skills.md",
+    "crates/skills/src/lib.rs",
+    "crates/local-runtime/src/lib.rs",
+    "crates/kernel-broker/src/lib.rs",
+    "crates/kernel-protocol/src/lib.rs",
+    "crates/artifacts/src/lib.rs",
+    "crates/channel-adapters/src/email.rs",
+    "crates/channel-adapters/src/lib.rs",
+    "crates/scheduler/src/lib.rs",
+    "crates/web/src/fetch.rs",
+    "crates/credentials/src/lib.rs",
+    "apps/agent-web/ui/components/KeithApp.tsx"
+  ],
+  "config_paths": [],
+  "binary_paths": [],
+  "required_case_ids": [
+    "donor-source-conformance"
+  ],
+  "cases": [
+    {
+      "id": "donor-source-conformance",
+      "kind": "unittest",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/causal-intelligence",
+        "-p",
+        "test_donor_inventory.py",
+        "-v"
+      ],
+      "expected_case_count": 10,
+      "timeout_seconds": 120
+    }
+  ]
+}

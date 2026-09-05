@@ -4,8 +4,8 @@ use std::fmt::Display;
 use std::sync::{Mutex, MutexGuard};
 
 use keith_agent_types::{
-    ArtifactId, CURRENT_SCHEMA_VERSION, CommitmentId, ConversationId, DeliveryId, EntityId,
-    EntryId, EventId, GoalId, JobId, ProfileId, Revision, SessionId, TurnId, UtcTimestamp,
+    ArtifactId, CURRENT_SCHEMA_VERSION, CommitmentId, DeliveryId, EntityId, EntryId, GoalId, JobId,
+    ProfileId, Revision, SessionId, TurnId, UtcTimestamp,
 };
 use keith_channel_core::{AdapterFailure, OutboundMessage, ReplyRoute, RetryClass, SendReceipt};
 use keith_protocol::DeliveryProjection;
@@ -17,11 +17,6 @@ use thiserror::Error;
 #[serde(rename_all = "snake_case", tag = "source", content = "id")]
 pub enum DeliverySource {
     Interactive(EntityId),
-    Conversation {
-        conversation_id: ConversationId,
-        source_event_id: EventId,
-        destination_profile_id: ProfileId,
-    },
     Scheduled(JobId),
     Child(EntityId),
     Commitment(CommitmentId),
@@ -276,20 +271,23 @@ where
         self.claim_next_matching(now, |_| true)
     }
 
-    /// Transactionally claims the oldest due item for one channel adapter.
+    /// Transactionally claims the oldest due item for one exact channel account.
     ///
     /// # Errors
     ///
-    /// Returns an error for an empty channel, persistence, or revision failure.
-    pub fn claim_next_for_channel(
+    /// Returns an error for an empty route partition, persistence, or revision failure.
+    pub fn claim_next_for_account(
         &self,
         channel: &str,
+        external_account: &str,
         now: UtcTimestamp,
     ) -> Result<Option<DeliveryClaim>, DeliveryError> {
-        if channel.trim().is_empty() {
+        if channel.trim().is_empty() || external_account.trim().is_empty() {
             return Err(DeliveryError::Invalid);
         }
-        self.claim_next_matching(now, |item| item.route.channel == channel)
+        self.claim_next_matching(now, |item| {
+            item.route.channel == channel && item.route.external_account == external_account
+        })
     }
 
     fn claim_next_matching(
@@ -729,6 +727,41 @@ mod tests {
                 .state,
             DeliveryState::Cancelled
         );
+    }
+
+    #[test]
+    fn account_scoped_claim_never_crosses_same_channel_accounts() {
+        let outbox = DeliveryOutbox::new(
+            EmbeddedStore::open_in_memory().expect("store"),
+            DeliveryConfig::default(),
+        )
+        .expect("outbox");
+        let account_a = new_delivery("account-a", true);
+        let mut account_b = new_delivery("account-b", true);
+        account_b.route.external_account = "other-account".to_owned();
+        outbox
+            .enqueue(account_a, UtcTimestamp::UNIX_EPOCH)
+            .expect("enqueue first account");
+        outbox
+            .enqueue(account_b, UtcTimestamp::UNIX_EPOCH)
+            .expect("enqueue second account");
+
+        assert!(
+            outbox
+                .claim_next_for_account("json", "missing-account", UtcTimestamp::UNIX_EPOCH)
+                .expect("empty partition")
+                .is_none()
+        );
+        let second = outbox
+            .claim_next_for_account("json", "other-account", UtcTimestamp::UNIX_EPOCH)
+            .expect("second partition")
+            .expect("second account delivery");
+        assert_eq!(second.item.route.external_account, "other-account");
+        let first = outbox
+            .claim_next_for_account("json", "account", UtcTimestamp::UNIX_EPOCH)
+            .expect("first partition")
+            .expect("first account delivery");
+        assert_eq!(first.item.route.external_account, "account");
     }
 
     #[test]

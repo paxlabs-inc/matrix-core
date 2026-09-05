@@ -1,23 +1,438 @@
 #![forbid(unsafe_code)]
 
+pub mod email;
+pub mod google_chat;
+pub mod matrix;
+pub mod slack;
+pub mod teams;
+pub mod telegram;
+pub mod whatsapp;
+
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::time::Duration;
 
-use keith_agent_types::{ArtifactId, EventId, ProfileId, Revision, StableKey, UtcTimestamp};
+use keith_agent_types::{ArtifactId, UtcTimestamp};
 use keith_channel_core::{
     AdapterCapability, AdapterEvent, AdapterFailure, AdapterFeatures, Attachment,
-    CanonicalChannelAppend, CanonicalChannelAppendReceipt, CanonicalChannelPublication,
-    CanonicalConversationIngress, ChannelAdapter, ConversationBindingReference,
-    ConversationRoutedInbound, ExternalConversationIdentity, InboundIntent, InboundMessage,
-    OutboundMessage, RetryClass, SendReceipt,
+    CHANNEL_CONTRACT_V2, ChannelAccountSetupV2, ChannelAdapter, ChannelAdapterErrorKindV2,
+    ChannelAdapterErrorV2, ChannelAdapterV2, ChannelAttachmentKindV2, ChannelAttachmentV2,
+    ChannelCapabilitiesV2, ChannelCapabilitySupportV2, ChannelCapabilityV2,
+    ChannelConnectionHealthV2, ChannelConversationKindV2, ChannelConversationV2,
+    ChannelEventKindV2, ChannelEventV2, ChannelIdentityV2, ChannelMentionV2, ChannelMessageV2,
+    ChannelOperationReceiptV2, ChannelOperationV2, ChannelReceiptStateV2, InboundIntent,
+    InboundMessage, OutboundMessage, ReconnectCursorV2, RetryClass, SendReceipt,
 };
 use keith_credentials::SecretValue;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tungstenite::stream::MaybeTlsStream;
 use tungstenite::{Message, WebSocket, connect};
+
+pub use email::{EmailAdapter, EmailConfig, EmailCursor};
+pub use google_chat::{GoogleChatAdapter, GoogleChatConfig, GoogleChatCursor};
+pub use matrix::{MatrixAdapter, MatrixConfig, MatrixCursor};
+pub use slack::{SlackAdapter, SlackConfig, SlackCursor};
+pub use teams::{TeamsAdapter, TeamsConfig, TeamsCursor};
+pub use telegram::{TelegramAdapter, TelegramConfig, TelegramCursor, TelegramIngress};
+pub use whatsapp::{WhatsAppCloudAdapter, WhatsAppCloudConfig, WhatsAppCursor};
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelAdapterKind {
+    Discord,
+    Slack,
+    Telegram,
+    WhatsAppCloud,
+    MicrosoftTeams,
+    GoogleChat,
+    Email,
+    Matrix,
+}
+
+impl ChannelAdapterKind {
+    pub const ALL: [Self; 8] = [
+        Self::Discord,
+        Self::Slack,
+        Self::Telegram,
+        Self::WhatsAppCloud,
+        Self::MicrosoftTeams,
+        Self::GoogleChat,
+        Self::Email,
+        Self::Matrix,
+    ];
+
+    pub const fn channel(self) -> &'static str {
+        match self {
+            Self::Discord => "discord",
+            Self::Slack => "slack",
+            Self::Telegram => "telegram",
+            Self::WhatsAppCloud => "whatsapp_cloud",
+            Self::MicrosoftTeams => "teams",
+            Self::GoogleChat => "google_chat",
+            Self::Email => "email",
+            Self::Matrix => "matrix",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelAdapterDefinition {
+    pub kind: ChannelAdapterKind,
+    pub channel: String,
+    pub required_credential_names: BTreeSet<String>,
+    pub required_scopes: BTreeSet<String>,
+    pub webhook_supported: bool,
+    pub socket_or_polling_supported: bool,
+    pub safe_test_supported: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelAdapterRegistration {
+    pub kind: ChannelAdapterKind,
+    pub account_id: String,
+    pub capabilities: ChannelCapabilitiesV2,
+    pub setup: ChannelAccountSetupV2,
+}
+
+pub trait ManagedChannelAdapter: ChannelAdapterV2 + Send {
+    fn kind(&self) -> ChannelAdapterKind;
+    fn account_setup(&self) -> ChannelAccountSetupV2;
+
+    /// Performs the platform's read-only account continuity test.
+    ///
+    /// # Errors
+    ///
+    /// Returns a classified authentication, permission, transport, or account-mismatch error.
+    fn test_connection(&self) -> Result<(), ChannelAdapterErrorV2>;
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChannelAccountLifecycle {
+    Starting,
+    Running,
+    Paused,
+    RateLimited,
+    Reconnecting,
+    Failed,
+    Removing,
+    Removed,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChannelAccountHealth {
+    pub kind: ChannelAdapterKind,
+    pub account_id: String,
+    pub lifecycle: ChannelAccountLifecycle,
+    pub connection: ChannelConnectionHealthV2,
+    pub queue_depth: usize,
+    pub queue_capacity: usize,
+    pub restart_count: u32,
+    pub consecutive_failures: u32,
+    pub throttled_until: Option<UtcTimestamp>,
+    pub last_event_at: Option<UtcTimestamp>,
+    pub last_delivery_at: Option<UtcTimestamp>,
+    pub reconnect_cursor_present: bool,
+    pub credential_generation: u64,
+    pub safe_error: Option<String>,
+}
+
+impl ChannelAccountHealth {
+    /// Validates a secret-free account health projection.
+    ///
+    /// # Errors
+    ///
+    /// Returns a malformed-contract error for blank identities, impossible queue bounds, or an
+    /// inconsistent throttled state.
+    pub fn validate(&self) -> Result<(), ChannelAdapterErrorV2> {
+        if self.account_id.trim().is_empty()
+            || self.queue_capacity == 0
+            || self.queue_depth > self.queue_capacity
+            || (self.lifecycle == ChannelAccountLifecycle::RateLimited
+                && self.throttled_until.is_none())
+            || self
+                .safe_error
+                .as_ref()
+                .is_some_and(|value| value.trim().is_empty())
+        {
+            return Err(ChannelAdapterErrorV2::malformed(
+                "channel account health is invalid",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ChannelCatalogError {
+    UnknownKind,
+    DuplicateAccount,
+    MissingRequiredCredential(String),
+    MissingRequiredScope(String),
+    IngressMismatch,
+    InvalidRegistration(ChannelAdapterErrorV2),
+}
+
+impl std::fmt::Display for ChannelCatalogError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnknownKind => formatter.write_str("channel adapter kind is not registered"),
+            Self::DuplicateAccount => {
+                formatter.write_str("channel adapter account is already registered")
+            }
+            Self::MissingRequiredCredential(name) => {
+                write!(
+                    formatter,
+                    "channel adapter account is missing credential {name}"
+                )
+            }
+            Self::MissingRequiredScope(scope) => {
+                write!(
+                    formatter,
+                    "channel adapter account is missing scope {scope}"
+                )
+            }
+            Self::IngressMismatch => formatter.write_str(
+                "channel adapter account configured an ingress mode the catalog does not support",
+            ),
+            Self::InvalidRegistration(error) => formatter.write_str(&error.safe_message),
+        }
+    }
+}
+
+impl std::error::Error for ChannelCatalogError {}
+
+pub struct ChannelAdapterCatalog {
+    definitions: BTreeMap<ChannelAdapterKind, ChannelAdapterDefinition>,
+    accounts: BTreeMap<(ChannelAdapterKind, String), ChannelAdapterRegistration>,
+}
+
+impl Default for ChannelAdapterCatalog {
+    fn default() -> Self {
+        Self::built_in()
+    }
+}
+
+impl ChannelAdapterCatalog {
+    pub fn built_in() -> Self {
+        let definitions = ChannelAdapterKind::ALL
+            .into_iter()
+            .map(|kind| (kind, built_in_definition(kind)))
+            .collect();
+        Self {
+            definitions,
+            accounts: BTreeMap::new(),
+        }
+    }
+
+    pub fn definitions(&self) -> impl ExactSizeIterator<Item = &ChannelAdapterDefinition> {
+        self.definitions.values()
+    }
+
+    pub fn definition(&self, kind: ChannelAdapterKind) -> Option<&ChannelAdapterDefinition> {
+        self.definitions.get(&kind)
+    }
+
+    /// Registers one real configured adapter through the shared managed interface.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid setup/capabilities, missing catalog requirements, or a
+    /// duplicate account.
+    pub fn register_adapter(
+        &mut self,
+        adapter: &dyn ManagedChannelAdapter,
+    ) -> Result<&ChannelAdapterRegistration, ChannelCatalogError> {
+        self.register_account(
+            adapter.kind(),
+            adapter.account_setup(),
+            adapter.capabilities_v2(),
+        )
+    }
+
+    /// Registers one configured account using the exact capabilities reported by its real
+    /// adapter instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid capabilities/setup, missing required credential references,
+    /// unknown adapter kinds, or duplicate account identities.
+    pub fn register_account(
+        &mut self,
+        kind: ChannelAdapterKind,
+        setup: ChannelAccountSetupV2,
+        capabilities: ChannelCapabilitiesV2,
+    ) -> Result<&ChannelAdapterRegistration, ChannelCatalogError> {
+        let definition = self
+            .definitions
+            .get(&kind)
+            .ok_or(ChannelCatalogError::UnknownKind)?;
+        setup
+            .validate()
+            .map_err(ChannelCatalogError::InvalidRegistration)?;
+        capabilities
+            .validate()
+            .map_err(ChannelCatalogError::InvalidRegistration)?;
+        for required in &definition.required_credential_names {
+            if !setup.required_credential_names.contains(required) {
+                return Err(ChannelCatalogError::MissingRequiredCredential(
+                    required.clone(),
+                ));
+            }
+        }
+        for required in &definition.required_scopes {
+            if !setup.required_scopes.contains(required) {
+                return Err(ChannelCatalogError::MissingRequiredScope(required.clone()));
+            }
+        }
+        if (setup.webhook_configured && !definition.webhook_supported)
+            || (setup.socket_or_polling_configured && !definition.socket_or_polling_supported)
+        {
+            return Err(ChannelCatalogError::IngressMismatch);
+        }
+        let key = (kind, setup.account_id.clone());
+        let registration = ChannelAdapterRegistration {
+            kind,
+            account_id: setup.account_id.clone(),
+            capabilities,
+            setup,
+        };
+        match self.accounts.entry(key) {
+            std::collections::btree_map::Entry::Vacant(entry) => Ok(entry.insert(registration)),
+            std::collections::btree_map::Entry::Occupied(_) => {
+                Err(ChannelCatalogError::DuplicateAccount)
+            }
+        }
+    }
+
+    pub fn account(
+        &self,
+        kind: ChannelAdapterKind,
+        account_id: &str,
+    ) -> Option<&ChannelAdapterRegistration> {
+        self.accounts.get(&(kind, account_id.to_owned()))
+    }
+
+    pub fn accounts(&self) -> impl ExactSizeIterator<Item = &ChannelAdapterRegistration> {
+        self.accounts.values()
+    }
+
+    pub fn remove_account(
+        &mut self,
+        kind: ChannelAdapterKind,
+        account_id: &str,
+    ) -> Option<ChannelAdapterRegistration> {
+        self.accounts.remove(&(kind, account_id.to_owned()))
+    }
+}
+
+macro_rules! managed_adapter {
+    ($adapter:ty, $kind:expr, $setup:ident) => {
+        impl ManagedChannelAdapter for $adapter {
+            fn kind(&self) -> ChannelAdapterKind {
+                $kind
+            }
+
+            fn account_setup(&self) -> ChannelAccountSetupV2 {
+                self.$setup()
+            }
+
+            fn test_connection(&self) -> Result<(), ChannelAdapterErrorV2> {
+                <$adapter>::test_connection(self)
+            }
+        }
+    };
+}
+
+managed_adapter!(
+    DiscordAdapter,
+    ChannelAdapterKind::Discord,
+    account_setup_v2
+);
+managed_adapter!(SlackAdapter, ChannelAdapterKind::Slack, setup_diagnostics);
+managed_adapter!(
+    TelegramAdapter,
+    ChannelAdapterKind::Telegram,
+    account_setup_v2
+);
+managed_adapter!(
+    WhatsAppCloudAdapter,
+    ChannelAdapterKind::WhatsAppCloud,
+    account_setup_v2
+);
+managed_adapter!(
+    TeamsAdapter,
+    ChannelAdapterKind::MicrosoftTeams,
+    account_setup_v2
+);
+managed_adapter!(
+    GoogleChatAdapter,
+    ChannelAdapterKind::GoogleChat,
+    account_setup_v2
+);
+managed_adapter!(EmailAdapter, ChannelAdapterKind::Email, account_setup_v2);
+managed_adapter!(MatrixAdapter, ChannelAdapterKind::Matrix, account_setup_v2);
+
+fn built_in_definition(kind: ChannelAdapterKind) -> ChannelAdapterDefinition {
+    let names = |values: &[&str]| values.iter().map(|value| (*value).to_owned()).collect();
+    let (credentials, scopes, webhook_supported, socket_or_polling_supported) = match kind {
+        ChannelAdapterKind::Discord => (names(&["bot_token"]), names(&["bot"]), false, true),
+        ChannelAdapterKind::Slack => (
+            names(&["bot_token", "signing_secret"]),
+            names(&["app_mentions:read", "chat:write"]),
+            true,
+            true,
+        ),
+        ChannelAdapterKind::Telegram => (
+            names(&["bot_token", "webhook_secret"]),
+            BTreeSet::new(),
+            true,
+            true,
+        ),
+        ChannelAdapterKind::WhatsAppCloud => (
+            names(&["access_token", "app_secret", "verify_token"]),
+            names(&["whatsapp_business_messaging"]),
+            true,
+            false,
+        ),
+        ChannelAdapterKind::MicrosoftTeams => (
+            names(&[
+                "bot_framework_access_token",
+                "bot_framework_request_verifier",
+            ]),
+            names(&["https://api.botframework.com/.default"]),
+            true,
+            false,
+        ),
+        ChannelAdapterKind::GoogleChat => (
+            names(&["chat_api_access_token", "google_chat_request_verifier"]),
+            names(&["https://www.googleapis.com/auth/chat.bot"]),
+            true,
+            false,
+        ),
+        ChannelAdapterKind::Email => (
+            names(&["provider_access_token", "webhook_signature_verifier"]),
+            BTreeSet::new(),
+            true,
+            true,
+        ),
+        ChannelAdapterKind::Matrix => (names(&["access_token"]), BTreeSet::new(), false, true),
+    };
+    ChannelAdapterDefinition {
+        kind,
+        channel: kind.channel().to_owned(),
+        required_credential_names: credentials,
+        required_scopes: scopes,
+        webhook_supported,
+        socket_or_polling_supported,
+        safe_test_supported: true,
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "event", content = "payload")]
@@ -38,248 +453,6 @@ impl From<NormalizedPlatformEvent> for AdapterEvent {
                 Self::Disconnected { safe_reason }
             }
         }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ChannelBindingSubject {
-    ExternalSender(String),
-    Participant(ProfileId),
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ChannelBindingStatus {
-    Current,
-    Stale,
-    Revoked,
-}
-
-/// Resolves current authority. The binding embedded in a channel envelope is evidence only.
-pub trait ChannelBindingValidator: Send + Sync {
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    fn validate_current(
-        &self,
-        binding: &ConversationBindingReference,
-        subject: &ChannelBindingSubject,
-        now: UtcTimestamp,
-    ) -> Result<ChannelBindingStatus, Self::Error>;
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DurableChannelDisposition {
-    Accepted,
-    Duplicate,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct DurableChannelPublicationReceipt {
-    pub stable_publication_key: StableKey,
-    pub event_id: EventId,
-    pub binding_revision: Revision,
-    pub disposition: DurableChannelDisposition,
-    pub accepted_at: UtcTimestamp,
-    pub client_connected: bool,
-}
-
-pub trait DurableChannelOutbox: Send + Sync {
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    fn enqueue(
-        &self,
-        publication: CanonicalChannelPublication,
-        client_connected: bool,
-        now: UtcTimestamp,
-    ) -> Result<DurableChannelPublicationReceipt, Self::Error>;
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ConversationBoundAdapterError {
-    #[error("channel adapter failed: {0}")]
-    Adapter(String),
-    #[error("channel binding resolution failed")]
-    Resolve,
-    #[error("channel binding validation failed")]
-    Validate,
-    #[error("channel binding is stale or revoked")]
-    StaleOrRevoked,
-    #[error("channel envelope identity, revision, or subject does not match")]
-    BindingMismatch,
-    #[error("canonical channel append failed")]
-    Append,
-    #[error("durable channel enqueue failed")]
-    Enqueue,
-    #[error("durable channel receipt does not match the publication")]
-    InvalidReceipt,
-    #[error("channel clock failed: {0}")]
-    Clock(#[from] keith_agent_types::TimestampError),
-}
-
-impl From<AdapterFailure> for ConversationBoundAdapterError {
-    fn from(error: AdapterFailure) -> Self {
-        Self::Adapter(error.safe_message)
-    }
-}
-
-/// Adds canonical conversation binding and durable delivery semantics to a concrete adapter.
-/// It never trusts caller-carried policy as current authority and never synchronously invokes a
-/// participant session.
-pub struct ConversationBoundAdapter<A, I, V, O> {
-    adapter: A,
-    ingress: I,
-    validator: V,
-    outbox: O,
-    connected: bool,
-    deduplication_capacity: usize,
-    inbound_receipts: BTreeMap<StableKey, CanonicalChannelAppendReceipt>,
-    inbound_order: VecDeque<StableKey>,
-}
-
-impl<A, I, V, O> ConversationBoundAdapter<A, I, V, O>
-where
-    A: ChannelAdapter,
-    I: CanonicalConversationIngress,
-    V: ChannelBindingValidator,
-    O: DurableChannelOutbox,
-{
-    pub fn new(
-        adapter: A,
-        ingress: I,
-        validator: V,
-        outbox: O,
-        deduplication_capacity: usize,
-    ) -> Result<Self, ConversationBoundAdapterError> {
-        if deduplication_capacity == 0 {
-            return Err(ConversationBoundAdapterError::BindingMismatch);
-        }
-        Ok(Self {
-            adapter,
-            ingress,
-            validator,
-            outbox,
-            connected: false,
-            deduplication_capacity,
-            inbound_receipts: BTreeMap::new(),
-            inbound_order: VecDeque::with_capacity(deduplication_capacity),
-        })
-    }
-
-    pub const fn is_connected(&self) -> bool {
-        self.connected
-    }
-
-    pub fn receive_bound(
-        &mut self,
-    ) -> Result<Option<CanonicalChannelAppendReceipt>, ConversationBoundAdapterError> {
-        let message = match self.adapter.receive()? {
-            AdapterEvent::Inbound(message) => {
-                self.connected = true;
-                *message
-            }
-            AdapterEvent::Disconnected { .. } => {
-                self.connected = false;
-                return Ok(None);
-            }
-            AdapterEvent::RateLimited { .. } => return Ok(None),
-        };
-        let now = UtcTimestamp::now()?;
-        let external = ExternalConversationIdentity::from(&message);
-        let binding = self
-            .ingress
-            .resolve(&external, now)
-            .map_err(|_| ConversationBoundAdapterError::Resolve)?;
-        if binding.external != external {
-            return Err(ConversationBoundAdapterError::BindingMismatch);
-        }
-        match self
-            .validator
-            .validate_current(
-                &binding,
-                &ChannelBindingSubject::ExternalSender(message.sender.clone()),
-                now,
-            )
-            .map_err(|_| ConversationBoundAdapterError::Validate)?
-        {
-            ChannelBindingStatus::Current => {}
-            ChannelBindingStatus::Stale | ChannelBindingStatus::Revoked => {
-                return Err(ConversationBoundAdapterError::StaleOrRevoked);
-            }
-        }
-        let source_key = message
-            .stable_source_key()
-            .map_err(|_| ConversationBoundAdapterError::BindingMismatch)?;
-        if let Some(receipt) = self.inbound_receipts.get(&source_key) {
-            return Ok(Some(receipt.clone()));
-        }
-        let append = CanonicalChannelAppend::try_from(ConversationRoutedInbound {
-            binding: binding.clone(),
-            source_key: source_key.clone(),
-            message,
-        })
-        .map_err(|_| ConversationBoundAdapterError::BindingMismatch)?;
-        let receipt = self
-            .ingress
-            .append(append, now)
-            .map_err(|_| ConversationBoundAdapterError::Append)?;
-        if receipt.binding_id != binding.binding_id
-            || receipt.binding_revision != binding.binding_revision
-            || receipt.conversation_id != binding.conversation_id
-            || receipt.source_key != source_key
-        {
-            return Err(ConversationBoundAdapterError::BindingMismatch);
-        }
-        self.inbound_order.push_back(source_key.clone());
-        self.inbound_receipts.insert(source_key, receipt.clone());
-        while self.inbound_order.len() > self.deduplication_capacity {
-            if let Some(oldest) = self.inbound_order.pop_front() {
-                self.inbound_receipts.remove(&oldest);
-            }
-        }
-        Ok(Some(receipt))
-    }
-
-    pub fn enqueue_bound(
-        &self,
-        publication: CanonicalChannelPublication,
-    ) -> Result<DurableChannelPublicationReceipt, ConversationBoundAdapterError> {
-        let now = UtcTimestamp::now()?;
-        let subject =
-            ChannelBindingSubject::Participant(publication.binding.participant_profile_id.clone());
-        match self
-            .validator
-            .validate_current(&publication.binding, &subject, now)
-            .map_err(|_| ConversationBoundAdapterError::Validate)?
-        {
-            ChannelBindingStatus::Current => {}
-            ChannelBindingStatus::Stale | ChannelBindingStatus::Revoked => {
-                return Err(ConversationBoundAdapterError::StaleOrRevoked);
-            }
-        }
-        OutboundMessage::try_from(publication.clone())
-            .map_err(|_| ConversationBoundAdapterError::BindingMismatch)?;
-        let expected_key = publication.stable_publication_key.clone();
-        let expected_event = publication.event_id.clone();
-        let expected_revision = publication.binding.binding_revision;
-        let receipt = self
-            .outbox
-            .enqueue(publication, self.connected, now)
-            .map_err(|_| ConversationBoundAdapterError::Enqueue)?;
-        if receipt.stable_publication_key != expected_key
-            || receipt.event_id != expected_event
-            || receipt.binding_revision != expected_revision
-            || receipt.client_connected != self.connected
-        {
-            return Err(ConversationBoundAdapterError::InvalidReceipt);
-        }
-        Ok(receipt)
-    }
-
-    pub fn reconnect(&mut self) -> Result<(), ConversationBoundAdapterError> {
-        self.adapter.reconnect()?;
-        self.connected = true;
-        Ok(())
     }
 }
 
@@ -420,6 +593,8 @@ pub struct DiscordAdapter {
     cursor: DiscordCursor,
     seen: BTreeSet<String>,
     seen_order: VecDeque<String>,
+    last_conversation_kind: Option<(String, ChannelConversationKindV2)>,
+    last_mentions: Vec<ChannelMentionV2>,
     staged: BTreeMap<ArtifactId, DiscordUpload>,
     staged_bytes: usize,
 }
@@ -474,6 +649,8 @@ impl DiscordAdapter {
             cursor,
             seen,
             seen_order,
+            last_conversation_kind: None,
+            last_mentions: Vec::new(),
             staged: BTreeMap::new(),
             staged_bytes: 0,
         })
@@ -481,6 +658,101 @@ impl DiscordAdapter {
 
     pub const fn cursor(&self) -> &DiscordCursor {
         &self.cursor
+    }
+
+    pub fn account_setup_v2(&self) -> ChannelAccountSetupV2 {
+        ChannelAccountSetupV2 {
+            account_id: self.config.bot_user_id.clone(),
+            required_credential_names: BTreeSet::from(["bot_token".to_owned()]),
+            required_scopes: BTreeSet::from(["bot".to_owned()]),
+            webhook_configured: false,
+            socket_or_polling_configured: true,
+            connection_health: if self.socket.is_some() {
+                ChannelConnectionHealthV2::Connected
+            } else {
+                ChannelConnectionHealthV2::Disconnected
+            },
+            reconnect_cursor_present: self.cursor.session_id.is_some()
+                || self.cursor.sequence.is_some()
+                || !self.cursor.recent_message_ids.is_empty(),
+            safe_test_supported: true,
+            metadata: BTreeMap::from([
+                ("gateway".to_owned(), "discord_gateway_v10".to_owned()),
+                ("intents".to_owned(), self.config.intents.to_string()),
+            ]),
+        }
+    }
+
+    /// Replaces the in-memory Discord credential. The old secret is zeroed on drop.
+    pub fn rotate_token(&mut self, token: SecretValue) {
+        self.token = token;
+        self.socket = None;
+    }
+
+    /// Performs Discord's read-only current-user request and verifies account continuity.
+    ///
+    /// # Errors
+    ///
+    /// Returns a classified error for authentication, transport, malformed data, or an account
+    /// mismatch.
+    pub fn test_connection(&self) -> Result<(), ChannelAdapterErrorV2> {
+        let url = format!("{}/users/@me", self.config.api_base);
+        let mut response = self.token.with_bytes(|token| {
+            let token = std::str::from_utf8(token).map_err(|_| ChannelAdapterErrorV2 {
+                kind: ChannelAdapterErrorKindV2::Authentication,
+                safe_message: "Discord token is not UTF-8".to_owned(),
+                retry_after_ms: None,
+            })?;
+            self.http
+                .get(&url)
+                .header("Authorization", format!("Bot {token}"))
+                .call()
+                .map_err(|error| ChannelAdapterErrorV2::from(rest_transport_error(&error)))
+        })?;
+        let status = response.status().as_u16();
+        let bytes = response
+            .body_mut()
+            .with_config()
+            .limit(u64::try_from(self.config.max_event_bytes).unwrap_or(u64::MAX))
+            .read_to_vec()
+            .map_err(|error| ChannelAdapterErrorV2::from(rest_transport_error(&error)))?;
+        match status {
+            200..=299 => {
+                let value: Value = serde_json::from_slice(&bytes).map_err(|_| {
+                    ChannelAdapterErrorV2::malformed("Discord account test returned malformed JSON")
+                })?;
+                if value.get("id").and_then(Value::as_str) == Some(&self.config.bot_user_id) {
+                    Ok(())
+                } else {
+                    Err(ChannelAdapterErrorV2 {
+                        kind: ChannelAdapterErrorKindV2::Permission,
+                        safe_message: "Discord credential belongs to another bot account"
+                            .to_owned(),
+                        retry_after_ms: None,
+                    })
+                }
+            }
+            401 | 403 => Err(ChannelAdapterErrorV2 {
+                kind: ChannelAdapterErrorKindV2::Authentication,
+                safe_message: "Discord authentication or permission denied".to_owned(),
+                retry_after_ms: None,
+            }),
+            429 => Err(ChannelAdapterErrorV2 {
+                kind: ChannelAdapterErrorKindV2::RateLimit,
+                safe_message: "Discord account test was rate limited".to_owned(),
+                retry_after_ms: None,
+            }),
+            500..=599 => Err(ChannelAdapterErrorV2 {
+                kind: ChannelAdapterErrorKindV2::TransientNetwork,
+                safe_message: "Discord account test is temporarily unavailable".to_owned(),
+                retry_after_ms: None,
+            }),
+            _ => Err(ChannelAdapterErrorV2 {
+                kind: ChannelAdapterErrorKindV2::PermanentDestination,
+                safe_message: "Discord rejected the account test".to_owned(),
+                retry_after_ms: None,
+            }),
+        }
     }
 
     /// Stages explicit artifact bytes for the next Discord multipart send.
@@ -611,44 +883,18 @@ impl DiscordAdapter {
         if sender == self.config.bot_user_id {
             return Ok(None);
         }
-        let attachments = data
-            .get("attachments")
-            .and_then(Value::as_array)
-            .map(|items| {
-                items
-                    .iter()
-                    .map(|item| {
-                        let byte_length = item
-                            .get("size")
-                            .and_then(Value::as_u64)
-                            .ok_or_else(|| permanent("Discord attachment size is missing"))?;
-                        if byte_length > self.config.max_attachment_bytes {
-                            return Err(permanent("Discord inbound attachment is oversized"));
-                        }
-                        Ok(Attachment {
-                            id: string_field(item, "id")?,
-                            file_name: string_field(item, "filename")?,
-                            media_type: item
-                                .get("content_type")
-                                .and_then(Value::as_str)
-                                .unwrap_or("application/octet-stream")
-                                .to_owned(),
-                            byte_length,
-                            artifact_id: None,
-                            download_url: item
-                                .get("url")
-                                .and_then(Value::as_str)
-                                .map(str::to_owned),
-                            staging_file: None,
-                            sha256: None,
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .transpose()?
-            .unwrap_or_default();
+        let attachments = discord_attachments(data, self.config.max_attachment_bytes)?;
         let occurred_at = discord_snowflake_timestamp(&message_id)
             .unwrap_or_else(|| UtcTimestamp::now().unwrap_or(UtcTimestamp::UNIX_EPOCH));
+        self.last_conversation_kind = Some((
+            message_id.clone(),
+            if data.get("guild_id").and_then(Value::as_str).is_some() {
+                ChannelConversationKindV2::Channel
+            } else {
+                ChannelConversationKindV2::Direct
+            },
+        ));
+        self.last_mentions = discord_mentions(data);
         self.remember(message_id.clone());
         Ok(Some(AdapterEvent::Inbound(Box::new(InboundMessage {
             channel: "discord".to_owned(),
@@ -783,6 +1029,274 @@ impl DiscordAdapter {
             500..=599 => Err(retryable("Discord service is temporarily unavailable")),
             _ => Err(permanent("Discord rejected the request")),
         }
+    }
+}
+
+fn discord_attachments(
+    data: &Value,
+    max_attachment_bytes: u64,
+) -> Result<Vec<Attachment>, AdapterFailure> {
+    data.get("attachments")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .map(|item| {
+                    let byte_length = item
+                        .get("size")
+                        .and_then(Value::as_u64)
+                        .ok_or_else(|| permanent("Discord attachment size is missing"))?;
+                    if byte_length > max_attachment_bytes {
+                        return Err(permanent("Discord inbound attachment is oversized"));
+                    }
+                    Ok(Attachment {
+                        id: string_field(item, "id")?,
+                        file_name: string_field(item, "filename")?,
+                        media_type: item
+                            .get("content_type")
+                            .and_then(Value::as_str)
+                            .unwrap_or("application/octet-stream")
+                            .to_owned(),
+                        byte_length,
+                        artifact_id: None,
+                        download_url: item.get("url").and_then(Value::as_str).map(str::to_owned),
+                        staging_file: None,
+                        sha256: None,
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()
+        .map(Option::unwrap_or_default)
+}
+
+fn discord_mentions(data: &Value) -> Vec<ChannelMentionV2> {
+    data.get("mentions")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|mention| {
+            Some(ChannelMentionV2 {
+                identity: ChannelIdentityV2 {
+                    platform_id: mention.get("id")?.as_str()?.to_owned(),
+                    display_name: mention
+                        .get("global_name")
+                        .or_else(|| mention.get("username"))
+                        .and_then(Value::as_str)
+                        .map(str::to_owned),
+                    is_bot: mention.get("bot").and_then(Value::as_bool).unwrap_or(false),
+                },
+                start: None,
+                end: None,
+            })
+        })
+        .collect()
+}
+
+impl ChannelAdapterV2 for DiscordAdapter {
+    fn capabilities_v2(&self) -> ChannelCapabilitiesV2 {
+        discord_capabilities(&self.config)
+    }
+
+    fn receive_v2(&mut self) -> Result<ChannelEventV2, ChannelAdapterErrorV2> {
+        let event = ChannelAdapter::receive(self).map_err(ChannelAdapterErrorV2::from)?;
+        let now = UtcTimestamp::now().unwrap_or(UtcTimestamp::UNIX_EPOCH);
+        let event = match event {
+            AdapterEvent::Inbound(message) => {
+                let conversation_kind = self
+                    .last_conversation_kind
+                    .take()
+                    .filter(|(message_id, _)| message_id == &message.message_id)
+                    .map_or(ChannelConversationKindV2::Channel, |(_, kind)| kind);
+                let attachments = message
+                    .attachments
+                    .iter()
+                    .cloned()
+                    .map(|attachment| ChannelAttachmentV2 {
+                        kind: discord_attachment_kind(&attachment.media_type),
+                        attachment,
+                        duration_ms: None,
+                        metadata: BTreeMap::new(),
+                    })
+                    .collect();
+                let mentions = std::mem::take(&mut self.last_mentions);
+                ChannelEventV2 {
+                    contract: CHANNEL_CONTRACT_V2,
+                    event_id: message.message_id.clone(),
+                    delivery_attempt: 1,
+                    event: ChannelEventKindV2::MessageCreated(ChannelMessageV2 {
+                        message_id: message.message_id.clone(),
+                        account_id: message.external_account.clone(),
+                        conversation: ChannelConversationV2 {
+                            platform_id: message.conversation.clone(),
+                            kind: conversation_kind,
+                            thread_id: message.thread.clone(),
+                            reply_to_message_id: message.reply_target.clone(),
+                        },
+                        sender: ChannelIdentityV2 {
+                            platform_id: message.sender.clone(),
+                            display_name: None,
+                            is_bot: false,
+                        },
+                        text: message.text.clone(),
+                        attachments,
+                        rich_content: Vec::new(),
+                        mentions,
+                        occurred_at: message.occurred_at,
+                        metadata: BTreeMap::new(),
+                    }),
+                    metadata: BTreeMap::new(),
+                }
+            }
+            AdapterEvent::RateLimited { retry_after_ms } => ChannelEventV2 {
+                contract: CHANNEL_CONTRACT_V2,
+                event_id: format!("discord-rate-limit:{}", now.unix_millis()),
+                delivery_attempt: 1,
+                event: ChannelEventKindV2::RateLimited { retry_after_ms },
+                metadata: BTreeMap::new(),
+            },
+            AdapterEvent::Disconnected { safe_reason } => ChannelEventV2 {
+                contract: CHANNEL_CONTRACT_V2,
+                event_id: format!("discord-reconnect:{}", now.unix_millis()),
+                delivery_attempt: 1,
+                event: ChannelEventKindV2::ReconnectRequired { safe_reason },
+                metadata: BTreeMap::new(),
+            },
+        };
+        event.validate(&self.capabilities_v2())?;
+        Ok(event)
+    }
+
+    fn execute_v2(
+        &mut self,
+        operation: &ChannelOperationV2,
+    ) -> Result<ChannelOperationReceiptV2, ChannelAdapterErrorV2> {
+        self.capabilities_v2()
+            .require(operation.required_capability())?;
+        match operation {
+            ChannelOperationV2::SendMessage(message) => {
+                if !message.rich_content.is_empty() {
+                    return Err(ChannelAdapterErrorV2::unsupported(
+                        "Discord rich embeds are not enabled by this adapter",
+                    ));
+                }
+                let receipt = self
+                    .send_message(&OutboundMessage {
+                        route: message.route.clone(),
+                        idempotency_key: message.idempotency_key.clone(),
+                        text: message.text.clone(),
+                        artifacts: message.artifacts.clone(),
+                    })
+                    .map_err(ChannelAdapterErrorV2::from)?;
+                Ok(ChannelOperationReceiptV2 {
+                    operation_id: message.idempotency_key.clone(),
+                    platform_message_id: Some(receipt.platform_message_id),
+                    accepted_at: receipt.accepted_at,
+                    state: ChannelReceiptStateV2::Accepted,
+                    duplicate_possible: receipt.duplicate_possible,
+                    metadata: BTreeMap::new(),
+                })
+            }
+            ChannelOperationV2::SetTyping { route, active } if *active => {
+                self.send_typing(route)
+                    .map_err(ChannelAdapterErrorV2::from)?;
+                Ok(ChannelOperationReceiptV2 {
+                    operation_id: format!(
+                        "discord-typing:{}:{}",
+                        route.conversation,
+                        UtcTimestamp::now()
+                            .unwrap_or(UtcTimestamp::UNIX_EPOCH)
+                            .unix_millis()
+                    ),
+                    platform_message_id: None,
+                    accepted_at: UtcTimestamp::now().unwrap_or(UtcTimestamp::UNIX_EPOCH),
+                    state: ChannelReceiptStateV2::Accepted,
+                    duplicate_possible: false,
+                    metadata: BTreeMap::new(),
+                })
+            }
+            ChannelOperationV2::SetTyping { .. } => Err(ChannelAdapterErrorV2::unsupported(
+                "Discord typing indicators expire automatically and cannot be explicitly stopped",
+            )),
+            ChannelOperationV2::EditMessage { .. }
+            | ChannelOperationV2::DeleteMessage { .. }
+            | ChannelOperationV2::AddReaction { .. }
+            | ChannelOperationV2::RemoveReaction { .. }
+            | ChannelOperationV2::Cancel { .. } => Err(ChannelAdapterErrorV2::unsupported(
+                "Discord operation is not enabled by this adapter",
+            )),
+        }
+    }
+
+    fn reconnect_v2(&mut self) -> Result<(), ChannelAdapterErrorV2> {
+        ChannelAdapter::reconnect(self).map_err(ChannelAdapterErrorV2::from)
+    }
+
+    fn reconnect_cursor_v2(&self) -> Option<ReconnectCursorV2> {
+        if self.cursor.session_id.is_none()
+            && self.cursor.sequence.is_none()
+            && self.cursor.recent_message_ids.is_empty()
+        {
+            return None;
+        }
+        let observed_at = self
+            .cursor
+            .recent_message_ids
+            .last()
+            .and_then(|message_id| discord_snowflake_timestamp(message_id))
+            .unwrap_or_else(|| UtcTimestamp::now().unwrap_or(UtcTimestamp::UNIX_EPOCH));
+        serde_json::to_string(&self.cursor)
+            .ok()
+            .map(|value| ReconnectCursorV2 { value, observed_at })
+    }
+}
+
+fn discord_capabilities(config: &DiscordConfig) -> ChannelCapabilitiesV2 {
+    let mut declarations = ChannelCapabilityV2::ALL
+        .into_iter()
+        .map(|capability| {
+            (
+                capability,
+                ChannelCapabilitySupportV2::Unsupported {
+                    safe_reason: "Discord capability is not enabled by this adapter".to_owned(),
+                },
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    for capability in [
+        ChannelCapabilityV2::InboundMessages,
+        ChannelCapabilityV2::OutboundMessages,
+        ChannelCapabilityV2::Threads,
+        ChannelCapabilityV2::Replies,
+        ChannelCapabilityV2::Mentions,
+        ChannelCapabilityV2::Attachments,
+        ChannelCapabilityV2::Typing,
+        ChannelCapabilityV2::RateLimits,
+        ChannelCapabilityV2::Reconnect,
+        ChannelCapabilityV2::IdempotentSend,
+    ] {
+        declarations.insert(capability, ChannelCapabilitySupportV2::Supported);
+    }
+    ChannelCapabilitiesV2 {
+        contract: CHANNEL_CONTRACT_V2,
+        declarations,
+        max_event_bytes: u64::try_from(config.max_event_bytes).unwrap_or(u64::MAX),
+        max_attachment_bytes: config.max_attachment_bytes,
+        max_attachments: 10,
+        max_rich_content_bytes: 1,
+        requests_per_minute: Some(50),
+    }
+}
+
+fn discord_attachment_kind(media_type: &str) -> ChannelAttachmentKindV2 {
+    if media_type.starts_with("image/") {
+        ChannelAttachmentKindV2::Image
+    } else if media_type.starts_with("audio/") {
+        ChannelAttachmentKindV2::Audio
+    } else if media_type.starts_with("video/") {
+        ChannelAttachmentKindV2::Video
+    } else {
+        ChannelAttachmentKindV2::File
     }
 }
 

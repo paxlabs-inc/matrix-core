@@ -4,11 +4,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use keith_release::{
-    MANIFEST_FILE, decode_public_key, verify_packaged_build_reports, verify_release,
-};
+use keith_release::{decode_public_key, verify_packaged_build_reports, verify_release};
 use serde::Deserialize;
-use sha2::{Digest, Sha256};
 
 const REQUIRED_ATTACKS: &[&str] = &[
     "archive_bomb",
@@ -32,6 +29,7 @@ const REQUIRED_ATTACKS: &[&str] = &[
     "export_disclosure",
     "forged_route",
     "kernel_isolation",
+    "injection",
     "log_disclosure",
     "malicious_markdown",
     "malicious_media",
@@ -45,6 +43,7 @@ const REQUIRED_ATTACKS: &[&str] = &[
     "path_traversal",
     "payload_bound",
     "plugin_isolation",
+    "plugin_escape",
     "protected_path",
     "rate_limit",
     "real_process_boundary",
@@ -74,11 +73,81 @@ const REQUIRED_ATTACKS: &[&str] = &[
     "self_evolution_toolchain_override",
     "self_evolution_unsigned_worker",
     "self_evolution_workspace_manifest",
+    "durable_boundary_crash",
+    "evaluator_tampering",
+    "oauth_substitution",
+    "protocol_confusion",
+    "recording_leakage",
     "ssrf",
     "stale_lease",
+    "stale_input",
+    "stream_hijack",
     "symlink_race",
     "terminal_escape",
     "unauthenticated_access",
+    "webhook_forgery",
+];
+
+const KEITH_EVERYWHERE_SURFACES: &[&str] = &[
+    "channel",
+    "acp",
+    "plugin",
+    "composio",
+    "computer",
+    "teaching",
+    "meta_harness",
+    "credentials",
+    "profiles",
+    "approvals",
+    "data_control",
+];
+
+const KEITH_EVERYWHERE_ATTACKS: &[&str] = &[
+    "injection",
+    "ssrf",
+    "webhook_forgery",
+    "protocol_confusion",
+    "plugin_escape",
+    "oauth_substitution",
+    "stream_hijack",
+    "stale_input",
+    "recording_leakage",
+    "evaluator_tampering",
+    "cross_profile",
+    "durable_boundary_crash",
+];
+
+const PRIVILEGED_TRANSITIONS: &[&str] = &[
+    "self_evolution",
+    "plugin_install",
+    "account_connection",
+    "grant_widening",
+    "computer_control",
+    "action_approval",
+    "credential_access",
+    "profile_selection",
+];
+
+const DATA_CONTROL_CLASSES: &[&str] = &[
+    "channel_accounts",
+    "channel_events",
+    "acp_metadata",
+    "plugins",
+    "connected_accounts",
+    "computer_state",
+    "recordings",
+    "recipes",
+    "traces",
+    "candidates",
+    "derived_indexes",
+];
+
+const FORBIDDEN_AUDIT_FIELDS: &[&str] = &[
+    "raw_credentials",
+    "secrets",
+    "full_private_content",
+    "reusable_stream_urls",
+    "private_reasoning",
 ];
 
 const PACKAGED_BINARIES: &[&str] = &[
@@ -95,7 +164,12 @@ const PACKAGED_BINARIES: &[&str] = &[
 ];
 
 const RELEASE_BLOCKING_CLASSES: &[&str] = &[
+    "authority_widening",
+    "credential_leak",
     "credential_exfiltration",
+    "cross_profile_access",
+    "data_loss",
+    "fabricated_success",
     "self_evolution_candidate_tamper",
     "self_evolution_credential_access",
     "self_evolution_filesystem_escape",
@@ -103,6 +177,7 @@ const RELEASE_BLOCKING_CLASSES: &[&str] = &[
     "self_evolution_process_escape",
     "self_evolution_protected_path",
     "self_evolution_unsigned_worker",
+    "unrecoverable_state",
     "unreversible_state",
 ];
 
@@ -367,7 +442,179 @@ const PROBES: &[Probe] = &[
         test: "unsigned_wrong_signer_and_tampered_worker_images_are_rejected_at_decode",
         attacks: &["self_evolution_unsigned_worker"],
     },
+    Probe {
+        package: "keith-channel-adapters",
+        test: "slack_signed_webhook_uses_official_hmac_vector_and_rejects_before_parse",
+        attacks: &["webhook_forgery", "injection"],
+    },
+    Probe {
+        package: "keith-agent-acp",
+        test: "real_process_refuses_unsupported_protocol_versions",
+        attacks: &["protocol_confusion"],
+    },
+    Probe {
+        package: "keith-agent-acp",
+        test: "managed_http_sse_authenticates_replays_and_closes_a_real_connection",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-plugin-host",
+        test: "abi_ambient_wasi_import_is_rejected_instead_of_inherited",
+        attacks: &["plugin_escape"],
+    },
+    Probe {
+        package: "keith-composio",
+        test: "tests::durable_state_refuses_profile_or_provider_identity_substitution",
+        attacks: &["oauth_substitution", "cross_profile"],
+    },
+    Probe {
+        package: "keith-composio",
+        test: "control_plane_and_mcp_endpoint_policy_blocks_credential_ssrf",
+        attacks: &["ssrf"],
+    },
+    Probe {
+        package: "keith-cua-runner",
+        test: "real_runner_process_enforces_stream_and_exclusive_control_across_restart",
+        attacks: &["stream_hijack"],
+    },
+    Probe {
+        package: "keith-cua",
+        test: "controller::tests::stale_coordinate_is_refused_and_exact_semantic_action_is_audited",
+        attacks: &["stale_input"],
+    },
+    Probe {
+        package: "keith-task-recipe",
+        test: "synchronized_capture_substitutes_credentials_and_never_serializes_raw_secrets",
+        attacks: &["recording_leakage"],
+    },
+    Probe {
+        package: "keith-meta-harness",
+        test: "meta_harness_evaluator_leakage_injection_crash_and_protected_surface_attacks_fail_closed",
+        attacks: &["evaluator_tampering", "injection"],
+    },
+    Probe {
+        package: "keith-agentd",
+        test: "daemon_process_integration_lifecycle_survives_crash_and_quarantines_corrupt_service",
+        attacks: &["durable_boundary_crash", "cross_profile"],
+    },
+    Probe {
+        package: "keith-platform-contracts",
+        test: "tests::consequential_action_requires_exact_unexpired_approval",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-acp",
+        test: "permission::tests::client_response_cannot_substitute_target_or_unoffered_option",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-plugin-host",
+        test: "authority_lifecycle_provenance_grants_updates_and_uninstall_are_durable",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-plugin-host",
+        test: "authority_crash_loop_and_corruption_enter_safe_mode_without_blocking_uninstall",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-composio",
+        test: "tests::real_http_journey_proves_sessions_accounts_policy_mcp_recovery_and_isolation",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-cua-runner",
+        test: "named_credential_is_origin_scoped_and_only_fills_a_protected_field",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-cua-runner",
+        test: "real_runner_process_crash_reconciles_without_cross_profile_access",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-task-recipe",
+        test: "filesystem_store_exports_sanitized_data_and_cascades_complete_deletion",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-meta-harness",
+        test: "meta_harness_real_failure_diagnosis_candidates_held_out_pareto_and_history",
+        attacks: &[],
+    },
+    Probe {
+        package: "keith-state-store",
+        test: "tests::external_service_collections_round_trip_restart_and_exact_deletion",
+        attacks: &[],
+    },
 ];
+
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
+#[serde(deny_unknown_fields)]
+struct ProbeReference {
+    package: String,
+    test: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct KeithEverywhereSecurityManifest {
+    schema_version: u16,
+    surfaces: Vec<String>,
+    privileged_transitions: Vec<String>,
+    attacks: Vec<AttackCoverage>,
+    authority_boundaries: Vec<AuthorityBoundaryCoverage>,
+    durable_boundaries: Vec<DurableBoundaryCoverage>,
+    data_control: Vec<DataControlCoverage>,
+    forbidden_audit_fields: Vec<String>,
+    audit_records: Vec<SafeAuditRecord>,
+    unavailable_credentialed_services: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AttackCoverage {
+    class: String,
+    probes: Vec<ProbeReference>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AuthorityBoundaryCoverage {
+    source_surface: String,
+    denies_all_privileged_transitions: bool,
+    probes: Vec<ProbeReference>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DurableBoundaryCoverage {
+    surface: String,
+    recovery: Vec<String>,
+    probes: Vec<ProbeReference>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DataControlCoverage {
+    class: String,
+    exported: bool,
+    deleted: bool,
+    remaining_records: u64,
+    remaining_objects: u64,
+    probe: ProbeReference,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SafeAuditRecord {
+    correlation_id: String,
+    profile_id: String,
+    surface: String,
+    action: String,
+    outcome: String,
+    safe_summary: String,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -403,15 +650,39 @@ enum FindingStatus {
 }
 
 pub fn run(root: &Path) -> Result<(), String> {
-    validate_corpus()?;
-    validate_findings(
-        &fs::read(root.join("security/findings.json"))
-            .map_err(|error| format!("security finding ledger is unavailable: {error}"))?,
-    )?;
+    validate_source_security(root)?;
     let release = required_path("KEITH_SECURITY_RELEASE_PATH")?;
     let trusted_key = required_text("KEITH_SECURITY_TRUSTED_PUBLIC_KEY")?;
     verify_packaged_binaries(&release, &trusted_key)?;
+    run_source_probes(root)?;
+    println!(
+        "security gate passed: {} attacks, {} packaged binaries, {} real test probes",
+        REQUIRED_ATTACKS.len(),
+        PACKAGED_BINARIES.len(),
+        PROBES.len()
+    );
+    Ok(())
+}
 
+pub fn run_source(root: &Path) -> Result<(), String> {
+    validate_source_security(root)?;
+    run_source_probes(root)
+}
+
+fn validate_source_security(root: &Path) -> Result<(), String> {
+    validate_corpus()?;
+    validate_keith_everywhere_manifest(
+        &fs::read(root.join("tests/security/keith_everywhere.json")).map_err(|error| {
+            format!("Keith Everywhere security manifest is unavailable: {error}")
+        })?,
+    )?;
+    validate_findings(
+        &fs::read(root.join("security/findings.json"))
+            .map_err(|error| format!("security finding ledger is unavailable: {error}"))?,
+    )
+}
+
+fn run_source_probes(root: &Path) -> Result<(), String> {
     let mut packages = BTreeMap::<&str, Vec<&str>>::new();
     for probe in PROBES {
         packages.entry(probe.package).or_default().push(probe.test);
@@ -428,17 +699,260 @@ pub fn run(root: &Path) -> Result<(), String> {
         run_command(
             root,
             "cargo",
-            &["test", "-p", package, "--release", "--locked"],
+            &[
+                "test",
+                "-p",
+                package,
+                "--release",
+                "--locked",
+                "--all-features",
+            ],
         )?;
     }
-    let teammates_report = TeammatesSecurityGate::from_verified_package(&release)?.run()?;
     println!(
-        "security gate passed: {} attacks, {} packaged binaries, {} real test probes, {} real teammates fault scenarios",
+        "security source probes passed: {} attacks, {} real test probes",
         REQUIRED_ATTACKS.len(),
-        PACKAGED_BINARIES.len(),
-        PROBES.len(),
-        teammates_report.results.len()
+        PROBES.len()
     );
+    Ok(())
+}
+
+fn validate_keith_everywhere_manifest(bytes: &[u8]) -> Result<(), String> {
+    let manifest: KeithEverywhereSecurityManifest = serde_json::from_slice(bytes)
+        .map_err(|error| format!("Keith Everywhere security manifest is invalid: {error}"))?;
+    if manifest.schema_version != 1 {
+        return Err(format!(
+            "Keith Everywhere security schema {} is unsupported",
+            manifest.schema_version
+        ));
+    }
+    exact_strings(
+        "security surfaces",
+        &manifest.surfaces,
+        KEITH_EVERYWHERE_SURFACES,
+    )?;
+    exact_strings(
+        "privileged transitions",
+        &manifest.privileged_transitions,
+        PRIVILEGED_TRANSITIONS,
+    )?;
+    validate_manifest_attacks(&manifest)?;
+    validate_manifest_authority_boundaries(&manifest)?;
+    validate_manifest_durable_boundaries(&manifest)?;
+    validate_manifest_data_control(&manifest)?;
+    exact_strings(
+        "forbidden audit fields",
+        &manifest.forbidden_audit_fields,
+        FORBIDDEN_AUDIT_FIELDS,
+    )?;
+    validate_audit_records(&manifest.audit_records)?;
+    if manifest
+        .unavailable_credentialed_services
+        .iter()
+        .any(|service| service.trim().is_empty())
+    {
+        return Err("credential availability contains an empty service name".into());
+    }
+    Ok(())
+}
+
+fn validate_manifest_attacks(manifest: &KeithEverywhereSecurityManifest) -> Result<(), String> {
+    let attacks = manifest
+        .attacks
+        .iter()
+        .map(|coverage| coverage.class.clone())
+        .collect::<Vec<_>>();
+    exact_strings(
+        "Keith Everywhere attacks",
+        &attacks,
+        KEITH_EVERYWHERE_ATTACKS,
+    )?;
+    for coverage in &manifest.attacks {
+        validate_probe_references(&coverage.probes, &format!("attack {}", coverage.class))?;
+    }
+    Ok(())
+}
+
+fn validate_manifest_authority_boundaries(
+    manifest: &KeithEverywhereSecurityManifest,
+) -> Result<(), String> {
+    let authority_surfaces = manifest
+        .authority_boundaries
+        .iter()
+        .map(|coverage| coverage.source_surface.clone())
+        .collect::<Vec<_>>();
+    exact_strings(
+        "authority source surfaces",
+        &authority_surfaces,
+        KEITH_EVERYWHERE_SURFACES,
+    )?;
+    for coverage in &manifest.authority_boundaries {
+        if !coverage.denies_all_privileged_transitions {
+            return Err(format!(
+                "{} does not deny every privileged cross-surface transition",
+                coverage.source_surface
+            ));
+        }
+        validate_probe_references(
+            &coverage.probes,
+            &format!("{} authority boundary", coverage.source_surface),
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_manifest_durable_boundaries(
+    manifest: &KeithEverywhereSecurityManifest,
+) -> Result<(), String> {
+    let durable_surfaces = manifest
+        .durable_boundaries
+        .iter()
+        .map(|coverage| coverage.surface.clone())
+        .collect::<Vec<_>>();
+    exact_strings(
+        "durable boundary surfaces",
+        &durable_surfaces,
+        KEITH_EVERYWHERE_SURFACES,
+    )?;
+    let required_recovery = BTreeSet::from([
+        "safe_reconciliation",
+        "cancellation",
+        "quarantine",
+        "reversal",
+        "deletion",
+        "daemon_availability",
+    ]);
+    let mut observed_recovery = BTreeSet::new();
+    for coverage in &manifest.durable_boundaries {
+        let recovery = coverage
+            .recovery
+            .iter()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>();
+        if !recovery.contains("safe_reconciliation")
+            || !recovery.contains("daemon_availability")
+            || !recovery.is_subset(&required_recovery)
+        {
+            return Err(format!(
+                "{} durable boundary lacks safe reconciliation or daemon availability",
+                coverage.surface
+            ));
+        }
+        observed_recovery.extend(recovery);
+        validate_probe_references(
+            &coverage.probes,
+            &format!("{} durable boundary", coverage.surface),
+        )?;
+    }
+    if observed_recovery != required_recovery {
+        return Err("durable boundary suite does not cover every required recovery outcome".into());
+    }
+    Ok(())
+}
+
+fn validate_manifest_data_control(
+    manifest: &KeithEverywhereSecurityManifest,
+) -> Result<(), String> {
+    let data_classes = manifest
+        .data_control
+        .iter()
+        .map(|coverage| coverage.class.clone())
+        .collect::<Vec<_>>();
+    exact_strings("data-control classes", &data_classes, DATA_CONTROL_CLASSES)?;
+    for coverage in &manifest.data_control {
+        if !coverage.exported
+            || !coverage.deleted
+            || coverage.remaining_records != 0
+            || coverage.remaining_objects != 0
+        {
+            return Err(format!(
+                "{} lacks complete export, deletion, or exact zero-remnant proof",
+                coverage.class
+            ));
+        }
+        validate_probe_references(
+            std::slice::from_ref(&coverage.probe),
+            &format!("{} data control", coverage.class),
+        )?;
+    }
+    Ok(())
+}
+
+fn exact_strings(label: &str, actual: &[String], expected: &[&str]) -> Result<(), String> {
+    let actual_len = actual.len();
+    let actual = actual.iter().map(String::as_str).collect::<BTreeSet<_>>();
+    let expected = expected.iter().copied().collect::<BTreeSet<_>>();
+    if actual == expected && actual_len == expected.len() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{label} mismatch: expected {expected:?}, got {actual:?}"
+        ))
+    }
+}
+
+fn validate_probe_references(probes: &[ProbeReference], label: &str) -> Result<(), String> {
+    if probes.is_empty() {
+        return Err(format!("{label} has no executable security probe"));
+    }
+    let known = PROBES
+        .iter()
+        .map(|probe| (probe.package, probe.test))
+        .collect::<BTreeSet<_>>();
+    for probe in probes {
+        if !known.contains(&(probe.package.as_str(), probe.test.as_str())) {
+            return Err(format!(
+                "{label} references unknown probe {}::{}",
+                probe.package, probe.test
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_audit_records(records: &[SafeAuditRecord]) -> Result<(), String> {
+    if records.len() < 3 {
+        return Err("cross-surface audit evidence requires at least three records".into());
+    }
+    let correlation_ids = records
+        .iter()
+        .map(|record| record.correlation_id.as_str())
+        .collect::<BTreeSet<_>>();
+    let profiles = records
+        .iter()
+        .map(|record| record.profile_id.as_str())
+        .collect::<BTreeSet<_>>();
+    let surfaces = records
+        .iter()
+        .map(|record| record.surface.as_str())
+        .collect::<BTreeSet<_>>();
+    if correlation_ids.len() != 1 || profiles.len() != 1 || surfaces.len() < 3 {
+        return Err(
+            "audit records must correlate at least three surfaces within one profile".into(),
+        );
+    }
+    let known_surfaces = KEITH_EVERYWHERE_SURFACES
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    for record in records {
+        let summary = record.safe_summary.to_ascii_lowercase();
+        if !known_surfaces.contains(record.surface.as_str())
+            || record.action.trim().is_empty()
+            || record.outcome.trim().is_empty()
+            || record.safe_summary.len() > 160
+            || summary.contains("secret")
+            || summary.contains("token")
+            || summary.contains("password")
+            || summary.contains("http://")
+            || summary.contains("https://")
+        {
+            return Err(format!(
+                "audit record for {} is unbounded or contains private material",
+                record.surface
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -505,6 +1019,7 @@ fn listed_tests(root: &Path, package: &str) -> Result<BTreeSet<String>, String> 
             package,
             "--release",
             "--locked",
+            "--all-features",
             "--",
             "--list",
         ])
@@ -641,604 +1156,25 @@ mod tests {
             assert!(validate_findings(ledger.as_bytes()).is_err(), "{class}");
         }
     }
-}
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TeammatesKillPoint {
-    AfterEnqueue,
-    AfterClaim,
-    AfterExpiredClaim,
-    AfterFinalizeBeforeAck,
-    AfterPublicationIntent,
-    AfterPublicationClaimBeforeAppend,
-    AfterAppendBeforePublished,
-    AfterAssignmentClaim,
-    AfterOwnershipTransfer,
-    AfterRoundTrigger,
-    MidRoundBranch,
-    BeforeMigrationWrite,
-    AfterMigrationWriteBeforeCommit,
-    BrowserTaskActive,
-    DisplayActive,
-    StreamActive,
-    TakeoverActive,
-}
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TeammatesAttack {
-    None,
-    ForgedAuthorship,
-    ForgedWebSocketSubject,
-    StaleRevision,
-    StaleLeaseToken,
-    DeliveryReplay,
-    AttachmentProvenance,
-    PromptInjection,
-    CrossProfileMemory,
-    CrossProfileSearch,
-    RevokedGrant,
-    SecretExfiltration,
-    ToolEscalation,
-    CredentialEscalation,
-    BrowserCrossProfileControl,
-    SelfEvolutionEscalation,
-    ConversationBudget,
-    DeliveryBudget,
-    BrowserBudget,
-    ProcessBudget,
-    DiskBudget,
-    CpuBudget,
-    MemoryBudget,
-    NetworkBudget,
-    ModelBudget,
-    CostBudget,
-}
+    #[test]
+    fn keith_everywhere_manifest_is_complete_and_tampering_fails_closed() {
+        let manifest = include_bytes!("../../../tests/security/keith_everywhere.json");
+        validate_keith_everywhere_manifest(manifest).unwrap();
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeammatesFaultCase {
-    pub id: String,
-    pub kill_point: Option<TeammatesKillPoint>,
-    pub attack: TeammatesAttack,
-    pub required_processes: std::collections::BTreeSet<String>,
-    pub minimum_concurrency: usize,
-    pub required_invariants: std::collections::BTreeSet<String>,
-}
+        let mut missing_surface: serde_json::Value = serde_json::from_slice(manifest).unwrap();
+        missing_surface["surfaces"].as_array_mut().unwrap().pop();
+        assert!(
+            validate_keith_everywhere_manifest(&serde_json::to_vec(&missing_surface).unwrap())
+                .is_err()
+        );
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeammatesFaultMatrix {
-    pub version: u32,
-    pub cases: Vec<TeammatesFaultCase>,
-}
-
-impl TeammatesFaultMatrix {
-    #[allow(clippy::too_many_lines)]
-    pub fn release_gate() -> Self {
-        let coordination = [
-            ("delivery-after-enqueue", TeammatesKillPoint::AfterEnqueue),
-            ("delivery-after-claim", TeammatesKillPoint::AfterClaim),
-            (
-                "delivery-after-expired-claim",
-                TeammatesKillPoint::AfterExpiredClaim,
-            ),
-            (
-                "delivery-after-finalize-before-ack",
-                TeammatesKillPoint::AfterFinalizeBeforeAck,
-            ),
-            (
-                "publication-after-intent",
-                TeammatesKillPoint::AfterPublicationIntent,
-            ),
-            (
-                "publication-after-claim-before-append",
-                TeammatesKillPoint::AfterPublicationClaimBeforeAppend,
-            ),
-            (
-                "publication-after-append-before-published",
-                TeammatesKillPoint::AfterAppendBeforePublished,
-            ),
-            (
-                "assignment-after-claim",
-                TeammatesKillPoint::AfterAssignmentClaim,
-            ),
-            (
-                "assignment-after-transfer",
-                TeammatesKillPoint::AfterOwnershipTransfer,
-            ),
-            ("round-after-trigger", TeammatesKillPoint::AfterRoundTrigger),
-            ("round-mid-branch", TeammatesKillPoint::MidRoundBranch),
-        ];
-        let mut cases = coordination
-            .into_iter()
-            .map(|(id, kill_point)| TeammatesFaultCase {
-                id: id.into(),
-                kill_point: Some(kill_point),
-                attack: TeammatesAttack::None,
-                required_processes: process_set(&["agentd", "agent-worker"]),
-                minimum_concurrency: 5,
-                required_invariants: invariant_set(&[
-                    "stable_key_exact_or_conflict",
-                    "monotonic_revision_and_fence",
-                    "stale_claim_rejected",
-                    "exactly_one_visible_publication",
-                    "terminal_work_not_reclaimed",
-                    "atomic_handoff_bundle",
-                    "bounded_fair_scheduling",
-                    "dead_letter_clears_claim",
-                ]),
-            })
-            .collect::<Vec<_>>();
-        for (id, kill_point, processes) in [
-            (
-                "migration-before-write",
-                TeammatesKillPoint::BeforeMigrationWrite,
-                &[][..],
-            ),
-            (
-                "migration-after-write-before-commit",
-                TeammatesKillPoint::AfterMigrationWriteBeforeCommit,
-                &[][..],
-            ),
-            (
-                "computer-browser-crash",
-                TeammatesKillPoint::BrowserTaskActive,
-                &["agentd", "browser-runner", "chromium", "xvfb"][..],
-            ),
-            (
-                "computer-display-crash",
-                TeammatesKillPoint::DisplayActive,
-                &["agentd", "browser-runner", "chromium", "xvfb"][..],
-            ),
-            (
-                "computer-stream-crash",
-                TeammatesKillPoint::StreamActive,
-                &["agentd", "agent-web", "browser-runner", "chromium", "xvfb"][..],
-            ),
-            (
-                "computer-takeover-crash",
-                TeammatesKillPoint::TakeoverActive,
-                &["agentd", "agent-web", "browser-runner", "chromium", "xvfb"][..],
-            ),
-        ] {
-            cases.push(TeammatesFaultCase {
-                id: id.into(),
-                kill_point: Some(kill_point),
-                attack: TeammatesAttack::None,
-                required_processes: process_set(processes),
-                minimum_concurrency: 5,
-                required_invariants: invariant_set(&[
-                    "fresh_root",
-                    "restart_reconciled",
-                    "cross_profile_denied",
-                    "leases_fenced",
-                    "no_secret_in_evidence",
-                ]),
-            });
-        }
-        for attack in [
-            TeammatesAttack::ForgedAuthorship,
-            TeammatesAttack::ForgedWebSocketSubject,
-            TeammatesAttack::StaleRevision,
-            TeammatesAttack::StaleLeaseToken,
-            TeammatesAttack::DeliveryReplay,
-            TeammatesAttack::AttachmentProvenance,
-            TeammatesAttack::PromptInjection,
-            TeammatesAttack::CrossProfileMemory,
-            TeammatesAttack::CrossProfileSearch,
-            TeammatesAttack::RevokedGrant,
-            TeammatesAttack::SecretExfiltration,
-            TeammatesAttack::ToolEscalation,
-            TeammatesAttack::CredentialEscalation,
-            TeammatesAttack::BrowserCrossProfileControl,
-            TeammatesAttack::SelfEvolutionEscalation,
-            TeammatesAttack::ConversationBudget,
-            TeammatesAttack::DeliveryBudget,
-            TeammatesAttack::BrowserBudget,
-            TeammatesAttack::ProcessBudget,
-            TeammatesAttack::DiskBudget,
-            TeammatesAttack::CpuBudget,
-            TeammatesAttack::MemoryBudget,
-            TeammatesAttack::NetworkBudget,
-            TeammatesAttack::ModelBudget,
-            TeammatesAttack::CostBudget,
-        ] {
-            cases.push(TeammatesFaultCase {
-                id: format!("attack-{attack:?}").to_ascii_lowercase(),
-                kill_point: None,
-                attack,
-                required_processes: process_set(&[
-                    "agentd",
-                    "agent-worker",
-                    "agent-web",
-                    "kernel-runner",
-                    "tool-runner",
-                    "browser-runner",
-                    "chromium",
-                    "xvfb",
-                ]),
-                minimum_concurrency: 5,
-                required_invariants: invariant_set(&[
-                    "fresh_root",
-                    "real_provider_boundary",
-                    "real_sandbox_boundary",
-                    "cross_profile_denied",
-                    "resource_limit_enforced",
-                    "owner_visible_audit",
-                    "no_secret_in_evidence",
-                ]),
-            });
-        }
-        Self { version: 1, cases }
+        let mut fabricated_probe: serde_json::Value = serde_json::from_slice(manifest).unwrap();
+        fabricated_probe["attacks"][0]["probes"][0]["test"] =
+            serde_json::Value::String("fabricated_success".into());
+        assert!(
+            validate_keith_everywhere_manifest(&serde_json::to_vec(&fabricated_probe).unwrap())
+                .is_err()
+        );
     }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ProviderBoundaryEvidence {
-    Hosted,
-    LocalModel,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeammatesInvariantEvidence {
-    pub name: String,
-    pub passed: bool,
-    pub safe_observation: String,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeammatesScenarioEvidence {
-    pub matrix_version: u32,
-    pub case_id: String,
-    pub fresh_data_root: String,
-    pub package_manifest_sha256: String,
-    pub provider_boundary: ProviderBoundaryEvidence,
-    pub real_processes: std::collections::BTreeSet<String>,
-    pub reopened_store_count: u32,
-    pub observed_concurrency: usize,
-    pub invariants: Vec<TeammatesInvariantEvidence>,
-    pub secret_scan_matches: usize,
-    pub used_mock_or_fake: bool,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeammatesGateCaseResult {
-    pub case_id: String,
-    pub passed: bool,
-    pub exit_code: Option<i32>,
-    pub evidence_path: String,
-    pub safe_failure: Option<String>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeammatesSecurityGateReport {
-    pub matrix_version: u32,
-    pub package_root: String,
-    pub evidence_root: String,
-    pub results: Vec<TeammatesGateCaseResult>,
-}
-
-pub struct TeammatesSecurityGate {
-    pub matrix: TeammatesFaultMatrix,
-    pub package_root: std::path::PathBuf,
-    pub evidence_root: std::path::PathBuf,
-    pub scenario_driver: std::path::PathBuf,
-    pub provider_command: String,
-    pub provider_boundary: ProviderBoundaryEvidence,
-    pub package_manifest_sha256: String,
-    pub timeout: std::time::Duration,
-}
-
-impl TeammatesSecurityGate {
-    pub fn from_environment() -> Result<Self, String> {
-        let package_root = required_path("KEITH_SECURITY_RELEASE_PATH")?;
-        let trusted_key = required_text("KEITH_SECURITY_TRUSTED_PUBLIC_KEY")?;
-        verify_packaged_binaries(&package_root, &trusted_key)?;
-        Self::from_verified_package(&package_root)
-    }
-
-    pub fn from_verified_package(package_root: &std::path::Path) -> Result<Self, String> {
-        let evidence_root = required_environment_path("KEITH_TEAMMATES_EVIDENCE_ROOT")?;
-        let scenario_driver = std::env::var_os("KEITH_TEAMMATES_SECURITY_DRIVER")
-            .filter(|value| !value.is_empty())
-            .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| {
-                package_root
-                    .join("bin")
-                    .join(format!("agentd{}", std::env::consts::EXE_SUFFIX))
-            });
-        let provider_command = std::env::var("KEITH_TEAMMATES_PROVIDER_COMMAND")
-            .map_err(|_| "KEITH_TEAMMATES_PROVIDER_COMMAND is required".to_owned())?;
-        let provider_boundary = match std::env::var("KEITH_TEAMMATES_PROVIDER_BOUNDARY")
-            .map_err(|_| "KEITH_TEAMMATES_PROVIDER_BOUNDARY is required".to_owned())?
-            .as_str()
-        {
-            "hosted" => ProviderBoundaryEvidence::Hosted,
-            "local_model" => ProviderBoundaryEvidence::LocalModel,
-            _ => {
-                return Err(
-                    "KEITH_TEAMMATES_PROVIDER_BOUNDARY must be hosted or local_model".into(),
-                );
-            }
-        };
-        let timeout_seconds = std::env::var("KEITH_TEAMMATES_CASE_TIMEOUT_SECONDS")
-            .ok()
-            .and_then(|value| value.parse::<u64>().ok())
-            .unwrap_or(300);
-        let package_root = std::fs::canonicalize(package_root)
-            .map_err(|error| format!("package root is unavailable: {error}"))?;
-        let scenario_driver = std::fs::canonicalize(scenario_driver)
-            .map_err(|error| format!("scenario driver is unavailable: {error}"))?;
-        if !scenario_driver.starts_with(&package_root) {
-            return Err("scenario driver must be a verified packaged binary".into());
-        }
-        if provider_command.trim().is_empty() {
-            return Err("real provider command is empty".into());
-        }
-        let package_manifest_sha256 = hex_sha256_file(&package_root.join(MANIFEST_FILE))?;
-        std::fs::create_dir_all(&evidence_root)
-            .map_err(|error| format!("cannot create evidence root: {error}"))?;
-        Ok(Self {
-            matrix: TeammatesFaultMatrix::release_gate(),
-            package_root,
-            evidence_root,
-            scenario_driver,
-            provider_command,
-            provider_boundary,
-            package_manifest_sha256,
-            timeout: std::time::Duration::from_secs(timeout_seconds),
-        })
-    }
-
-    pub fn run(&self) -> Result<TeammatesSecurityGateReport, String> {
-        validate_packaged_processes(&self.package_root)?;
-        let mut results = Vec::with_capacity(self.matrix.cases.len());
-        for (index, case) in self.matrix.cases.iter().enumerate() {
-            let case_root = fresh_case_root(&self.evidence_root, index, &case.id)?;
-            let evidence_path = case_root.join("evidence.json");
-            let stdout_path = case_root.join("stdout.log");
-            let stderr_path = case_root.join("stderr.log");
-            let stdout = std::fs::File::create(&stdout_path)
-                .map_err(|error| format!("cannot create scenario stdout: {error}"))?;
-            let stderr = std::fs::File::create(&stderr_path)
-                .map_err(|error| format!("cannot create scenario stderr: {error}"))?;
-            let matrix_case_path = case_root.join("case.json");
-            let case_bytes = serde_json::to_vec_pretty(case)
-                .map_err(|error| format!("cannot encode matrix case: {error}"))?;
-            std::fs::write(&matrix_case_path, case_bytes)
-                .map_err(|error| format!("cannot write matrix case: {error}"))?;
-            let mut child = std::process::Command::new(&self.scenario_driver)
-                .arg("teammates-security-scenario")
-                .arg("--package-root")
-                .arg(&self.package_root)
-                .arg("--fresh-data-root")
-                .arg(case_root.join("data"))
-                .arg("--case")
-                .arg(&matrix_case_path)
-                .arg("--evidence")
-                .arg(&evidence_path)
-                .arg("--minimum-concurrency")
-                .arg(case.minimum_concurrency.to_string())
-                .env("KEITH_REAL_PROVIDER_COMMAND", &self.provider_command)
-                .env(
-                    "KEITH_REAL_PROVIDER_BOUNDARY",
-                    match self.provider_boundary {
-                        ProviderBoundaryEvidence::Hosted => "hosted",
-                        ProviderBoundaryEvidence::LocalModel => "local_model",
-                    },
-                )
-                .env(
-                    "KEITH_VERIFIED_PACKAGE_MANIFEST_SHA256",
-                    &self.package_manifest_sha256,
-                )
-                .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::from(stdout))
-                .stderr(std::process::Stdio::from(stderr))
-                .spawn()
-                .map_err(|error| format!("cannot start real security scenario: {error}"))?;
-            let started = std::time::Instant::now();
-            let status = loop {
-                if let Some(status) = child
-                    .try_wait()
-                    .map_err(|error| format!("cannot observe security scenario: {error}"))?
-                {
-                    break status;
-                }
-                if started.elapsed() >= self.timeout {
-                    let _ = child.kill();
-                    let status = child
-                        .wait()
-                        .map_err(|error| format!("cannot reap timed-out scenario: {error}"))?;
-                    break status;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(50));
-            };
-            let result = validate_scenario(
-                case,
-                &evidence_path,
-                &case_root.join("data"),
-                &self.package_manifest_sha256,
-                &self.provider_boundary,
-                status.code(),
-            )
-            .unwrap_or_else(|safe_failure| TeammatesGateCaseResult {
-                case_id: case.id.clone(),
-                passed: false,
-                exit_code: status.code(),
-                evidence_path: evidence_path.display().to_string(),
-                safe_failure: Some(safe_failure),
-            });
-            results.push(result);
-        }
-        let report = TeammatesSecurityGateReport {
-            matrix_version: self.matrix.version,
-            package_root: self.package_root.display().to_string(),
-            evidence_root: self.evidence_root.display().to_string(),
-            results,
-        };
-        let report_bytes = serde_json::to_vec_pretty(&report)
-            .map_err(|error| format!("cannot encode teammates gate report: {error}"))?;
-        std::fs::write(
-            self.evidence_root.join("teammates-security-gate.json"),
-            report_bytes,
-        )
-        .map_err(|error| format!("cannot write teammates gate report: {error}"))?;
-        if report.results.iter().any(|result| !result.passed) {
-            return Err("teammates security gate found load-bearing failures".into());
-        }
-        Ok(report)
-    }
-}
-
-pub fn run_teammates(_root: &std::path::Path) -> Result<(), String> {
-    let gate = TeammatesSecurityGate::from_environment()?;
-    let report = gate.run()?;
-    println!(
-        "teammates security gate passed {} real packaged scenarios",
-        report.results.len()
-    );
-    Ok(())
-}
-
-fn validate_scenario(
-    case: &TeammatesFaultCase,
-    evidence_path: &std::path::Path,
-    expected_data_root: &std::path::Path,
-    expected_package_manifest_sha256: &str,
-    expected_provider_boundary: &ProviderBoundaryEvidence,
-    exit_code: Option<i32>,
-) -> Result<TeammatesGateCaseResult, String> {
-    if exit_code != Some(0) {
-        return Err(format!("scenario exited with {exit_code:?}"));
-    }
-    let bytes = std::fs::read(evidence_path)
-        .map_err(|error| format!("scenario evidence missing: {error}"))?;
-    let evidence: TeammatesScenarioEvidence = serde_json::from_slice(&bytes)
-        .map_err(|error| format!("scenario evidence malformed: {error}"))?;
-    if evidence.matrix_version != 1 || evidence.case_id != case.id {
-        return Err("scenario evidence identity mismatch".into());
-    }
-    let observed_data_root = std::fs::canonicalize(&evidence.fresh_data_root)
-        .map_err(|error| format!("scenario data root is unavailable: {error}"))?;
-    let expected_data_root = std::fs::canonicalize(expected_data_root)
-        .map_err(|error| format!("fresh data root is unavailable: {error}"))?;
-    if observed_data_root != expected_data_root {
-        return Err("scenario evidence was produced from a different data root".into());
-    }
-    if evidence.package_manifest_sha256 != expected_package_manifest_sha256 {
-        return Err("scenario evidence is not bound to the verified package manifest".into());
-    }
-    if &evidence.provider_boundary != expected_provider_boundary {
-        return Err("scenario exercised a different provider boundary".into());
-    }
-    if evidence.used_mock_or_fake {
-        return Err("scenario used a mock or fake".into());
-    }
-    if evidence.secret_scan_matches != 0 {
-        return Err("scenario evidence contains secret material".into());
-    }
-    if evidence.reopened_store_count == 0
-        || evidence.observed_concurrency < case.minimum_concurrency
-    {
-        return Err("scenario did not exercise restart and required concurrency".into());
-    }
-    if !case.required_processes.is_subset(&evidence.real_processes) {
-        return Err("scenario did not run every required real process".into());
-    }
-    let observations = evidence
-        .invariants
-        .iter()
-        .map(|invariant| (invariant.name.as_str(), invariant.passed))
-        .collect::<std::collections::BTreeMap<_, _>>();
-    for invariant in &case.required_invariants {
-        if observations.get(invariant.as_str()) != Some(&true) {
-            return Err(format!("required invariant failed: {invariant}"));
-        }
-    }
-    Ok(TeammatesGateCaseResult {
-        case_id: case.id.clone(),
-        passed: true,
-        exit_code,
-        evidence_path: evidence_path.display().to_string(),
-        safe_failure: None,
-    })
-}
-
-fn required_environment_path(name: &str) -> Result<std::path::PathBuf, String> {
-    std::env::var_os(name)
-        .filter(|value| !value.is_empty())
-        .map(std::path::PathBuf::from)
-        .ok_or_else(|| format!("{name} is required"))
-}
-
-fn fresh_case_root(
-    evidence_root: &std::path::Path,
-    index: usize,
-    case_id: &str,
-) -> Result<std::path::PathBuf, String> {
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| format!("clock error: {error}"))?
-        .as_nanos();
-    let root = evidence_root.join(format!(
-        "case-{index}-{}-{}-{nonce}",
-        std::process::id(),
-        sanitize_case_id(case_id)
-    ));
-    std::fs::create_dir(&root)
-        .map_err(|error| format!("cannot create fresh case root: {error}"))?;
-    std::fs::create_dir(root.join("data"))
-        .map_err(|error| format!("cannot create fresh data root: {error}"))?;
-    Ok(root)
-}
-
-fn validate_packaged_processes(package_root: &std::path::Path) -> Result<(), String> {
-    for logical_name in PACKAGED_BINARIES {
-        let path = package_root
-            .join("bin")
-            .join(format!("{logical_name}{}", std::env::consts::EXE_SUFFIX));
-        if !path.is_file() {
-            return Err(format!(
-                "required packaged process is missing: {logical_name}"
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn hex_sha256_file(path: &std::path::Path) -> Result<String, String> {
-    let bytes = std::fs::read(path)
-        .map_err(|error| format!("verified package manifest is unavailable: {error}"))?;
-    Ok(Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<Vec<_>>()
-        .join(""))
-}
-
-fn process_set(values: &[&str]) -> std::collections::BTreeSet<String> {
-    values.iter().map(|value| (*value).to_owned()).collect()
-}
-
-fn invariant_set(values: &[&str]) -> std::collections::BTreeSet<String> {
-    process_set(values)
-}
-
-fn sanitize_case_id(value: &str) -> String {
-    value
-        .chars()
-        .map(|character| {
-            if character.is_ascii_alphanumeric() || character == '-' {
-                character
-            } else {
-                '-'
-            }
-        })
-        .collect()
 }

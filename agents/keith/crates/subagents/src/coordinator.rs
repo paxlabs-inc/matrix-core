@@ -22,9 +22,9 @@ use keith_state_store_core::{
 };
 
 use crate::model::{
-    ChildAuthorityCeiling, ChildCancellation, ChildError, ChildMessage, ChildMessageKind,
-    ChildMessageSender, ChildModelRoute, ChildProjection, ChildRecord, ChildRetention, ChildSpec,
-    ChildStatus, ChildWorkspaceMode, ParentAuthority, StoredChild, StoredMessage,
+    ChildCancellation, ChildError, ChildMessage, ChildMessageKind, ChildMessageSender,
+    ChildProjection, ChildRecord, ChildRetention, ChildSpec, ChildStatus, ChildWorkspaceMode,
+    ParentAuthority, StoredChild, StoredMessage,
 };
 
 pub struct ChildCoordinator<R> {
@@ -116,15 +116,6 @@ where
             return Err(ChildError::WorkspaceDenied);
         }
         authority.workspace_root = workspace;
-        authority.ceiling.validate()?;
-        if !authority.ceiling.tools.is_subset(&authority.allowed_tools)
-            || !authority
-                .ceiling
-                .readable_roots
-                .contains(&authority.workspace_root)
-        {
-            return Err(ChildError::AuthorityEscalation);
-        }
         self.roots
             .lock()
             .map_err(|_| ChildError::LockPoisoned)?
@@ -144,7 +135,9 @@ where
         let _guard = self.lock()?;
         let existing = self.load_children()?;
         let authority = self.resolve_authority(&spec.parent_session_id, &existing)?;
-        spec.validate_authority(&authority)?;
+        if !spec.requested_tools.is_subset(&authority.allowed_tools) {
+            return Err(ChildError::ToolEscalation);
+        }
         let parent_depth = existing
             .iter()
             .find(|child| child.record.session_id == spec.parent_session_id)
@@ -174,10 +167,6 @@ where
         let id = ChildId::new();
         let session_id = SessionId::new();
         let (workspace_id, workspace_root) = self.prepare_workspace(&id, &authority, &spec)?;
-        let child_authority = spec
-            .requested_authority
-            .clone()
-            .confined_to_workspace(spec.workspace_mode, workspace_root.clone());
         let artifact_directory = self.artifacts_root.join(id.to_string());
         if let Err(error) = fs::create_dir(&artifact_directory) {
             if matches!(
@@ -204,7 +193,6 @@ where
             workspace_mode: spec.workspace_mode,
             workspace_root,
             allowed_tools: spec.requested_tools,
-            authority: child_authority,
             limits: spec.limits,
             depth,
             status: ChildStatus::Starting,
@@ -218,7 +206,6 @@ where
             retention: spec.retention,
             revision: Revision::ZERO,
         };
-        record.validate_parent_authority(&authority)?;
         self.put_new_child(&record)?;
         let startup = (|| {
             self.sessions.create(NewSession {
@@ -625,7 +612,6 @@ where
             return Err(ChildError::RecursiveLimit);
         }
         child.record.parent_session_id = new_parent.clone();
-        child.record.validate_parent_authority(&authority)?;
         child.record.depth = depth;
         child.record.status = ChildStatus::Running;
         child.record.orphaned_at = None;
@@ -801,7 +787,6 @@ where
                 workspace_id: child.record.workspace_id.clone(),
                 workspace_root: child.record.workspace_root.clone(),
                 allowed_tools: child.record.allowed_tools.clone(),
-                ceiling: child.record.authority.clone(),
             });
         }
         self.roots
@@ -1073,7 +1058,6 @@ fn decode_child(record: VersionedRecord) -> Result<StoredChild, ChildError> {
     {
         return Err(ChildError::Corrupt("child record envelope mismatch".into()));
     }
-    child.validate_intrinsic_authority()?;
     Ok(StoredChild {
         record: child,
         storage_revision: record.revision,
@@ -1141,49 +1125,27 @@ mod tests {
     }
 
     fn authority(workspace: &TempDir) -> ParentAuthority {
-        let allowed_tools = tools(&["read", "search", "write"]);
-        let mut ceiling = ChildAuthorityCeiling::denied();
-        ceiling.tools = allowed_tools.clone();
-        ceiling.model_routes.insert(ChildModelRoute {
-            provider: "local".into(),
-            model: "test-model".into(),
-        });
-        ceiling
-            .readable_roots
-            .insert(workspace.path().to_path_buf());
-        ceiling
-            .writable_roots
-            .insert(workspace.path().to_path_buf());
         ParentAuthority {
             session_id: SessionId::new(),
             root_tree_id: keith_agent_types::RootTreeId::new(),
             profile_id: keith_agent_types::ProfileId::new(),
             workspace_id: WorkspaceId::new(),
             workspace_root: workspace.path().to_path_buf(),
-            allowed_tools,
-            ceiling,
+            allowed_tools: tools(&["read", "search", "write"]),
         }
     }
 
     fn spec(parent: &SessionId, mode: ChildWorkspaceMode) -> ChildSpec {
-        let requested_tools = tools(&["read", "search"]);
-        let mut requested_authority = ChildAuthorityCeiling::denied();
-        requested_authority.tools = requested_tools.clone();
-        requested_authority.model_routes.insert(ChildModelRoute {
-            provider: "local".into(),
-            model: "test-model".into(),
-        });
         ChildSpec {
             parent_session_id: parent.clone(),
             objective: "Complete an independent workstream".into(),
             workspace_mode: mode,
-            requested_tools,
+            requested_tools: tools(&["read", "search"]),
             provider: "local".into(),
             model: "test-model".into(),
             limits: ChildLimits::default(),
             cancellation: ChildCancellation::Propagate,
             retention: ChildRetention::Retain,
-            requested_authority,
         }
     }
 

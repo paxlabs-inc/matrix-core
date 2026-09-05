@@ -7,35 +7,37 @@ license.workspace = true
 repository.workspace = true
 publish = false
 
+[features]
+default = []
+test-fault-injection = ["keith-daemon-core/test-fault-injection"]
+
 [dependencies]
 keith-build-info = { path = "../../crates/build-info" }
-keith-agent-types = { path = "../../crates/agent-types" }
-keith-computer = { path = "../../crates/computer" }
-keith-credentials = { path = "../../crates/credentials" }
+keith-configuration = { path = "../../crates/configuration" }
 keith-daemon-core = { path = "../../crates/daemon-core" }
 keith-local-runtime = { path = "../../crates/local-runtime" }
 keith-platform = { path = "../../crates/platform" }
-keith-profile = { path = "../../crates/profile" }
-keith-protocol = { path = "../../crates/protocol" }
 keith-self-evolution = { path = "../../crates/self-evolution" }
-keith-state-store = { path = "../../crates/state-store" }
 keith-worker-runtime = { path = "../../crates/worker-runtime" }
 signal-hook.workspace = true
 serde_json.workspace = true
-base64 = "0.22"
-sha2.workspace = true
+
+[target.'cfg(unix)'.dependencies]
 nix.workspace = true
 
 [dev-dependencies]
 keith-agent-web = { path = "../agent-web" }
 keith-agent-types = { path = "../../crates/agent-types" }
 keith-connection = { path = "../../crates/connection" }
-keith-conversation = { path = "../../crates/conversation" }
 keith-credentials = { path = "../../crates/credentials" }
+keith-protocol = { path = "../../crates/protocol" }
+keith-platform-contracts = { path = "../../crates/platform-contracts" }
+keith-runtime-api = { path = "../../crates/runtime-api" }
 keith-sandbox = { path = "../../crates/sandbox" }
 keith-state-store = { path = "../../crates/state-store" }
-nix.workspace = true
+keith-state-store-core = { path = "../../crates/state-store-core" }
 ring.workspace = true
+sha2.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
 

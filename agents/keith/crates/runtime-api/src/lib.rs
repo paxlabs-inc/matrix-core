@@ -1,14 +1,180 @@
 #![forbid(unsafe_code)]
 
+use std::collections::BTreeSet;
+
 use keith_agent_types::{
-    ActionId, ArtifactId, ClientId, CommandId, ConversationId, EntityId, EntryId, Generation,
-    MessageId, ProfileId, RootTreeId, SessionId, ToolCallId, TurnId, UtcTimestamp, WorkerId,
+    ActionId, ArtifactId, ClientId, CommandId, EntityId, EntryId, Generation, MessageId, ProfileId,
+    Revision, RootTreeId, SessionId, ToolCallId, TurnId, UtcTimestamp,
+};
+use keith_platform_contracts::{
+    AuditCorrelationId, CancellationId, ExternalAction, ExternalEffect, LifecycleState,
+    RedactedText, ResourceBounds,
 };
 use keith_protocol::{
     ClientCommand, CommandResult, CreateSession, ModelSelection, ProfileSummary, SessionSnapshot,
     SessionState, SubmitPrompt,
 };
 use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExternalServiceKind {
+    ChannelAccount,
+    AcpConnection,
+    Plugin,
+    ConnectedApp,
+    ComputerSession,
+    ControlLease,
+    Recording,
+    Recipe,
+    HarnessRepair,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "state")]
+pub enum ServiceAvailability {
+    Available,
+    Unavailable { safe_reason: RedactedText },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ServiceControl {
+    Restart,
+    Cancel,
+    Export,
+    Delete,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ServiceRegistration {
+    pub id: EntityId,
+    pub profile_id: ProfileId,
+    pub owning_session_id: Option<SessionId>,
+    pub service: ExternalServiceKind,
+    pub native_resource_key: String,
+    pub display_label: RedactedText,
+    pub availability: ServiceAvailability,
+    pub lifecycle: LifecycleState,
+    pub effect: ExternalEffect,
+    pub cancellation_id: CancellationId,
+    pub audit_correlation: AuditCorrelationId,
+    pub bounds: ResourceBounds,
+    pub controls: BTreeSet<ServiceControl>,
+    pub safe_error: Option<RedactedText>,
+    pub revision: Revision,
+    pub created_at: UtcTimestamp,
+    pub updated_at: UtcTimestamp,
+}
+
+impl ServiceRegistration {
+    /// Validates resource identity, bounds, lifecycle truth, and unavailable-state honesty.
+    ///
+    /// # Errors
+    ///
+    /// Returns a safe error when the registration cannot be persisted or projected truthfully.
+    pub fn validate(&self) -> Result<(), String> {
+        if self.native_resource_key.is_empty()
+            || self.native_resource_key.len() > 256
+            || self.native_resource_key.chars().any(char::is_control)
+        {
+            return Err("service resource key is invalid".into());
+        }
+        self.bounds.validate().map_err(|error| error.to_string())?;
+        if matches!(self.availability, ServiceAvailability::Unavailable { .. })
+            && matches!(self.lifecycle, LifecycleState::Active)
+        {
+            return Err("unavailable service cannot report an active lifecycle".into());
+        }
+        if matches!(
+            self.lifecycle,
+            LifecycleState::Failed | LifecycleState::Interrupted
+        ) != self.safe_error.is_some()
+        {
+            return Err("service failure and safe error do not agree".into());
+        }
+        if self.lifecycle.is_terminal() && self.controls.contains(&ServiceControl::Cancel) {
+            return Err("terminal service cannot report cancellation availability".into());
+        }
+        Ok(())
+    }
+
+    /// Reconciles an in-flight registration without replaying an uncertain external effect.
+    #[must_use]
+    pub fn reconcile_after_restart(mut self, now: UtcTimestamp) -> Self {
+        let lifecycle = self.lifecycle.reconcile_after_restart(&self.effect);
+        if lifecycle != self.lifecycle {
+            self.lifecycle = lifecycle;
+            self.updated_at = now;
+            self.controls.remove(&ServiceControl::Cancel);
+            if matches!(lifecycle, LifecycleState::Pending) {
+                self.controls.insert(ServiceControl::Cancel);
+            }
+            self.safe_error = matches!(lifecycle, LifecycleState::Interrupted)
+                .then(|| RedactedText::parse("external outcome requires operator review").ok())
+                .flatten();
+        }
+        self
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ActiveServiceOperation {
+    pub id: EntityId,
+    pub registration_id: EntityId,
+    pub profile_id: ProfileId,
+    pub action: ExternalAction,
+    pub idempotency_key: String,
+    pub lifecycle: LifecycleState,
+    pub attempt: u32,
+    pub created_at: UtcTimestamp,
+    pub updated_at: UtcTimestamp,
+    pub safe_error: Option<RedactedText>,
+}
+
+impl ActiveServiceOperation {
+    /// Validates profile isolation and truthful terminal/error state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the operation widens profile authority or fabricates health.
+    pub fn validate(&self) -> Result<(), String> {
+        if self.profile_id != self.action.profile_id {
+            return Err("service operation profile does not match action authority".into());
+        }
+        if self.idempotency_key.is_empty()
+            || self.idempotency_key.len() > 256
+            || self.idempotency_key.chars().any(char::is_control)
+        {
+            return Err("service operation idempotency key is invalid".into());
+        }
+        if matches!(
+            self.lifecycle,
+            LifecycleState::Failed | LifecycleState::Interrupted
+        ) != self.safe_error.is_some()
+        {
+            return Err("service operation failure and safe error do not agree".into());
+        }
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn reconcile_after_restart(mut self, now: UtcTimestamp) -> Self {
+        let lifecycle = self
+            .lifecycle
+            .reconcile_after_restart(&self.action.external_effect);
+        if lifecycle != self.lifecycle {
+            self.lifecycle = lifecycle;
+            self.updated_at = now;
+            self.safe_error = matches!(lifecycle, LifecycleState::Interrupted)
+                .then(|| RedactedText::parse("external outcome requires operator review").ok())
+                .flatten();
+        }
+        self
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -23,38 +189,12 @@ pub struct RuntimeSession {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ConversationSessionAssignment {
-    pub profile_id: ProfileId,
-    pub root_tree_id: RootTreeId,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct AcceptedPrompt {
     pub acceptance_id: CommandId,
     pub action_id: ActionId,
     pub turn_id: TurnId,
     pub prompt: SubmitPrompt,
     pub accepted_at: UtcTimestamp,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "authority")]
-pub enum RuntimeCommandAuthority {
-    HumanOwner,
-    Agent {
-        profile_id: ProfileId,
-        session_id: SessionId,
-    },
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct RuntimeWorkerBinding {
-    pub root_tree_id: RootTreeId,
-    pub worker_id: WorkerId,
-    pub generation: Generation,
-    pub lease_authentication: EntityId,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -117,24 +257,12 @@ pub enum RuntimeRequest {
         root_tree_id: RootTreeId,
         request: CreateSession,
     },
-    ProvisionConversationSession {
-        conversation_id: ConversationId,
-        profile_id: ProfileId,
+    ForkSession {
+        source_session_id: SessionId,
+        session_id: SessionId,
+        root_tree_id: RootTreeId,
+        title: Option<String>,
         generation: Generation,
-        now: UtcTimestamp,
-    },
-    ProvisionConversationSessions {
-        conversation_id: ConversationId,
-        assignments: Vec<ConversationSessionAssignment>,
-        generation: Generation,
-        now: UtcTimestamp,
-    },
-    DrainConversationActions {
-        conversation_id: ConversationId,
-        generation: Generation,
-    },
-    PendingConversationActionSessions {
-        conversation_id: ConversationId,
     },
     SelectModel(ModelSelection),
     RunPrompt {
@@ -152,8 +280,6 @@ pub enum RuntimeRequest {
     },
     ExecuteFeature {
         client_id: ClientId,
-        requester_authority: RuntimeCommandAuthority,
-        worker_binding: RuntimeWorkerBinding,
         scope_session_id: Option<SessionId>,
         command: ClientCommand,
         generation: Generation,
@@ -281,31 +407,29 @@ impl RuntimeRequest {
             } => runtime
                 .create_session_assigned(session_id, root_tree_id, request)
                 .map(RuntimeResponse::Session),
-            Self::ProvisionConversationSession {
-                conversation_id,
-                profile_id,
+            Self::ForkSession {
+                source_session_id,
+                session_id,
+                root_tree_id,
+                title,
                 generation,
-                now,
-            } => runtime
-                .provision_conversation_session(conversation_id, profile_id, *generation, *now)
-                .map(RuntimeResponse::Session),
-            Self::ProvisionConversationSessions {
-                conversation_id,
-                assignments,
-                generation,
-                now,
-            } => runtime
-                .provision_conversation_sessions(conversation_id, assignments, *generation, *now)
-                .map(RuntimeResponse::Sessions),
-            Self::DrainConversationActions {
-                conversation_id,
-                generation,
-            } => runtime
-                .drain_conversation_actions(conversation_id, *generation)
-                .map(|()| RuntimeResponse::Complete),
-            Self::PendingConversationActionSessions { conversation_id } => runtime
-                .pending_conversation_action_sessions(conversation_id)
-                .map(RuntimeResponse::Sessions),
+            } => {
+                if source_session_id == session_id {
+                    Err("fork source and destination sessions must differ".into())
+                } else if !valid_optional_title(title.as_deref()) {
+                    Err("fork title is empty, oversized, or contains controls".into())
+                } else {
+                    runtime
+                        .fork_session_assigned(
+                            source_session_id,
+                            session_id,
+                            root_tree_id,
+                            title.clone(),
+                            *generation,
+                        )
+                        .map(RuntimeResponse::Session)
+                }
+            }
             Self::SelectModel(selection) => runtime
                 .select_model(selection)
                 .map(|()| RuntimeResponse::Complete),
@@ -327,20 +451,11 @@ impl RuntimeRequest {
                 .map(|snapshot| RuntimeResponse::Snapshot(Box::new(snapshot))),
             Self::ExecuteFeature {
                 client_id,
-                requester_authority,
-                worker_binding,
                 scope_session_id,
                 command,
                 generation,
             } => runtime
-                .execute_feature_authorized(
-                    client_id,
-                    requester_authority,
-                    worker_binding,
-                    scope_session_id.as_ref(),
-                    command,
-                    *generation,
-                )
+                .execute_feature(client_id, scope_session_id.as_ref(), command, *generation)
                 .map(|result| RuntimeResponse::Command(Box::new(result))),
             Self::Maintain => runtime.maintain().map(|()| RuntimeResponse::Complete),
             Self::CandidateCanary(request) => runtime
@@ -349,6 +464,12 @@ impl RuntimeRequest {
         };
         response.unwrap_or_else(RuntimeResponse::Failed)
     }
+}
+
+fn valid_optional_title(title: Option<&str>) -> bool {
+    title.is_none_or(|title| {
+        !title.trim().is_empty() && title.len() <= 512 && !title.chars().any(char::is_control)
+    })
 }
 
 #[allow(clippy::missing_errors_doc)]
@@ -369,31 +490,14 @@ pub trait CommandRuntime: Send + Sync {
         root_tree_id: &RootTreeId,
         request: &CreateSession,
     ) -> Result<RuntimeSession, String>;
-    fn provision_conversation_session(
+    fn fork_session_assigned(
         &self,
-        conversation_id: &ConversationId,
-        profile_id: &ProfileId,
+        source_session_id: &SessionId,
+        session_id: &SessionId,
+        root_tree_id: &RootTreeId,
+        title: Option<String>,
         generation: Generation,
-        now: UtcTimestamp,
     ) -> Result<RuntimeSession, String>;
-    fn provision_conversation_sessions(
-        &self,
-        conversation_id: &ConversationId,
-        assignments: &[ConversationSessionAssignment],
-        generation: Generation,
-        now: UtcTimestamp,
-    ) -> Result<Vec<RuntimeSession>, String>;
-    fn drain_conversation_actions(
-        &self,
-        conversation_id: &ConversationId,
-        generation: Generation,
-    ) -> Result<(), String>;
-    fn pending_conversation_action_sessions(
-        &self,
-        _conversation_id: &ConversationId,
-    ) -> Result<Vec<RuntimeSession>, String> {
-        Err("pending conversation action routing is unavailable".into())
-    }
     fn select_model(&self, selection: &ModelSelection) -> Result<(), String>;
     fn run_prompt(
         &self,
@@ -431,19 +535,6 @@ pub trait CommandRuntime: Send + Sync {
         command: &ClientCommand,
         generation: Generation,
     ) -> Result<CommandResult, String>;
-    fn execute_feature_authorized(
-        &self,
-        client_id: &ClientId,
-        requester_authority: &RuntimeCommandAuthority,
-        worker_binding: &RuntimeWorkerBinding,
-        scope_session_id: Option<&SessionId>,
-        command: &ClientCommand,
-        generation: Generation,
-    ) -> Result<CommandResult, String> {
-        let _ = requester_authority;
-        let _ = worker_binding;
-        self.execute_feature(client_id, scope_session_id, command, generation)
-    }
     fn maintain(&self) -> Result<(), String>;
     fn candidate_canary(
         &self,
@@ -454,95 +545,101 @@ pub trait CommandRuntime: Send + Sync {
 }
 
 #[cfg(test)]
-mod authority_tests {
+mod tests {
+    use keith_platform_contracts::{
+        ActionRisk, ApprovalEnvelope, ApprovalState, Capability, ExternalPrincipalId,
+    };
+
     use super::*;
 
-    fn worker_binding() -> RuntimeWorkerBinding {
-        RuntimeWorkerBinding {
-            root_tree_id: RootTreeId::new(),
-            worker_id: WorkerId::new(),
-            generation: Generation::ZERO,
-            lease_authentication: EntityId::new(),
+    fn bounds() -> ResourceBounds {
+        ResourceBounds {
+            max_concurrency: 1,
+            max_duration_ms: 1,
+            max_cpu_time_ms: 1,
+            max_retries: 0,
+            max_input_bytes: 1,
+            max_output_bytes: 1,
+            max_memory_bytes: 1,
+            max_disk_bytes: 1,
+            max_events_per_minute: 1,
+        }
+    }
+
+    fn action(profile_id: ProfileId, effect: ExternalEffect) -> ExternalAction {
+        ExternalAction {
+            profile_id,
+            session_id: SessionId::new(),
+            acting_principal: ExternalPrincipalId::new(),
+            requested_capability: Capability::LocalWrite,
+            risk: ActionRisk::ReversibleLocalWrite,
+            approval: ApprovalEnvelope {
+                risk: ActionRisk::ReversibleLocalWrite,
+                state: ApprovalState::NotRequired,
+            },
+            target: RedactedText::parse("resource").unwrap(),
+            target_digest: RedactedText::parse("digest").unwrap(),
+            cancellation_id: CancellationId::new(),
+            reply_route: None,
+            audit_correlation: AuditCorrelationId::new(),
+            external_effect: effect,
         }
     }
 
     #[test]
-    fn execution_request_preserves_requester_authority_separately_from_route() {
-        let client_id = ClientId::new();
+    fn restart_reconciliation_never_replays_uncertain_external_effects() {
         let profile_id = ProfileId::new();
-        let requester_session = SessionId::new();
-        let target_session = SessionId::new();
-        let request = RuntimeRequest::ExecuteFeature {
-            client_id,
-            requester_authority: RuntimeCommandAuthority::Agent {
-                profile_id,
-                session_id: requester_session,
-            },
-            worker_binding: worker_binding(),
-            scope_session_id: Some(target_session.clone()),
-            command: ClientCommand::AgentLifecycle(keith_protocol::AgentLifecycleCommand::List),
-            generation: Generation::ZERO,
+        let now = UtcTimestamp::from_unix_millis(10);
+        let registration = ServiceRegistration {
+            id: EntityId::new(),
+            profile_id: profile_id.clone(),
+            owning_session_id: None,
+            service: ExternalServiceKind::ConnectedApp,
+            native_resource_key: "resource".into(),
+            display_label: RedactedText::parse("Resource").unwrap(),
+            availability: ServiceAvailability::Available,
+            lifecycle: LifecycleState::Active,
+            effect: ExternalEffect::NonRepeatable,
+            cancellation_id: CancellationId::new(),
+            audit_correlation: AuditCorrelationId::new(),
+            bounds: bounds(),
+            controls: [
+                ServiceControl::Cancel,
+                ServiceControl::Export,
+                ServiceControl::Delete,
+            ]
+            .into_iter()
+            .collect(),
+            safe_error: None,
+            revision: Revision::ZERO,
+            created_at: UtcTimestamp::UNIX_EPOCH,
+            updated_at: UtcTimestamp::UNIX_EPOCH,
         };
-        let RuntimeRequest::ExecuteFeature {
-            requester_authority,
-            scope_session_id,
-            ..
-        } = request
-        else {
-            panic!("expected feature request")
-        };
-        assert!(matches!(
-            requester_authority,
-            RuntimeCommandAuthority::Agent { .. }
-        ));
-        assert_eq!(scope_session_id, Some(target_session));
-    }
+        let interrupted = registration.reconcile_after_restart(now);
+        assert_eq!(interrupted.lifecycle, LifecycleState::Interrupted);
+        assert!(interrupted.safe_error.is_some());
+        assert!(!interrupted.controls.contains(&ServiceControl::Cancel));
+        interrupted.validate().unwrap();
 
-    #[test]
-    fn unscoped_owner_authority_is_explicit_on_the_wire() {
-        let request = RuntimeRequest::ExecuteFeature {
-            client_id: ClientId::new(),
-            requester_authority: RuntimeCommandAuthority::HumanOwner,
-            worker_binding: worker_binding(),
-            scope_session_id: None,
-            command: ClientCommand::AgentLifecycle(keith_protocol::AgentLifecycleCommand::List),
-            generation: Generation::ZERO,
-        };
-        let RuntimeRequest::ExecuteFeature {
-            requester_authority,
-            scope_session_id,
-            ..
-        } = request
-        else {
-            panic!("expected feature request")
-        };
-        assert_eq!(requester_authority, RuntimeCommandAuthority::HumanOwner);
-        assert!(scope_session_id.is_none());
-    }
+        let operation = ActiveServiceOperation {
+            id: EntityId::new(),
+            registration_id: interrupted.id,
+            profile_id: profile_id.clone(),
+            action: action(profile_id.clone(), ExternalEffect::NonRepeatable),
+            idempotency_key: "operation".into(),
+            lifecycle: LifecycleState::Active,
+            attempt: 1,
+            created_at: UtcTimestamp::UNIX_EPOCH,
+            updated_at: UtcTimestamp::UNIX_EPOCH,
+            safe_error: None,
+        }
+        .reconcile_after_restart(now);
+        assert_eq!(operation.lifecycle, LifecycleState::Interrupted);
+        assert!(operation.safe_error.is_some());
+        operation.validate().unwrap();
 
-    #[test]
-    fn conversation_session_assignments_preserve_exact_profile_roots_on_the_wire() {
-        let conversation_id = ConversationId::new();
-        let assignments = vec![
-            ConversationSessionAssignment {
-                profile_id: ProfileId::new(),
-                root_tree_id: RootTreeId::new(),
-            },
-            ConversationSessionAssignment {
-                profile_id: ProfileId::new(),
-                root_tree_id: RootTreeId::new(),
-            },
-        ];
-        let request = RuntimeRequest::ProvisionConversationSessions {
-            conversation_id,
-            assignments,
-            generation: Generation::ZERO,
-            now: UtcTimestamp::UNIX_EPOCH,
-        };
-        let encoded = serde_json::to_vec(&request).unwrap();
-        assert_eq!(
-            serde_json::from_slice::<RuntimeRequest>(&encoded).unwrap(),
-            request
-        );
+        let mut cross_profile = operation;
+        cross_profile.profile_id = ProfileId::new();
+        assert!(cross_profile.validate().is_err());
     }
 }

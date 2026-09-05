@@ -9,9 +9,7 @@ use keith_agent_desktop::{
     BrowserHandoff, DesktopBootstrap, DesktopLifecycle, DesktopProcessConfig, DesktopUpdateManager,
     UninstallChoice, backup_state, execute_uninstall, plan_uninstall, restore_state,
 };
-use keith_agent_types::{CURRENT_PROTOCOL_VERSION, CURRENT_SCHEMA_VERSION, UtcTimestamp};
-use keith_protocol::TEAMMATES_PROTOCOL_VERSION;
-use keith_release::{TeammatesHostCompatibility, TeammatesPackageInventory};
+use keith_agent_types::UtcTimestamp;
 use signal_hook::consts::{SIGINT, SIGTERM};
 
 fn main() -> ExitCode {
@@ -126,37 +124,6 @@ fn run() -> Result<(), String> {
             println!(
                 "{}",
                 serde_json::to_string_pretty(&verified).map_err(|error| error.to_string())?
-            );
-            Ok(())
-        }
-        Some("verify-teammates-inventory") => {
-            let inventory_path = required_path(
-                &mut arguments,
-                "verify-teammates-inventory requires INVENTORY_JSON",
-            )?;
-            let inventory: TeammatesPackageInventory = serde_json::from_slice(
-                &std::fs::read(&inventory_path).map_err(|error| error.to_string())?,
-            )
-            .map_err(|error| error.to_string())?;
-            inventory.validate().map_err(|error| error.to_string())?;
-            inventory
-                .verify_host(&TeammatesHostCompatibility {
-                    target_triple: format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS),
-                    schema_version: u32::from(CURRENT_SCHEMA_VERSION.major),
-                    native_protocol_major: CURRENT_PROTOCOL_VERSION.major,
-                    teammates_protocol_major: TEAMMATES_PROTOCOL_VERSION.major,
-                    trusted_signing_key_ids: std::collections::BTreeSet::new(),
-                })
-                .map_err(|error| error.to_string())?;
-            println!(
-                "{}",
-                serde_json::json!({
-                    "release_version": inventory.release_version,
-                    "build_id": inventory.build_id,
-                    "self_hosted": inventory.compatibility.self_hosted,
-                    "artifacts": inventory.artifacts.len(),
-                    "runtime_dependencies": inventory.runtime_dependencies.len(),
-                })
             );
             Ok(())
         }
@@ -334,5 +301,5 @@ fn serve_active_release(
 }
 
 fn usage() -> &'static str {
-    "usage: agent-desktop <setup-default [ORIGIN]|setup STATE_ROOT DATA_ROOT [ORIGIN]|settings STATE_ROOT|backup STATE_ROOT|restore BACKUP TARGET_DATA_ROOT|digest-release RELEASE_DIRECTORY|verify-release RELEASE_DIRECTORY EXPECTED_PUBLIC_KEY_HEX|verify-teammates-inventory INVENTORY_JSON|update STATE_ROOT RELEASE_DIRECTORY EXPECTED_PUBLIC_KEY_HEX|rollback STATE_ROOT|serve STATE_ROOT WORKSPACE_ROOT WEB_BIND [LOGIN_SECRET_ENV] [CREDENTIAL_KEY_ENV]|uninstall-plan STATE_ROOT DATA_CHOICE|uninstall STATE_ROOT DATA_CHOICE CONFIRMATION|open ORIGIN [PATH]>"
+    "usage: agent-desktop <setup-default [ORIGIN]|setup STATE_ROOT DATA_ROOT [ORIGIN]|settings STATE_ROOT|backup STATE_ROOT|restore BACKUP TARGET_DATA_ROOT|digest-release RELEASE_DIRECTORY|verify-release RELEASE_DIRECTORY EXPECTED_PUBLIC_KEY_HEX|update STATE_ROOT RELEASE_DIRECTORY EXPECTED_PUBLIC_KEY_HEX|rollback STATE_ROOT|serve STATE_ROOT WORKSPACE_ROOT WEB_BIND [LOGIN_SECRET_ENV] [CREDENTIAL_KEY_ENV]|uninstall-plan STATE_ROOT DATA_CHOICE|uninstall STATE_ROOT DATA_CHOICE CONFIRMATION|open ORIGIN [PATH]>"
 }

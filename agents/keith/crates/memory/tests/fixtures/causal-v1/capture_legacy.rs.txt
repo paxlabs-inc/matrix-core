@@ -1,0 +1,45 @@
+use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
+
+use keith_agent_types::{ActionId, EntityId, Generation, ProfileId, RootTreeId, SessionId, ToolCallId, TurnId, UtcTimestamp, WorkerId, WorkspaceId, canonical_json_bytes};
+use keith_memory::{ActivationPolicy, ActivationRequest, MemoryObservatory, ObservatoryLimits, select_activation};
+use keith_session_store::{ContentBlock, MessageRole, NewSession, Sensitivity, SessionEntryPayload, SessionKind, SessionStore, StoredMessage, TurnTerminalStatus, WriterIdentity};
+
+fn message(role: MessageRole, text: &str) -> StoredMessage {
+    StoredMessage { role, content: vec![ContentBlock::Text { text: text.into() }], provider_metadata: BTreeMap::new() }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let output = std::path::PathBuf::from(std::env::args().nth(1).ok_or("output directory required")?);
+    fs::create_dir_all(&output)?;
+    let root = tempfile::tempdir()?;
+    let store = SessionStore::open(root.path())?;
+    let profile = ProfileId::new();
+    let session = SessionId::new();
+    let now = UtcTimestamp::from_unix_millis(1_000);
+    store.create(NewSession { kind: SessionKind::Root, session_id: session.clone(), root_tree_id: RootTreeId::new(), parent_session_id: None, profile_id: profile.clone(), workspace_id: WorkspaceId::new(), created_at: now, label: Some("Synthetic compatibility fixture".into()), profile_snapshot: None })?;
+    let mut writer = store.acquire_writer(&session, WriterIdentity { worker_id: WorkerId::new(), owner_instance: EntityId::new(), generation: Generation::new(1), acquired_at: now })?;
+    let user = writer.append(None, now, SessionEntryPayload::UserMessage { message: message(MessageRole::User, "The synthetic compass is in the cobalt locker.") })?;
+    let action = ActionId::new();
+    let turn = TurnId::new();
+    let call = ToolCallId::new();
+    writer.accept_turn(now, action.clone(), turn.clone(), user.id.clone())?;
+    writer.append(writer.manifest().active_leaf.clone(), now, SessionEntryPayload::ToolCall { call_id: call.clone(), name: "inspect_synthetic_compass".into(), arguments: serde_json::json!({"object":"synthetic-compass"}) })?;
+    writer.append(writer.manifest().active_leaf.clone(), now, SessionEntryPayload::ToolResult { call_id: call.clone(), content: vec![ContentBlock::Text { text: "Observed the synthetic compass in the cobalt locker.".into() }], is_error: false, failure: None })?;
+    let final_message = message(MessageRole::Assistant, "The synthetic compass is in the cobalt locker.");
+    writer.append_final_candidate(now, turn.clone(), final_message.clone(), 17, 11, 0)?;
+    writer.append_finalized_turn(now, &turn, final_message, TurnTerminalStatus::Completed, true, true, Some(action), vec![], None)?;
+    let leaf = writer.manifest().active_leaf.clone().ok_or("missing leaf")?;
+    drop(writer);
+    let entries = store.load_index(&session)?.ancestry(&leaf)?;
+    let observatory = MemoryObservatory::open(root.path(), &profile, ObservatoryLimits::default(), now)?;
+    observatory.ingest_session_entries(&session, &entries, UtcTimestamp::from_unix_millis(2_000))?;
+    let activation = select_activation(&observatory, &ActivationRequest { profile_id: profile, session_id: session.clone(), query: "synthetic compass cobalt locker".into(), max_sensitivity: Sensitivity::Personal, excluded_entries: BTreeSet::new() }, ActivationPolicy::default())?;
+    let session_dir = root.path().join("sessions").join(session.to_string());
+    fs::copy(session_dir.join("manifest.json"), output.join("session-manifest.json"))?;
+    fs::copy(session_dir.join("history.jsonl"), output.join("session-history.jsonl"))?;
+    fs::copy(root.path().join(".keith/memory-vault.jsonl"), output.join("memory-vault.jsonl"))?;
+    fs::write(output.join("activation.json"), canonical_json_bytes(&activation)?)?;
+    fs::write(output.join("evidence.json"), canonical_json_bytes(&observatory.evidence_snapshot()?)?)?;
+    Ok(())
+}

@@ -599,18 +599,11 @@ where
 }
 
 fn validate_acquire(request: &AcquireRequest) -> Result<(), ResourceError> {
-    let persistent_computer_resource = matches!(
-        request.resource,
-        ResourceKind::Browsers | ResourceKind::Displays
-    ) && request.path.is_persistent_computer_path();
-    let session_required =
-        request.resource != ResourceKind::Workers && !persistent_computer_resource;
-    let tree_required = !persistent_computer_resource;
+    let session_required = request.resource != ResourceKind::Workers;
     if !request.resource.is_concurrency()
         || request.units == 0
         || request.idle_timeout_ms == 0
-        || (tree_required && request.path.tree().is_none())
-        || (persistent_computer_resource && request.path.profile().is_none())
+        || request.path.tree().is_none()
         || (session_required && request.path.session().is_none())
         || request.recovery.as_ref().is_some_and(|recovery| {
             recovery.class.resource() != request.resource

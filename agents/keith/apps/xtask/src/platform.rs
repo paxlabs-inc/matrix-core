@@ -58,11 +58,11 @@ const PROBES: &[Probe] = &[
     },
     Probe {
         package: "keith-agent-tui",
-        filter: "tests::every_operator_surface_is_keyboard_reachable_and_renderable_at_all_widths",
+        filter: "tests::every_temporary_overlay_is_searchable_and_conversation_survives_all_widths",
     },
     Probe {
         package: "keith-agent-web",
-        filter: "platform_web_startup_serves_the_login_shell",
+        filter: "platform_web_startup_serves_browser_and_guarded_compatibility_boundaries",
     },
     Probe {
         package: "keith-agent-desktop",

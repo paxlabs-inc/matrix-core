@@ -81,6 +81,23 @@ pub struct ProcessArtifacts {
 pub struct EvolutionWorkRoot(PathBuf);
 
 impl EvolutionWorkRoot {
+    /// Opens an installation-owned directory for isolated evolution artifacts.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the path cannot be created, is a symlink, or is not a directory.
+    pub fn open(path: impl Into<PathBuf>) -> Result<Self, std::io::Error> {
+        let path = path.into();
+        fs::create_dir_all(&path)?;
+        let metadata = fs::symlink_metadata(&path)?;
+        if metadata.file_type().is_symlink() || !metadata.is_dir() {
+            return Err(std::io::Error::other(
+                "evolution work root must be a regular directory",
+            ));
+        }
+        Ok(Self(fs::canonicalize(path)?))
+    }
+
     #[must_use]
     pub(crate) fn path(&self) -> &Path {
         &self.0

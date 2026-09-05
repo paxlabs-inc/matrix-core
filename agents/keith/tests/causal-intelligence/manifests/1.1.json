@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "task": "1.1",
+  "source_paths": [
+    "scripts/qualification/causal_intelligence.py",
+    "tests/causal-intelligence/test_qualification_runner.py",
+    "tests/causal-intelligence/test_runtime_baseline.py",
+    "tests/causal-intelligence/README.md",
+    "docs/architecture/causal-intelligence-baseline.md",
+    "Cargo.toml",
+    "Cargo.lock",
+    "crates",
+    "apps/agentd",
+    "apps/agent-worker",
+    "apps/agent-web/Cargo.toml",
+    "apps/agent-web/src",
+    "apps/agent-web/static",
+    "apps/agent-cli"
+  ],
+  "config_paths": ["packaging/providers.json", "rust-toolchain.toml"],
+  "binary_paths": [
+    "/tmp/keith-causal-build/debug/agentd",
+    "/tmp/keith-causal-build/debug/agent-worker",
+    "/tmp/keith-causal-build/debug/agent-web",
+    "/tmp/keith-causal-build/debug/agent-cli"
+  ],
+  "required_case_ids": ["qualification-runner-self-check", "live-keith-baseline"],
+  "cases": [
+    {
+      "id": "qualification-runner-self-check",
+      "kind": "unittest",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "tests/causal-intelligence", "-p", "test_qualification_runner.py", "-v"],
+      "expected_case_count": 29,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "live-keith-baseline",
+      "kind": "unittest",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "tests/causal-intelligence", "-p", "test_runtime_baseline.py", "-v"],
+      "expected_case_count": 2,
+      "timeout_seconds": 2400,
+      "required_artifacts": ["baseline.json"]
+    }
+  ]
+}

@@ -137,6 +137,15 @@ struct StoredCommitment {
     revision: Revision,
 }
 
+/// Exact canonical commitment state with its repository revision. A caller must
+/// re-read this reference before depending on it after a context change.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CommitmentSnapshot {
+    pub commitment: Commitment,
+    pub revision: Revision,
+}
+
 pub struct CommitmentService<R, S> {
     repository: Arc<R>,
     waiting: Arc<WaitingService<R, S>>,
@@ -402,6 +411,35 @@ where
         Ok(self.required(id)?.commitment)
     }
 
+    /// Resolves one commitment by exact identity within the caller's profile.
+    /// Missing and other-profile identities both return `None`; no optional
+    /// retrieval ranking or global list participates in this lookup.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the canonical record cannot be read or decoded.
+    pub fn inspect_scoped(
+        &self,
+        profile_id: &ProfileId,
+        id: &CommitmentId,
+    ) -> Result<Option<CommitmentSnapshot>, CommitmentError> {
+        let Some(record) = self
+            .repository
+            .get_commitment(id.as_entity_id())
+            .map_err(repository_error)?
+        else {
+            return Ok(None);
+        };
+        let stored = decode_commitment(record)?;
+        if &stored.commitment.profile_id != profile_id {
+            return Ok(None);
+        }
+        Ok(Some(CommitmentSnapshot {
+            commitment: stored.commitment,
+            revision: stored.revision,
+        }))
+    }
+
     fn transition(
         &self,
         id: &CommitmentId,
@@ -535,6 +573,58 @@ mod tests {
             .unwrap(),
         );
         CommitmentService::new(repository, sink)
+    }
+
+    #[test]
+    fn exact_scoped_revision_tracks_changes_and_restart_without_leaking_other_profiles() {
+        let directory = tempdir().unwrap();
+        let path = directory.path().join("runtime.sqlite");
+        let commitments = service(&path);
+        let profile = ProfileId::new();
+        let commitment = commitments
+            .create(
+                NewCommitment {
+                    profile_id: profile.clone(),
+                    session_id: SessionId::new(),
+                    description: "Inspect the current endpoint before delivery".into(),
+                    owner: CommitmentOwner::Agent,
+                    trigger: None,
+                    reply_route: None,
+                    expires_at: None,
+                },
+                UtcTimestamp::UNIX_EPOCH,
+            )
+            .unwrap();
+        let original = commitments
+            .inspect_scoped(&profile, &commitment.id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(original.revision, Revision::ZERO);
+        assert!(
+            commitments
+                .inspect_scoped(&ProfileId::new(), &commitment.id)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            commitments
+                .inspect_scoped(&profile, &CommitmentId::new())
+                .unwrap()
+                .is_none()
+        );
+        commitments
+            .activate(&commitment.id, UtcTimestamp::from_unix_millis(1))
+            .unwrap();
+        drop(commitments);
+        let reopened = service(&path);
+        let current = reopened
+            .inspect_scoped(&profile, &commitment.id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(current.revision, Revision::new(1));
+        assert_eq!(current.commitment.state, CommitmentState::Active);
+        assert_eq!(current.commitment.id, original.commitment.id);
+        assert_ne!(current, original);
     }
 
     #[test]

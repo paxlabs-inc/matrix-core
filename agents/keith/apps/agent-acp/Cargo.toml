@@ -1,0 +1,36 @@
+[package]
+name = "keith-agent-acp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+default = []
+unstable-acp-v2 = [
+    "agent-client-protocol/unstable_protocol_v2",
+    "keith-acp/unstable-acp-v2",
+]
+
+[dependencies]
+agent-client-protocol = { version = "=2.0.0", features = ["unstable_session_fork"] }
+axum.workspace = true
+base64 = "0.22.1"
+futures-util.workspace = true
+keith-acp = { path = "../../crates/acp" }
+keith-agent-types = { path = "../../crates/agent-types" }
+keith-platform-contracts = { path = "../../crates/platform-contracts" }
+keith-protocol = { path = "../../crates/protocol" }
+serde_json.workspace = true
+serde.workspace = true
+tokio = { workspace = true, features = ["io-std", "io-util"] }
+
+[dev-dependencies]
+serde_json.workspace = true
+tempfile.workspace = true
+tungstenite.workspace = true
+
+[lints]
+workspace = true

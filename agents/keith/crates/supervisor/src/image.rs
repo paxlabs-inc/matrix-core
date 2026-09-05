@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 
 use fs2::FileExt;
@@ -270,6 +270,10 @@ impl WorkerImageRegistry {
         Ok(registry)
     }
 
+    /// # Panics
+    ///
+    /// Panics if the registry's validated current pointer is missing, which cannot
+    /// happen for a registry that opened successfully.
     #[must_use]
     pub fn current(&self) -> &InstalledImage {
         self.state
@@ -286,6 +290,10 @@ impl WorkerImageRegistry {
             .and_then(|id| self.state.images.get(id))
     }
 
+    /// # Panics
+    ///
+    /// Panics if the registry's validated known-good pointer is missing, which cannot
+    /// happen for a registry that opened successfully.
     #[must_use]
     pub fn known_good(&self) -> &InstalledImage {
         let id = self
@@ -658,37 +666,15 @@ fn bootstrap_state(root: &Path, executable: &Path) -> Result<RegistryState, Imag
     if !metadata.is_file() || metadata.file_type().is_symlink() {
         return Err(ImageRegistryError::ArtifactMismatch);
     }
-    let mut source = File::open(executable)?;
-    let staging = root
-        .join("images")
-        .join(format!(".bootstrap.{}.tmp", std::process::id()));
-    if staging.exists() {
-        fs::remove_dir_all(&staging)?;
-    }
-    fs::create_dir(&staging)?;
-    let staged_executable = staging.join("agent-worker");
-    let mut installed = OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .open(&staged_executable)?;
-    let mut hasher = Sha256::new();
-    let mut buffer = vec![0_u8; 1024 * 1024];
-    loop {
-        let read = source.read(&mut buffer)?;
-        if read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..read]);
-        installed.write_all(&buffer[..read])?;
-    }
-    installed.sync_all()?;
-    set_executable(&staged_executable)?;
-    sync_directory(&staging)?;
-    let executable_sha256 = format!("{:x}", hasher.finalize());
+    let bytes = fs::read(executable)?;
+    let executable_sha256 = sha256(&bytes);
     let image_id = format!("bootstrap-{executable_sha256}");
     let destination = root.join("images").join(&image_id);
-    fs::rename(&staging, &destination)?;
+    fs::create_dir(&destination)?;
     let installed_path = destination.join("agent-worker");
+    write_synced(&installed_path, &bytes)?;
+    set_executable(&installed_path)?;
+    sync_directory(&destination)?;
     sync_directory(&root.join("images"))?;
     let image = InstalledImage {
         image_id: image_id.clone(),
@@ -979,7 +965,10 @@ mod tests {
             },
             "gates": gates,
             "artifact_source_paths": [source_path],
-            "change_class": if source_path.ends_with(".rs") {"b"} else {"a"}
+            "change_class": if std::path::Path::new(source_path)
+                .extension()
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("rs"))
+            {"b"} else {"a"}
         }))
         .unwrap();
         let key_bytes = Ed25519KeyPair::generate_pkcs8(&SystemRandom::new()).unwrap();

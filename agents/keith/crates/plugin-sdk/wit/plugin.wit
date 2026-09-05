@@ -1,0 +1,133 @@
+package keith:plugin@1.0.0;
+
+interface types {
+    enum operation {
+        activate,
+        health,
+        command,
+        tool,
+        migrate,
+        deactivate,
+    }
+
+    enum payload-format {
+        json,
+        bytes,
+    }
+
+    enum status {
+        completed,
+        cancelled,
+        denied,
+        failed,
+    }
+
+    record invocation {
+        interface-version: u16,
+        invocation-id: string,
+        operation: operation,
+        target: option<string>,
+        payload-format: payload-format,
+        payload: list<u8>,
+        cancellation-id: string,
+    }
+
+    record stream-frame {
+        sequence: u64,
+        payload-format: payload-format,
+        payload: list<u8>,
+    }
+
+    record response {
+        interface-version: u16,
+        invocation-id: string,
+        status: status,
+        payload-format: payload-format,
+        payload: list<u8>,
+        frames: list<stream-frame>,
+        safe-error: option<string>,
+    }
+
+    enum risk {
+        read-only,
+        reversible,
+        consequential,
+        irreversible,
+    }
+
+    variant grant {
+        http-host(string),
+        credential(string),
+        storage-read(string),
+        storage-write(string),
+        emit-event,
+        create-artifact,
+        clock,
+        safe-log,
+    }
+
+    record callable-descriptor {
+        name: string,
+        description: string,
+        input-schema: string,
+        output-schema: string,
+        risk: risk,
+        timeout-ms: u64,
+        supports-cancellation: bool,
+        streaming: bool,
+        concurrency-limit: u32,
+        required-grants: list<grant>,
+    }
+
+    record http-request {
+        method: string,
+        url: string,
+        headers: list<tuple<string, string>>,
+        body: list<u8>,
+    }
+
+    record http-response {
+        status: u16,
+        headers: list<tuple<string, string>>,
+        body: list<u8>,
+    }
+
+    variant storage-operation {
+        get(string),
+        put(tuple<string, list<u8>>),
+        delete(string),
+    }
+
+    enum log-level {
+        error,
+        warn,
+        info,
+        debug,
+    }
+}
+
+interface host {
+    use types.{http-request, http-response, log-level, storage-operation};
+
+    http: func(request: http-request) -> result<http-response, string>;
+    credential: func(name: string) -> result<list<u8>, string>;
+    storage: func(namespace: string, operation: storage-operation) -> result<option<list<u8>>, string>;
+    emit-event: func(topic: string, payload: list<u8>) -> result<_, string>;
+    create-artifact: func(name: string, media-type: string, payload: list<u8>) -> result<string, string>;
+    now-millis: func() -> result<u64, string>;
+    log: func(level: log-level, message: string) -> result<_, string>;
+    cancelled: func(cancellation-id: string) -> bool;
+}
+
+interface guest {
+    use types.{callable-descriptor, invocation, response};
+
+    describe-tools: func() -> list<callable-descriptor>;
+    describe-commands: func() -> list<callable-descriptor>;
+    invoke: func(request: invocation) -> response;
+}
+
+world plugin {
+    import host;
+    export guest;
+}

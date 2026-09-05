@@ -1,0 +1,43 @@
+[package]
+name = "keith-agent-web"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "agent-web"
+path = "src/main.rs"
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+keith-agent-types = { path = "../../crates/agent-types" }
+keith-provider-catalog = { path = "../../crates/provider-catalog" }
+keith-protocol = { path = "../../crates/protocol" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+axum.workspace = true
+futures-util.workspace = true
+keith-connection = { path = "../../crates/connection" }
+keith-credentials = { path = "../../crates/credentials" }
+keith-framing = { path = "../../crates/framing" }
+keith-platform = { path = "../../crates/platform" }
+ring.workspace = true
+sha2.workspace = true
+tokio.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tungstenite.workspace = true
+ureq.workspace = true
